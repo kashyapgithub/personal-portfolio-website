@@ -18,22 +18,9 @@
   document.documentElement.classList.add("js");
 
   /* ------------------------------------------------------------
-     1. Theme Management (System-aware + LocalStorage)
+     1. Theme: dark only (no toggle)
      ------------------------------------------------------------ */
-  var themeToggleBtn = document.getElementById("theme-toggle-btn");
-  var currentTheme = localStorage.getItem("theme") || 
-    (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-
-  document.documentElement.setAttribute("data-theme", currentTheme);
-
-  if (themeToggleBtn) {
-    themeToggleBtn.addEventListener("click", function () {
-      var active = document.documentElement.getAttribute("data-theme");
-      var next = active === "light" ? "dark" : "light";
-      document.documentElement.setAttribute("data-theme", next);
-      localStorage.setItem("theme", next);
-    });
-  }
+  document.documentElement.setAttribute("data-theme", "dark");
 
   /* ------------------------------------------------------------
      2. Copy Email with Toast Feedback
