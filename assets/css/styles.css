@@ -316,7 +316,7 @@ body {
 
 /* (Dot mesh lives on #dotmesh-canvas; no CSS overlay needed.) */
 
-#dotmesh-canvas {
+#sketch-canvas {
   position: absolute;
   inset: 0;
   width: 100%;
