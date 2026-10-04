@@ -42,8 +42,8 @@
     }
   }
 
-  /* ---------- pencil primitives (jittered double strokes) ---------- */
-  function j() { return (Math.random() * 2 - 1); }
+  /* ---------- pencil primitives (stable single-pass strokes; no boil) ---------- */
+  function j() { return 0; }
 
   function sline(x1, y1, x2, y2, alpha, w, tone) {
     alpha = alpha === undefined ? 0.85 : alpha;
