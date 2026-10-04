@@ -680,15 +680,16 @@
       msc = 1 - 0.22 * wp2; malpha = 1 - 0.5 * wp2;
       arm = "down"; dotsA = 1; appear = 2.2;
     } else if (t < 20.2) {
-      /* doors close behind him; boards fade away too */
+      /* doors close behind him; boards stay on display */
       var cp = (t - 18.8) / 1.4;
       door = 1 - ease(cp);
       showMan = true; walking = false;
       manX = doorX + dw / 2; msc = 0.78;
       malpha = Math.max(0, 0.5 * (1 - cp));
-      arm = "down"; dotsA = 1; appear = 2.2; boardFade = 1 - cp;
+      arm = "down"; dotsA = 1; appear = 2.2; boardFade = 1;
     } else {
-      door = 0; dotsA = 1; appear = 0; boardFade = 0;
+      /* final held frame: closed doors, boards stay */
+      door = 0; dotsA = 1; appear = 2.2; boardFade = 1;
     }
 
     backdrop(dotsA);
@@ -707,11 +708,9 @@
     if (showFront && frontA > 0.05) contactShadow(manX, G + 5 * S, 58 * S, 0.42 * frontA);
     drawMotes(doorX, door, t);
 
-    var a = 1;
-    if (t < 0.7) a = t / 0.7;
-    if (t > 20.4) a = Math.max(0, 1 - (t - 20.4) / 1.6);
-    if (a < 1) {
-      ctx.fillStyle = "rgba(9,10,15," + (1 - a).toFixed(3) + ")";
+    /* gentle fade-in only; the ending holds, no loop restart */
+    if (t < 0.7) {
+      ctx.fillStyle = "rgba(9,10,15," + (1 - t / 0.7).toFixed(3) + ")";
       ctx.fillRect(0, 0, W, H);
     }
   }
@@ -719,22 +718,26 @@
   resize();
   window.addEventListener("resize", resize);
 
-  if (freezeT !== null && !isNaN(freezeT)) { scene(freezeT % T_LOOP); return; }
-  if (reduceMotion) { scene(13.8); return; }
+  var T_END = 20.8; /* story ends here and holds */
 
-  var running = true, inView = true;
+  if (freezeT !== null && !isNaN(freezeT)) { scene(Math.min(freezeT, T_END)); return; }
+  if (reduceMotion) { scene(T_END); return; }
+
+  var running = true, inView = true, finished = false;
   if ("IntersectionObserver" in window && hero) {
     new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) { inView = entry.isIntersecting; });
     }, { threshold: 0 }).observe(hero);
   }
   document.addEventListener("visibilitychange", function () { running = !document.hidden; });
+  window.addEventListener("resize", function () { if (finished) scene(T_END); });
 
   var start = performance.now();
   (function loop(now) {
-    requestAnimationFrame(loop);
-    if (!running || !inView || document.hidden) return;
-    var t = (((now || performance.now()) - start) / 1000) % T_LOOP;
+    if (!running || !inView || document.hidden) { requestAnimationFrame(loop); return; }
+    var t = ((now || performance.now()) - start) / 1000;
+    if (t >= T_END) { scene(T_END); finished = true; return; }
     scene(t);
+    requestAnimationFrame(loop);
   })();
 })();
