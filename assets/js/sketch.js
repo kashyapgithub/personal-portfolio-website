@@ -241,6 +241,22 @@
     ctx.restore();
   }
 
+  /* soft contact shadow grounding an object */
+  function contactShadow(x, y, w, alpha) {
+    alpha = alpha === undefined ? 0.4 : alpha;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(1, 0.22);
+    var g = ctx.createRadialGradient(0, 0, 1, 0, 0, w / 2);
+    g.addColorStop(0, "rgba(0,0,0," + alpha.toFixed(3) + ")");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, w / 2, 0, 6.2832);
+    ctx.fill();
+    ctx.restore();
+  }
+
   /* ---------- room: double doors + light ---------- */
   function drawDoors(doorX, open, seam) {
     var dw = 150 * S, dh = 182 * S;
@@ -261,16 +277,15 @@
     if (open > 0.01) {
       var flick = 0.94 + 0.06 * Math.sin(performance.now() / 130);
       var li = open * flick;
-      /* layered halo */
-      var g = ctx.createRadialGradient(doorX + dw / 2, top + dh / 2, 8, doorX + dw / 2, top + dh / 2, dw * 2.2);
-      g.addColorStop(0, "rgba(255,205,125," + (0.6 * li).toFixed(3) + ")");
-      g.addColorStop(0.55, "rgba(255,170,90," + (0.22 * li).toFixed(3) + ")");
+      /* tight glow hugging the doorway (no big halo) */
+      var g = ctx.createRadialGradient(doorX + dw / 2, top + dh / 2, 8, doorX + dw / 2, top + dh / 2, dw * 1.05);
+      g.addColorStop(0, "rgba(255,205,125," + (0.55 * li).toFixed(3) + ")");
       g.addColorStop(1, "rgba(255,150,60,0)");
       ctx.fillStyle = g;
-      ctx.fillRect(doorX - dw * 1.6, top - dh * 0.8, dw * 4.4, dh * 3);
+      ctx.fillRect(doorX - dw * 0.6, top - dh * 0.4, dw * 2.2, dh * 1.9);
       /* floor wash + plank seams catching light */
       var fg = ctx.createLinearGradient(doorX, G, doorX + dw * 4.4, G);
-      fg.addColorStop(0, "rgba(255,190,100," + (0.32 * li).toFixed(3) + ")");
+      fg.addColorStop(0, "rgba(255,190,100," + (0.22 * li).toFixed(3) + ")");
       fg.addColorStop(1, "rgba(255,150,60,0)");
       ctx.fillStyle = fg;
       ctx.beginPath();
@@ -294,7 +309,7 @@
       ctx.restore();
       /* rays */
       ctx.save();
-      ctx.globalAlpha = 0.10 * li;
+      ctx.globalAlpha = 0.07 * li;
       ctx.strokeStyle = "rgba(255,200,120,1)";
       ctx.lineWidth = 1.2;
       for (var r = 0; r < 4; r++) {
@@ -317,8 +332,9 @@
     sline(doorX - 6 * S, top - 6 * S, doorX - 6 * S, G + 4 * S, 0.9, 3);
     sline(doorX + dw + 6 * S, top - 6 * S, doorX + dw + 6 * S, G + 4 * S, 0.9, 3);
     sline(doorX - 10 * S, top - 6 * S, doorX + dw + 10 * S, top - 6 * S, 0.9, 3);
-    /* threshold step */
+    /* threshold step + its soft shadow */
     sline(doorX - 8 * S, G + 8 * S, doorX + dw + 8 * S, G + 8 * S, 0.6, 2.4, "235,200,150");
+    contactShadow(doorX + dw / 2, G + 12 * S, dw * 1.5, 0.45);
 
     var half = (dw / 2) * Math.cos(open * 1.65);
     if (half > 2) {
@@ -437,12 +453,13 @@
     srect(x, y, w, h, 0.95, 2.4, "235,200,150");
   }
 
-  function drawBoards(bx, by, appear) {
+  function drawBoards(bx, by, appear, fade) {
+    fade = fade === undefined ? 1 : fade;
     var bw = 96 * S, bh = 122 * S, gap = 24 * S, rail = 9 * S;
     var tones = [0, 10, -8, 4];
     for (var i = 0; i < 4; i++) {
-      var p = Math.max(0, Math.min(1, appear * 4 - i * 0.55));
-      if (p <= 0) continue;
+      var p = Math.max(0, Math.min(1, appear * 4 - i * 0.55)) * fade;
+      if (p <= 0.01) continue;
       var cx = bx + (i % 2) * (bw + gap), cy = by + Math.floor(i / 2) * (bh + gap) + (1 - p) * 34;
       ctx.save();
       ctx.globalAlpha = p;
@@ -475,6 +492,7 @@
       ctx.fillRect(cx + rail, cy + rail, bw - rail * 2, bh - rail * 2);
       miniSketch(i, cx + rail + 4 * S, cy + rail + 4 * S, bw - rail * 2 - 8 * S, bh - rail * 2 - 8 * S, 0.95);
       ctx.restore();
+      contactShadow(cx + bw / 2, cy + bh + 44 * S + 5 * S, bw * 1.35, 0.38 * p);
     }
   }
 
@@ -604,7 +622,7 @@
     var door = 0, seam = 0, dotsA = 0;
     var manX = 0, walking = false, phase = 0, arm = "down", lean = 0.06;
     var msc = 1, malpha = 1, blend = 0, bow = 0;
-    var showMan = false, showFront = false, frontA = 0, appear = 0;
+    var showMan = false, showFront = false, frontA = 0, appear = 0, boardFade = 1;
 
     var bx = Math.min(W - (96 * S * 2 + 24 * S) - 24, doorX + dw + 90 * S);
     if (W < 760) bx = Math.max(doorX + dw + 40 * S, 24);
@@ -662,14 +680,15 @@
       msc = 1 - 0.22 * wp2; malpha = 1 - 0.5 * wp2;
       arm = "down"; dotsA = 1; appear = 2.2;
     } else if (t < 20.2) {
-      /* doors close behind him */
-      door = 1 - ease((t - 18.8) / 1.4);
+      /* doors close behind him; boards fade away too */
+      var cp = (t - 18.8) / 1.4;
+      door = 1 - ease(cp);
       showMan = true; walking = false;
       manX = doorX + dw / 2; msc = 0.78;
-      malpha = Math.max(0, 0.5 * (1 - (t - 18.8) / 1.4));
-      arm = "down"; dotsA = 1; appear = 2.2;
+      malpha = Math.max(0, 0.5 * (1 - cp));
+      arm = "down"; dotsA = 1; appear = 2.2; boardFade = 1 - cp;
     } else {
-      door = 0; dotsA = 1; appear = 2.2;
+      door = 0; dotsA = 1; appear = 0; boardFade = 0;
     }
 
     backdrop(dotsA);
@@ -680,10 +699,12 @@
     drawDoors(doorX, door, seam);
 
     var by = G + 46 * S - (2 * 122 * S + 24 * S + 44 * S);
-    drawBoards(bx, by, appear);
+    drawBoards(bx, by, appear, boardFade);
 
     if (showMan) drawMan(manX, { walk: walking ? phase : null, arm: arm, blend: blend, lean: lean, sc: msc, alpha: malpha, bow: 0 });
+    if (showMan && malpha > 0.05) contactShadow(manX, G + 5 * S, 52 * S * msc, 0.42 * malpha);
     if (showFront) drawFront(manX, bow, frontA);
+    if (showFront && frontA > 0.05) contactShadow(manX, G + 5 * S, 58 * S, 0.42 * frontA);
     drawMotes(doorX, door, t);
 
     var a = 1;
