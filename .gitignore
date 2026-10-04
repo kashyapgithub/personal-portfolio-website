@@ -1,0 +1,12 @@
+# OS & IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Node / Scratch
+node_modules/
+npm-debug.log*
+.tmp/
