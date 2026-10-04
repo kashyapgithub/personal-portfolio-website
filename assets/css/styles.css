@@ -334,6 +334,14 @@ body {
   .hero::before { animation: none; }
 }
 
+#nebula-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .hero-grid {
   position: relative;
   z-index: 1;
