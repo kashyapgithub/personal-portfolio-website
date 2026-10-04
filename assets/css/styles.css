@@ -909,6 +909,8 @@ body {
 .section {
   padding: clamp(3.5rem, 6vw, 5.5rem) 0;
   border-bottom: 1px solid var(--border);
+  min-height: calc(100vh - var(--header-h));
+  min-height: calc(100svh - var(--header-h));
 }
 
 .section-head {
@@ -1249,6 +1251,8 @@ body {
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   padding: clamp(2.5rem, 5vw, 3.5rem) 0;
+  min-height: calc(100vh - var(--header-h));
+  min-height: calc(100svh - var(--header-h));
 }
 
 .stats-grid {
