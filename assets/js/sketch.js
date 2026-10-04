@@ -322,12 +322,6 @@
       ctx.restore();
     }
 
-    /* wall edges + baseboard so the room reads */
-    sline(doorX - 34 * S, top + 10 * S, doorX - 34 * S, G + 4 * S, 0.28, 1.6);
-    sline(doorX + dw + 34 * S, top + 10 * S, doorX + dw + 34 * S, G + 4 * S, 0.28, 1.6);
-    sline(doorX - 60 * S, G + 4 * S, doorX - 10 * S, G + 4 * S, 0.22, 1.4);
-    sline(doorX + dw + 10 * S, G + 4 * S, doorX + dw + 60 * S, G + 4 * S, 0.22, 1.4);
-
     /* frame */
     sline(doorX - 6 * S, top - 6 * S, doorX - 6 * S, G + 4 * S, 0.9, 3);
     sline(doorX + dw + 6 * S, top - 6 * S, doorX + dw + 6 * S, G + 4 * S, 0.9, 3);
@@ -619,7 +613,7 @@
 
     var doorX = W < 760 ? W * 0.08 : W * 0.26;
     var dw = 150 * S;
-    var door = 0, seam = 0, dotsA = 0;
+    var door = 0, seam = 0, dotsA = 0, doorA = 1;
     var manX = 0, walking = false, phase = 0, arm = "down", lean = 0.06;
     var msc = 1, malpha = 1, blend = 0, bow = 0;
     var showMan = false, showFront = false, frontA = 0, appear = 0, boardFade = 1;
@@ -687,9 +681,13 @@
       manX = doorX + dw / 2; msc = 0.78;
       malpha = Math.max(0, 0.5 * (1 - cp));
       arm = "down"; dotsA = 1; appear = 2.2; boardFade = 1;
+    } else if (t < 21.4) {
+      /* door itself fades away once he is inside */
+      door = 0; doorA = Math.max(0, 1 - (t - 20.2) / 1.2);
+      dotsA = 1; appear = 2.2; boardFade = 1;
     } else {
-      /* final held frame: closed doors, boards stay */
-      door = 0; dotsA = 1; appear = 2.2; boardFade = 1;
+      /* final held frame: boards stay on display */
+      door = 0; doorA = 0; dotsA = 1; appear = 2.2; boardFade = 1;
     }
 
     backdrop(dotsA);
@@ -697,7 +695,10 @@
     sline(20, G + 46 * S, W - 20, G + 46 * S, 0.5, 1.6);
     sline(40, G + 54 * S, W - 60, G + 54 * S, 0.25, 1.2);
 
+    ctx.save();
+    ctx.globalAlpha = doorA;
     drawDoors(doorX, door, seam);
+    ctx.restore();
 
     var by = G + 46 * S - (2 * 122 * S + 24 * S + 44 * S);
     drawBoards(bx, by, appear, boardFade);
@@ -718,7 +719,7 @@
   resize();
   window.addEventListener("resize", resize);
 
-  var T_END = 20.8; /* story ends here and holds */
+  var T_END = 21.6; /* story ends here and holds */
 
   if (freezeT !== null && !isNaN(freezeT)) { scene(Math.min(freezeT, T_END)); return; }
   if (reduceMotion) { scene(T_END); return; }
