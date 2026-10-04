@@ -313,13 +313,25 @@ body {
 .hero::before {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: -6%;
   pointer-events: none;
   background:
     radial-gradient(640px 420px at 12% 18%, rgba(16, 185, 129, 0.20), transparent 62%),
     radial-gradient(760px 480px at 88% 12%, rgba(0, 113, 227, 0.24), transparent 62%),
     radial-gradient(560px 380px at 50% 108%, rgba(255, 164, 43, 0.14), transparent 62%),
     radial-gradient(420px 300px at 78% 78%, rgba(0, 212, 200, 0.10), transparent 60%);
+  animation: nebula-drift 22s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes nebula-drift {
+  0% { transform: translate3d(-3%, -2%, 0) scale(1); }
+  50% { transform: translate3d(3%, 2%, 0) scale(1.08); }
+  100% { transform: translate3d(-2%, 3%, 0) scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero::before { animation: none; }
 }
 
 .hero-grid {
