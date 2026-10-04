@@ -18,7 +18,7 @@
   if (!ctx) return;
 
   var W = 0, H = 0, S = 1, G = 0;
-  var T_LOOP = 18;
+  var T_LOOP = 22;
 
   var freezeT = null;
   try {
@@ -124,16 +124,21 @@
     }
   }
 
-  /* ---------- backdrop: dots + grain ---------- */
-  function backdrop() {
-    ctx.fillStyle = "rgba(148,163,184,0.13)";
-    var gap = 26 * S;
-    for (var y = gap / 2; y < H; y += gap) {
-      for (var x = gap / 2; x < W; x += gap) {
-        ctx.beginPath();
-        ctx.arc(x, y, 1.3, 0, 6.2832);
-        ctx.fill();
+  /* ---------- backdrop: grain always; dots only when revealed ---------- */
+  function backdrop(dotsA) {
+    if (dotsA > 0.01) {
+      ctx.fillStyle = "rgba(148,163,184,0.13)";
+      ctx.save();
+      ctx.globalAlpha = dotsA;
+      var gap = 26 * S;
+      for (var y = gap / 2; y < H; y += gap) {
+        for (var x = gap / 2; x < W; x += gap) {
+          ctx.beginPath();
+          ctx.arc(x, y, 1.3, 0, 6.2832);
+          ctx.fill();
+        }
       }
+      ctx.restore();
     }
     ctx.fillStyle = "rgba(200,200,200,1)";
     for (var i = 0; i < grain.length; i++) {
@@ -473,22 +478,133 @@
     }
   }
 
+  /* ---------- front-facing detailed figure in namaste (faces viewer) ---------- */
+  function drawFront(cx, bow, alpha) {
+    var L = S;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    var breath = Math.sin(performance.now() / 1100) * 1.1 * L;
+    var hipY = G - 62 * L;
+    var shY = hipY - 54 * L + bow * 8 * L + breath * 0.4;
+
+    /* shoes */
+    ctx.fillStyle = "rgba(30,28,26,0.95)";
+    for (var sdi = -1; sdi <= 1; sdi += 2) {
+      ctx.beginPath();
+      ctx.ellipse(cx + sdi * 9 * L, G - 2.5 * L, 9 * L, 3.4 * L, 0, 0, 6.2832);
+      ctx.fill();
+      sline(cx + sdi * 9 * L - 8 * L, G - 3 * L, cx + sdi * 9 * L + 8 * L, G - 3 * L, 0.5, 1.2, "235,200,150");
+    }
+
+    /* trousers: outer + inner seams, knees, waistband */
+    for (var sd = -1; sd <= 1; sd += 2) {
+      sline(cx + sd * 11 * L, hipY, cx + sd * 10 * L, G - 6 * L, 0.9, 2.4);
+      sline(cx + sd * 3 * L, hipY + 8 * L, cx + sd * 4 * L, G - 6 * L, 0.7, 1.8);
+      sline(cx + sd * 10 * L - 3 * L, G - 30 * L, cx + sd * 10 * L + 3 * L, G - 30 * L, 0.45, 1.2);
+    }
+    sline(cx - 11 * L, hipY, cx + 11 * L, hipY, 0.8, 2.2);
+    scircle(cx, hipY, 1.8 * L, 0.8);
+
+    /* kurta torso: shoulders -> waist, hem, collar, buttons, folds */
+    sline(cx - 17 * L, shY, cx - 12 * L, hipY + 2 * L, 0.9, 2.4);
+    sline(cx + 17 * L, shY, cx + 12 * L, hipY + 2 * L, 0.9, 2.4);
+    sline(cx - 12 * L, hipY + 2 * L, cx + 12 * L, hipY + 2 * L, 0.7, 1.8);
+    sline(cx - 17 * L, shY, cx + 17 * L, shY, 0.6, 1.8);
+    /* collar V + placket */
+    sline(cx - 7 * L, shY + 2 * L, cx, shY + 14 * L, 0.85, 1.8);
+    sline(cx + 7 * L, shY + 2 * L, cx, shY + 14 * L, 0.85, 1.8);
+    sline(cx, shY + 14 * L, cx, hipY - 2 * L, 0.5, 1.4);
+    for (var b = 0; b < 3; b++) {
+      scircle(cx, shY + (20 + b * 11) * L, 1.5 * L, 0.8);
+    }
+    /* fabric folds */
+    sline(cx - 8 * L, hipY - 12 * L, cx - 6 * L, hipY - 2 * L, 0.35, 1.2);
+    sline(cx + 8 * L, hipY - 12 * L, cx + 6 * L, hipY - 2 * L, 0.35, 1.2);
+
+    /* arms: shoulders -> elbows -> prayer point at chest */
+    var P = [cx, shY + 32 * L];
+    for (var sa = -1; sa <= 1; sa += 2) {
+      var shx = cx + sa * 17 * L;
+      var E = [cx + sa * 24 * L, shY + 24 * L];
+      sline(shx, shY + 1 * L, E[0], E[1], 0.9, 2.4);
+      sline(shx + sa * 2 * L, shY + 3 * L, E[0] + sa * 2 * L, E[1], 0.35, 1.3);
+      sline(E[0], E[1], P[0] + sa * 2 * L, P[1], 0.9, 2.2);
+      /* cuff */
+      sline(E[0] - 4 * L, E[1] - 2 * L, E[0] + 4 * L, E[1] + 2 * L, 0.6, 1.6);
+    }
+
+    /* joined palms: two hands + finger separations + thumbs */
+    sline(P[0] - 5 * L, P[1] - 12 * L, P[0] - 4 * L, P[1] + 8 * L, 0.95, 2.4);
+    sline(P[0] + 5 * L, P[1] - 12 * L, P[0] + 4 * L, P[1] + 8 * L, 0.95, 2.4);
+    sline(P[0] - 5 * L, P[1] + 8 * L, P[0] + 5 * L, P[1] + 8 * L, 0.8, 2.0);
+    for (var f = -1; f <= 1; f++) {
+      sline(P[0] + f * 3 * L - 1 * L, P[1] - 11 * L, P[0] + f * 3 * L - 1 * L, P[1] - 1 * L, 0.55, 1.1);
+    }
+    ctx.strokeStyle = "rgba(232,230,224,0.7)";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(P[0] - 6 * L, P[1] - 2 * L, 4 * L, Math.PI * 0.4, Math.PI * 1.1);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(P[0] + 6 * L, P[1] - 2 * L, 4 * L, Math.PI * 1.9, Math.PI * 2.6);
+    ctx.stroke();
+
+    /* neck + head */
+    sline(cx - 4 * L, shY - 1 * L, cx - 4 * L, shY - 9 * L, 0.8, 2.0);
+    sline(cx + 4 * L, shY - 1 * L, cx + 4 * L, shY - 9 * L, 0.8, 2.0);
+    var hcy = shY - 24 * L + bow * 24 * L;
+    var featDrop = bow * 5 * L;
+    scircle(cx, hcy, 13 * L, 0.95);
+    /* hair cap + sideburns */
+    ctx.strokeStyle = "rgba(232,230,224,0.75)";
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.arc(cx, hcy - 2 * L, 13 * L, Math.PI * 1.02, Math.PI * 1.98);
+    ctx.stroke();
+    sline(cx - 13 * L, hcy - 2 * L, cx - 13 * L, hcy + 6 * L, 0.6, 1.6);
+    sline(cx + 13 * L, hcy - 2 * L, cx + 13 * L, hcy + 6 * L, 0.6, 1.6);
+    /* ears */
+    ctx.strokeStyle = "rgba(232,230,224,0.6)";
+    ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.arc(cx - 13 * L, hcy + 1 * L, 2.6 * L, Math.PI * 0.5, Math.PI * 1.5); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx + 13 * L, hcy + 1 * L, 2.6 * L, Math.PI * 1.5, Math.PI * 2.5); ctx.stroke();
+    /* serene closed eyes, brows, nose, gentle smile */
+    ctx.strokeStyle = "rgba(232,230,224,0.9)";
+    ctx.lineWidth = 1.5;
+    for (var e = -1; e <= 1; e += 2) {
+      ctx.beginPath();
+      ctx.arc(cx + e * 5.5 * L, hcy - 0.5 * L + featDrop, 2.6 * L, Math.PI * 0.15, Math.PI * 0.85);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx + e * 8.5 * L, hcy - 5.5 * L + featDrop);
+      ctx.lineTo(cx + e * 3 * L, hcy - 6.5 * L + featDrop);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = "rgba(232,230,224,0.7)";
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(cx + 1 * L, hcy + 2 * L + featDrop);
+    ctx.lineTo(cx - 1 * L, hcy + 6 * L + featDrop);
+    ctx.lineTo(cx + 1.5 * L, hcy + 6 * L + featDrop);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, hcy + 7 * L + featDrop, 4 * L, Math.PI * 0.2, Math.PI * 0.8);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   /* ---------- timeline ---------- */
   function ease(u) { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); }
 
   function scene(t) {
     ctx.clearRect(0, 0, W, H);
-    backdrop();
-
-    sline(20, G + 46 * S, W - 20, G + 46 * S, 0.5, 1.6);
-    sline(40, G + 54 * S, W - 60, G + 54 * S, 0.25, 1.2);
 
     var doorX = W < 760 ? W * 0.08 : W * 0.26;
     var dw = 150 * S;
-    var door = 0, seam = 0;
+    var door = 0, seam = 0, dotsA = 0;
     var manX = 0, walking = false, phase = 0, arm = "down", lean = 0.06;
     var msc = 1, malpha = 1, blend = 0, bow = 0;
-    var showMan = false, appear = 0;
+    var showMan = false, showFront = false, frontA = 0, appear = 0;
 
     var bx = Math.min(W - (96 * S * 2 + 24 * S) - 24, doorX + dw + 90 * S);
     if (W < 760) bx = Math.max(doorX + dw + 40 * S, 24);
@@ -516,25 +632,63 @@
       door = 1; showMan = true;
       manX = presentX; arm = "present"; lean = 0.10;
       appear = Math.min(2.2, 1.4 + (t - 8.8) * 0.25);
-    } else {
-      door = 1; showMan = true;
-      manX = presentX; arm = "namaste"; lean = 0.10;
-      var n = ease((t - 11) / 1.3);
-      blend = n; bow = n;
+    } else if (t < 11.7) {
+      /* turn to face the viewer */
+      door = 1; showMan = true; showFront = true;
+      manX = presentX; arm = "present";
+      var k = ease((t - 11) / 0.7);
+      frontA = k; malpha = 1 - k;
       appear = 2.2;
+    } else if (t < 15) {
+      /* front namaste to the viewer; dots revealed */
+      door = 1; showFront = true;
+      manX = presentX; frontA = 1;
+      var n = ease((t - 11.7) / 1.3);
+      bow = n; dotsA = ease((t - 11.7) / 1.8);
+      appear = 2.2;
+    } else if (t < 15.7) {
+      /* turn back to profile */
+      door = 1; showMan = true; showFront = true;
+      manX = presentX; arm = "down"; dotsA = 1;
+      var k2 = 1 - ease((t - 15) / 0.7);
+      frontA = k2; malpha = 1 - k2;
+      appear = 2.2;
+    } else if (t < 18.8) {
+      /* walk back inside the room */
+      door = 1; showMan = true;
+      var wp2 = ease((t - 15.7) / 3.1);
+      walking = true; phase = (t - 15.7) * 7.5;
+      manX = presentX + ((doorX + dw / 2) - presentX) * wp2;
+      msc = 1 - 0.22 * wp2; malpha = 1 - 0.5 * wp2;
+      arm = "down"; dotsA = 1; appear = 2.2;
+    } else if (t < 20.2) {
+      /* doors close behind him */
+      door = 1 - ease((t - 18.8) / 1.4);
+      showMan = true; walking = false;
+      manX = doorX + dw / 2; msc = 0.78;
+      malpha = Math.max(0, 0.5 * (1 - (t - 18.8) / 1.4));
+      arm = "down"; dotsA = 1; appear = 2.2;
+    } else {
+      door = 0; dotsA = 1; appear = 2.2;
     }
+
+    backdrop(dotsA);
+
+    sline(20, G + 46 * S, W - 20, G + 46 * S, 0.5, 1.6);
+    sline(40, G + 54 * S, W - 60, G + 54 * S, 0.25, 1.2);
 
     drawDoors(doorX, door, seam);
 
     var by = G + 46 * S - (2 * 122 * S + 24 * S + 44 * S);
     drawBoards(bx, by, appear);
 
-    if (showMan) drawMan(manX, { walk: walking ? phase : null, arm: arm, blend: blend, lean: lean, sc: msc, alpha: malpha, bow: bow });
+    if (showMan) drawMan(manX, { walk: walking ? phase : null, arm: arm, blend: blend, lean: lean, sc: msc, alpha: malpha, bow: 0 });
+    if (showFront) drawFront(manX, bow, frontA);
     drawMotes(doorX, door, t);
 
     var a = 1;
     if (t < 0.7) a = t / 0.7;
-    if (t > 15.4) a = Math.max(0, 1 - (t - 15.4) / 1.9);
+    if (t > 20.4) a = Math.max(0, 1 - (t - 20.4) / 1.6);
     if (a < 1) {
       ctx.fillStyle = "rgba(9,10,15," + (1 - a).toFixed(3) + ")";
       ctx.fillRect(0, 0, W, H);
