@@ -278,11 +278,6 @@
       var flick = 0.94 + 0.06 * Math.sin(performance.now() / 130);
       var li = open * flick;
       /* tight glow hugging the doorway (no big halo) */
-      var g = ctx.createRadialGradient(doorX + dw / 2, top + dh / 2, 8, doorX + dw / 2, top + dh / 2, dw * 1.05);
-      g.addColorStop(0, "rgba(255,205,125," + (0.55 * li).toFixed(3) + ")");
-      g.addColorStop(1, "rgba(255,150,60,0)");
-      ctx.fillStyle = g;
-      ctx.fillRect(doorX - dw * 0.6, top - dh * 0.4, dw * 2.2, dh * 1.9);
       /* floor wash + plank seams catching light */
       var fg = ctx.createLinearGradient(doorX, G, doorX + dw * 4.4, G);
       fg.addColorStop(0, "rgba(255,190,100," + (0.22 * li).toFixed(3) + ")");
