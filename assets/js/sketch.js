@@ -167,6 +167,9 @@
     var bow = o.bow || 0, blend = o.blend || 0;
     ctx.save();
     ctx.globalAlpha = alpha;
+    ctx.translate(x, 0);
+    ctx.scale((o.face || 1) * (o.sx || 1), 1);
+    ctx.translate(-x, 0);
 
     var bob = o.walk !== null && o.walk !== undefined
       ? Math.abs(Math.sin(o.walk)) * 3 * L
@@ -473,10 +476,13 @@
   }
 
   /* ---------- front-facing detailed figure in namaste (faces viewer) ---------- */
-  function drawFront(cx, bow, alpha) {
+  function drawFront(cx, bow, alpha, sx) {
     var L = S;
     ctx.save();
     ctx.globalAlpha = alpha;
+    ctx.translate(cx, 0);
+    ctx.scale(sx || 1, 1);
+    ctx.translate(-cx, 0);
     var breath = Math.sin(performance.now() / 1100) * 1.1 * L;
     var hipY = G - 62 * L;
     var shY = hipY - 54 * L + bow * 8 * L + breath * 0.4;
@@ -599,6 +605,7 @@
     var manX = 0, walking = false, phase = 0, arm = "down", lean = 0.06;
     var msc = 1, malpha = 1, blend = 0, bow = 0;
     var showMan = false, showFront = false, frontA = 0, appear = 0, boardFade = 1;
+    var frontSX = 1, sideSX = 1, sideFace = 1;
 
     var bx = Math.min(W - (96 * S * 2 + 24 * S) - 24, doorX + dw + 90 * S);
     if (W < 760) bx = Math.max(doorX + dw + 40 * S, 24);
@@ -640,30 +647,37 @@
       var n = ease((t - 11.7) / 1.3);
       bow = n; dotsA = ease((t - 11.7) / 1.8);
       appear = 2.2;
-    } else if (t < 15.7) {
-      /* turn back to profile */
-      door = 1; showMan = true; showFront = true;
-      manX = presentX; arm = "down"; dotsA = 1;
-      var k2 = 1 - ease((t - 15) / 0.7);
-      frontA = k2; malpha = 1 - k2;
-      appear = 2.2;
-    } else if (t < 18.8) {
-      /* walk back inside the room */
+    } else if (t < 16.4) {
+      /* smooth turn-around: rise from bow, rotate edge-on, open facing door */
+      door = 1; dotsA = 1; appear = 2.2;
+      var tu = ease((t - 15) / 1.4);
+      manX = presentX;
+      if (tu < 0.5) {
+        var f = ease(tu * 2);
+        showFront = true; frontA = 1;
+        frontSX = 1 - 0.85 * f; bow = 1 - f;
+      } else {
+        var s2 = ease((tu - 0.5) * 2);
+        showMan = true; malpha = 1;
+        arm = "down"; sideSX = 0.15 + 0.85 * s2; sideFace = -1;
+      }
+    } else if (t < 19.2) {
+      /* walk back inside, facing the door */
       door = 1; showMan = true;
-      var wp2 = ease((t - 15.7) / 3.1);
-      walking = true; phase = (t - 15.7) * 7.5;
+      var wp2 = ease((t - 16.4) / 2.8);
+      walking = true; phase = (t - 16.4) * 7.5;
       manX = presentX + ((doorX + dw / 2) - presentX) * wp2;
       msc = 1 - 0.22 * wp2; malpha = 1 - 0.5 * wp2;
-      arm = "down"; dotsA = 1; appear = 2.2;
-    } else if (t < 20.2) {
+      arm = "down"; sideFace = -1; dotsA = 1; appear = 2.2;
+    } else if (t < 20.6) {
       /* doors close behind him; boards stay on display */
-      var cp = (t - 18.8) / 1.4;
+      var cp = (t - 19.2) / 1.4;
       door = 1 - ease(cp);
       showMan = true; walking = false;
       manX = doorX + dw / 2; msc = 0.78;
       malpha = Math.max(0, 0.5 * (1 - cp));
-      arm = "down"; dotsA = 1; appear = 2.2; boardFade = 1;
-    } else if (t < 21.4) {
+      arm = "down"; sideFace = -1; dotsA = 1; appear = 2.2; boardFade = 1;
+    } else if (t < 21.8) {
       /* door itself fades away once he is inside */
       door = 0; doorA = Math.max(0, 1 - (t - 20.2) / 1.2);
       dotsA = 1; appear = 2.2; boardFade = 1;
@@ -685,9 +699,9 @@
     var by = G + 46 * S - (2 * 122 * S + 24 * S + 44 * S);
     drawBoards(bx, by, appear, boardFade);
 
-    if (showMan) drawMan(manX, { walk: walking ? phase : null, arm: arm, blend: blend, lean: lean, sc: msc, alpha: malpha, bow: 0 });
+    if (showMan) drawMan(manX, { walk: walking ? phase : null, arm: arm, blend: blend, lean: lean, sc: msc, alpha: malpha, bow: 0, sx: sideSX, face: sideFace });
     if (showMan && malpha > 0.05) contactShadow(manX, G + 5 * S, 52 * S * msc, 0.42 * malpha);
-    if (showFront) drawFront(manX, bow, frontA);
+    if (showFront) drawFront(manX, bow, frontA, frontSX);
     if (showFront && frontA > 0.05) contactShadow(manX, G + 5 * S, 58 * S, 0.42 * frontA);
     drawMotes(doorX, door, t);
 
@@ -701,7 +715,7 @@
   resize();
   window.addEventListener("resize", resize);
 
-  var T_END = 21.6; /* story ends here and holds */
+  var T_END = 22; /* story ends here and holds */
 
   if (freezeT !== null && !isNaN(freezeT)) { scene(Math.min(freezeT, T_END)); return; }
   if (reduceMotion) { scene(T_END); return; }
