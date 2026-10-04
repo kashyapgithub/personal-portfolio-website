@@ -1,8 +1,9 @@
 /* ============================================================
-   Hero Nebula — Three.js starfield + green/blue/orange nebula
-   Self-contained: uses vendored assets/js/vendor/three.min.js.
+   Hero Nebula — custom GLSL emission nebula (Hubble palette)
+   Domain-warped fractal gas in OIII blue + teal-green with gold
+   star-forming cores, dark dust lanes, procedural starfield,
+   film grain. Self-contained: vendored three.min.js only.
    Falls back silently to the CSS glow if WebGL/THREE is missing.
-   Pauses when the hero is off-screen or the tab is hidden.
    ============================================================ */
 
 (function () {
@@ -16,100 +17,157 @@
 
   var renderer;
   try {
-    renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: false, antialias: false });
   } catch (err) {
     return; /* no WebGL — CSS glow remains */
   }
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
 
   var scene = new THREE.Scene();
-  var camera = new THREE.PerspectiveCamera(60, 1, 1, 2000);
-  camera.position.z = 420;
+  var camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
-  /* Soft round sprite texture (no external assets) */
-  function makeSprite() {
-    var c = document.createElement("canvas");
-    c.width = c.height = 128;
-    var ctx = c.getContext("2d");
-    var g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-    g.addColorStop(0, "rgba(255,255,255,1)");
-    g.addColorStop(0.35, "rgba(255,255,255,0.55)");
-    g.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, 128, 128);
-    var tex = new THREE.CanvasTexture(c);
-    return tex;
-  }
-  var sprite = makeSprite();
+  var uniforms = {
+    uTime: { value: 0.0 },
+    uRes: { value: new THREE.Vector2(1, 1) },
+    uSeed: { value: 3.7 }
+  };
 
-  function makeCloud(color, count, size, spreadX, spreadY, opacity) {
-    var geo = new THREE.BufferGeometry();
-    var pos = new Float32Array(count * 3);
-    for (var i = 0; i < count; i++) {
-      pos[i * 3] = (Math.random() * 2 - 1) * spreadX;
-      pos[i * 3 + 1] = (Math.random() * 2 - 1) * spreadY;
-      pos[i * 3 + 2] = (Math.random() * 2 - 1) * 220;
-    }
-    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    var mat = new THREE.PointsMaterial({
-      size: size,
-      map: sprite,
-      color: color,
-      transparent: true,
-      opacity: opacity,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      sizeAttenuation: true
-    });
-    var points = new THREE.Points(geo, mat);
-    scene.add(points);
-    return points;
-  }
+  var material = new THREE.ShaderMaterial({
+    uniforms: uniforms,
+    depthWrite: false,
+    depthTest: false,
+    vertexShader: [
+      "varying vec2 vUv;",
+      "void main() {",
+      "  vUv = uv;",
+      "  gl_Position = vec4(position.xy, 0.0, 1.0);",
+      "}"
+    ].join("\n"),
+    fragmentShader: [
+      "precision highp float;",
+      "varying vec2 vUv;",
+      "uniform vec2 uRes;",
+      "uniform float uTime;",
+      "uniform float uSeed;",
 
-  function spread() {
-    var w = hero.clientWidth || window.innerWidth;
-    var h = hero.clientHeight || 480;
-    return { x: w * 0.75, y: Math.max(h * 0.6, 220) };
-  }
+      "float hash21(vec2 p) {",
+      "  p = fract(p * vec2(234.34, 435.345));",
+      "  p += dot(p, p + 34.23);",
+      "  return fract(p.x * p.y);",
+      "}",
 
-  var s = spread();
-  /* Nebula dust: green + blue mix with an orange accent.
-     Many small faint sprites blend into a wash; avoid big blobs. */
-  var green = makeCloud(0x10b981, 260, 55, s.x, s.y, 0.16);
-  var teal = makeCloud(0x00d4c8, 200, 45, s.x, s.y, 0.13);
-  var blue = makeCloud(0x2f7bff, 320, 60, s.x, s.y, 0.16);
-  var orange = makeCloud(0xffa42b, 150, 50, s.x, s.y, 0.12);
-  /* Distant white stars */
-  var stars = makeCloud(0xffffff, 260, 3.2, s.x * 1.1, s.y * 1.1, 0.8);
-  stars.material.sizeAttenuation = false;
+      "float vnoise(vec2 p) {",
+      "  vec2 i = floor(p);",
+      "  vec2 f = fract(p);",
+      "  vec2 u = f * f * (3.0 - 2.0 * f);",
+      "  float a = hash21(i);",
+      "  float b = hash21(i + vec2(1.0, 0.0));",
+      "  float c = hash21(i + vec2(0.0, 1.0));",
+      "  float d = hash21(i + vec2(1.0, 1.0));",
+      "  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);",
+      "}",
+
+      "float fbm(vec2 p) {",
+      "  float v = 0.0;",
+      "  float a = 0.5;",
+      "  mat2 r = mat2(0.8, 0.6, -0.6, 0.8);",
+      "  for (int i = 0; i < 6; i++) {",
+      "    v += a * vnoise(p);",
+      "    p = r * p * 2.0 + 11.5;",
+      "    a *= 0.5;",
+      "  }",
+      "  return v;",
+      "}",
+
+      /* One star layer: sparse cell-hash suns with halo + twinkle */
+      "vec3 starLayer(vec2 p, float scale, float density, float bright) {",
+      "  vec2 g = floor(p * scale);",
+      "  vec2 f = fract(p * scale);",
+      "  float h = hash21(g);",
+      "  if (h > density) return vec3(0.0);",
+      "  vec2 sp = vec2(hash21(g + 7.13), hash21(g + 3.71));",
+      "  float d = length(f - sp);",
+      "  float tw = 0.55 + 0.45 * sin(uTime * (0.6 + h * 3.0) + h * 43.0);",
+      "  float core = smoothstep(0.10, 0.0, d);",
+      "  float halo = smoothstep(0.45, 0.0, d) * 0.30;",
+      "  float warm = step(0.78, hash21(g + 1.7));",
+      "  vec3 tint = mix(vec3(0.72, 0.83, 1.0), vec3(1.0, 0.82, 0.60), warm);",
+      "  return tint * (core + halo) * tw * bright;",
+      "}",
+
+      "void main() {",
+      "  vec2 frag = vUv;",
+      "  float aspect = uRes.x / uRes.y;",
+      "  vec2 auv = frag;",
+      "  auv.x *= aspect;",
+      "  vec2 p = auv * 2.1 + uSeed * 17.0;",
+      "  vec2 drift = vec2(uTime * 0.010, uTime * 0.006);",
+
+      /* Domain-warped turbulent gas */
+      "  float w1 = fbm(p * 1.4 + drift);",
+      "  float w2 = fbm(p * 1.4 + vec2(5.2, 1.3) - drift * 0.7);",
+      "  vec2 q = vec2(w1, w2);",
+      "  float base = fbm(p * 2.2 + q * 2.0 - vec2(drift.x * 1.5, -drift.y));",
+      "  float d = smoothstep(0.30, 0.86, base);",
+      "  d = pow(d, 1.35);",
+
+      /* Dark dust lanes silhouetted over the gas */
+      "  float ridge = 1.0 - abs(2.0 * vnoise(p * 3.6 + q * 2.6 + drift) - 1.0);",
+      "  ridge = pow(ridge, 3.0);",
+      "  float dust = smoothstep(0.42, 0.85, ridge) * smoothstep(0.08, 0.55, base);",
+      "  d *= 1.0 - dust * 0.82;",
+
+      /* Hubble palette: deep space -> OIII blue -> teal -> gold cores */
+      "  vec3 col = vec3(0.008, 0.012, 0.038);",
+      "  col = mix(col, vec3(0.09, 0.26, 0.72), smoothstep(0.04, 0.55, d));",
+      "  col = mix(col, vec3(0.04, 0.72, 0.58), smoothstep(0.34, 0.74, d) * 0.85);",
+      "  col = mix(col, vec3(1.00, 0.52, 0.14), smoothstep(0.60, 0.95, d));",
+      "  col += vec3(0.85, 0.92, 1.0) * pow(d, 3.0) * 0.38;",
+
+      /* Starfield: bright sparse + dense faint */
+      "  vec3 stars = starLayer(p, 34.0, 0.10, 1.0);",
+      "  stars += starLayer(p + 4.7, 90.0, 0.09, 0.55);",
+      "  stars += starLayer(p + 9.1, 200.0, 0.10, 0.30);",
+      "  stars *= 1.0 - dust * 0.55;",
+      "  col += stars;",
+
+      /* Readability: dim the middle where the headline sits */
+      "  vec2 c = frag - 0.5;",
+      "  c.x *= aspect;",
+      "  float cd = smoothstep(0.78, 0.05, length(c));",
+      "  col *= 1.0 - cd * 0.62;",
+
+      /* Vignette into the page background */
+      "  float vig = smoothstep(1.25, 0.25, length(c) * 1.15);",
+      "  col *= mix(0.35, 1.0, vig);",
+
+      /* Film grain */
+      "  float gr = hash21(frag * uRes * 0.5 + fract(uTime) * 7.0);",
+      "  col += (gr - 0.5) * 0.045;",
+
+      "  gl_FragColor = vec4(col, 1.0);",
+      "}"
+    ].join("\n")
+  });
+
+  scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material));
 
   function resize() {
     var w = hero.clientWidth || window.innerWidth;
     var h = hero.clientHeight || 480;
     renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
+    uniforms.uRes.value.set(w * renderer.getPixelRatio(), h * renderer.getPixelRatio());
   }
   resize();
   window.addEventListener("resize", resize);
 
-  /* One static frame for reduced-motion users */
-  function renderFrame(t) {
-    green.rotation.z = t * 0.008;
-    blue.rotation.z = -t * 0.006;
-    teal.rotation.z = t * 0.005;
-    orange.rotation.z = -t * 0.009;
-    green.position.x = Math.sin(t * 0.25) * 14;
-    blue.position.x = Math.cos(t * 0.2) * 16;
-    orange.position.y = Math.sin(t * 0.3) * 10;
-    stars.rotation.y = t * 0.004;
-    var tw = 0.65 + Math.sin(t * 1.4) * 0.15;
-    stars.material.opacity = tw;
+  function frame(t) {
+    uniforms.uTime.value = t;
     renderer.render(scene, camera);
   }
 
   if (reduceMotion) {
-    renderFrame(1.2);
+    frame(8.0);
     return;
   }
 
@@ -132,7 +190,6 @@
   (function loop(now) {
     requestAnimationFrame(loop);
     if (!running || !inView || document.hidden) return;
-    var t = ((now || performance.now()) - start) / 1000;
-    renderFrame(t);
+    frame(((now || performance.now()) - start) / 1000);
   })();
 })();
