@@ -1,12 +1,13 @@
 /* ============================================================
-   Bhabajit Kashyap — Personal Portfolio & Systems Engineering
+   B. Kashyap — Product | Agentic AI Development
    Progressive enhancement: 100% vanilla JS, zero dependencies.
+   Content source: LinkedIn "send to agent" export in repo.
+   All role/latency claims are profile-quoted, not benchmarked.
    Features:
    - Dynamic Hero Word Rotator
    - Cascading Illuminated Workflow Line
-   - Live Auto-Bumping Metrics & Sparklines
-   - Ticking Progress & Telemetry Pipeline
-   - Interactive Architecture Tab Panels & Raft Simulator
+   - Illustrative Engine Console Demo
+   - Interactive Work Tab Panels
    - Scroll Reveal Animations
    - Theme Persistence (Dark / Light)
    ============================================================ */
@@ -78,12 +79,12 @@
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     var specializations = [
-      "distributed consensus",
-      "ultra-low-latency HFT",
-      "autonomous agent systems",
-      "lock-free concurrency",
-      "multi-agent MCP protocols",
-      "fault-tolerant ledgers"
+      "risk management engines",
+      "alpha generation (Genie 2.0)",
+      "TUI observability",
+      "product UI/UX",
+      "dry-run verification",
+      "agentic AI development"
     ];
     var i = 0;
 
@@ -121,13 +122,10 @@
     var index = -1;
     var timer = null;
 
-    /* Live telemetry counters bumping */
+    /* Live telemetry counters bumping — illustrative only, profile-quoted range */
     var statEls = Array.prototype.slice.call(
       document.querySelectorAll(".mock-stats .ms-value")
     );
-    var baseProcessed = 14291847;
-    var baseLatency = 1.42;
-    var processed = baseProcessed;
 
     var bump = function (el, text) {
       el.textContent = text;
@@ -137,11 +135,10 @@
     };
 
     var nudgeNumbers = function () {
-      if (statEls.length < 3) return;
-      processed += 12;
-      bump(statEls[0], processed.toLocaleString("en-US"));
-      var lat = (1.35 + Math.random() * 0.18).toFixed(2);
-      bump(statEls[1], lat + " μs");
+      if (statEls.length < 1) return;
+      // Keep the profile-quoted 12–100 μs range; drift inside it for effect only.
+      var lat = (12 + Math.random() * 88).toFixed(0);
+      bump(statEls[0], lat + " μs · per profile");
     };
 
     var show = function (i) {
@@ -206,22 +203,12 @@
   })();
 
   /* ------------------------------------------------------------
-     5. Hero Telemetry Table: Live analyzing loop
+     5. Hero console note: static roadmap line (no fake sync %)
      ------------------------------------------------------------ */
   (function liveAnalyzing() {
-    var text = document.querySelector(".conf-live .conf-text");
-    if (!text) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    var pct = 32;
-    setInterval(function () {
-      if (document.hidden) return;
-      pct += 4 + Math.floor(Math.random() * 5);
-      if (pct >= 98) {
-        pct = 24 + Math.floor(Math.random() * 10);
-      }
-      text.textContent = pct + "% synced";
-    }, 700);
+    // Intentionally static: the "early 2027" line is a roadmap date from
+    // the LinkedIn profile, not a live sync percentage. Do nothing.
+    return;
   })();
 
   /* ------------------------------------------------------------
@@ -256,7 +243,7 @@
   })();
 
   /* ------------------------------------------------------------
-     7. Raft Consensus Simulator Controls (Panel 2)
+     7. Engine Console Demo Controls (illustrative UI only)
      ------------------------------------------------------------ */
   (function initRaftSim() {
     var termVal = document.getElementById("sim-raft-term");
@@ -268,36 +255,37 @@
 
     if (!termVal || !btnHeartbeat) return;
 
-    var term = 14;
-    var commit = 1042;
-    var partitioned = false;
+    var checks = ["Passing", "Reviewing", "Passing", "Strict"];
+    var checkIdx = 0;
+    var verified = 1042;
+    var dryRunOn = true;
 
     btnHeartbeat.addEventListener("click", function () {
-      commit += 1;
-      commitVal.textContent = commit;
+      verified += 1;
+      commitVal.textContent = verified.toLocaleString("en-US");
       commitVal.classList.remove("bump");
       void commitVal.offsetWidth;
       commitVal.classList.add("bump");
     });
 
     btnPartition.addEventListener("click", function () {
-      partitioned = !partitioned;
-      if (partitioned) {
-        quorumVal.textContent = "3/5 (Quorum Met)";
-        quorumVal.classList.remove("ok");
-        quorumVal.style.color = "var(--signal-amber)";
-        btnPartition.textContent = "Heal Partition";
-      } else {
-        quorumVal.textContent = "5/5 (Full Quorum)";
+      dryRunOn = !dryRunOn;
+      if (dryRunOn) {
+        quorumVal.textContent = "Live · Dry-run on";
         quorumVal.classList.add("ok");
         quorumVal.style.color = "";
-        btnPartition.textContent = "Simulate Partition";
+        btnPartition.textContent = "Toggle Dry-Run";
+      } else {
+        quorumVal.textContent = "Live · Dry-run bypassed (demo)";
+        quorumVal.classList.remove("ok");
+        quorumVal.style.color = "var(--signal-amber)";
+        btnPartition.textContent = "Re-enable Dry-Run";
       }
     });
 
     btnElection.addEventListener("click", function () {
-      term += 1;
-      termVal.textContent = term;
+      checkIdx = (checkIdx + 1) % checks.length;
+      termVal.textContent = checks[checkIdx];
       termVal.classList.remove("bump");
       void termVal.offsetWidth;
       termVal.classList.add("bump");
