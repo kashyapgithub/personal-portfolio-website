@@ -27,9 +27,9 @@
       <nav class="site-nav" aria-label="Primary Navigation">
         <ul class="nav-links">
           <li><a class="nav-link" href="#architecture">Architecture</a></li>
-          <li><a class="nav-link" href="#open-source">Open Source</a></li>
+          <li><a class="nav-link" href="#principles">Principles</a></li>
           <li><a class="nav-link" href="#stats">Benchmarks</a></li>
-          <li><a class="nav-link" href="https://github.com/kashyapgithub" target="_blank" rel="noopener noreferrer">Repositories</a></li>
+          <li><a class="nav-link" href="https://github.com/kashyapgithub" target="_blank" rel="noopener noreferrer">GitHub Profile &rarr;</a></li>
         </ul>
       </nav>
 
@@ -44,7 +44,7 @@
         </button>
 
         <!-- GitHub Profile -->
-        <a class="btn-icon" href="https://github.com/kashyapgithub" target="_blank" rel="noopener noreferrer" aria-label="GitHub Profile (230+ repos)">
+        <a class="btn-icon" href="https://github.com/kashyapgithub" target="_blank" rel="noopener noreferrer" aria-label="GitHub Profile (@kashyapgithub)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/>
             <path d="M9 18c-4.51 2-5-2-7-2"/>
@@ -98,8 +98,15 @@
 
           <div class="hero-cta reveal" data-delay="3">
             <a class="btn btn-primary" href="#architecture">Explore Architecture</a>
-            <a class="link-arrow" href="#open-source">
-              <span>View Open Source Work</span>
+            <a class="btn btn-secondary" href="https://github.com/kashyapgithub" target="_blank" rel="noopener noreferrer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/>
+                <path d="M9 18c-4.51 2-5-2-7-2"/>
+              </svg>
+              <span>GitHub Profile</span>
+            </a>
+            <a class="link-arrow" href="https://www.linkedin.com/in/bkashyap07" target="_blank" rel="noopener noreferrer">
+              <span>LinkedIn (@bkashyap07)</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
               </svg>
@@ -237,7 +244,7 @@
           <span class="ticker-item">5-Node Raft Consensus Engine</span>
           <span class="ticker-item">Autonomous Agent MCP Protocol Gateway</span>
           <span class="ticker-item">Zero External Dependencies · 100/100 CWV</span>
-          <span class="ticker-item">230+ Shipped Open-Source Repositories</span>
+          <span class="ticker-item">Over 230 Public Projects on GitHub</span>
           <span class="ticker-item">Zero False Sharing Cache-Line Invariants</span>
         </div>
         <div class="ticker-group" aria-hidden="true">
@@ -247,7 +254,7 @@
           <span class="ticker-item">5-Node Raft Consensus Engine</span>
           <span class="ticker-item">Autonomous Agent MCP Protocol Gateway</span>
           <span class="ticker-item">Zero External Dependencies · 100/100 CWV</span>
-          <span class="ticker-item">230+ Shipped Open-Source Repositories</span>
+          <span class="ticker-item">Over 230 Public Projects on GitHub</span>
           <span class="ticker-item">Zero False Sharing Cache-Line Invariants</span>
         </div>
       </div>
@@ -398,7 +405,8 @@
                 <div class="panel-items">
                   <div class="panel-item">
                     <h4>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/></svg>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/>
+                      </svg>
                       Model Context Protocol
                     </h4>
                     <p>Standardized JSON-RPC 2.0 communication over stdio and SSE connecting autonomous agents with external databases and tools.</p>
@@ -501,138 +509,80 @@
       </div>
     </section>
 
-    <!-- ============ Bento Grid: Selected Shipped Work ============ -->
-    <section class="section" id="open-source" data-od-id="open-source-bento">
+    <!-- ============ Principles & Architectural Rigor (Replaces Repo List) ============ -->
+    <section class="section" id="principles" data-od-id="engineering-principles">
       <div class="container">
         
         <div class="section-head reveal">
-          <span class="eyebrow">Production Codebases</span>
-          <h2>Selected Open Source &amp; Systems Repositories</h2>
-          <p class="lead">Highlights from 230+ public repositories spanning financial data engineering, autonomous agent harnesses, and low-latency infrastructure.</p>
+          <span class="eyebrow">Engineering Foundations</span>
+          <h2>Architectural Principles &amp; Operational Rigor</h2>
+          <p class="lead">Core tenets guiding system design, low-latency execution, and distributed reliability at scale.</p>
         </div>
 
-        <div class="bento-grid">
+        <div class="principles-grid">
           
-          <!-- Card 1: pynse -->
-          <a class="bento-card reveal" href="https://github.com/kashyapgithub/pynse" target="_blank" rel="noopener noreferrer">
-            <div class="bento-top">
-              <div class="bento-header">
-                <div class="bento-icon-box">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                  </svg>
-                </div>
-                <span class="bento-tag">Python // Financial</span>
-              </div>
-              <h3 class="bento-title">pynse</h3>
-              <p class="bento-desc">High-throughput library to extract publicly available real-time and historical market data from the National Stock Exchange of India (NSE).</p>
+          <div class="principle-card reveal" data-delay="1">
+            <div class="principle-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
             </div>
-            <div class="bento-footer">
-              <span>Financial Data Extractor</span>
-              <span class="stars">View Repo &rarr;</span>
-            </div>
-          </a>
+            <h3>Zero-Allocation Latency Discipline</h3>
+            <p>Eliminate garbage collection spikes and CPU cache invalidations in critical path execution through lock-free ring buffers, cache-line padding, and contiguous memory layout.</p>
+          </div>
 
-          <!-- Card 2: everything-claude-code -->
-          <a class="bento-card reveal" href="https://github.com/kashyapgithub/everything-claude-code" target="_blank" rel="noopener noreferrer">
-            <div class="bento-top">
-              <div class="bento-header">
-                <div class="bento-icon-box">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/>
-                  </svg>
-                </div>
-                <span class="bento-tag">JavaScript // AI</span>
-              </div>
-              <h3 class="bento-title">everything-claude-code</h3>
-              <p class="bento-desc">Agent harness performance optimization system. Skills, instincts, memory, security, and research-first development for Claude Code, Codex, and Cursor.</p>
+          <div class="principle-card reveal" data-delay="2">
+            <div class="principle-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+              </svg>
             </div>
-            <div class="bento-footer">
-              <span>Agent Optimization</span>
-              <span class="stars">View Repo &rarr;</span>
-            </div>
-          </a>
+            <h3>Verifiable Invariants over Hope</h3>
+            <p>Design distributed systems with mathematical safety proofs. Quorum intersections (W &ge; 3/5), deterministic state machine replication, and formal linearizability guarantees.</p>
+          </div>
 
-          <!-- Card 3: drawio-mcp -->
-          <a class="bento-card reveal" href="https://github.com/kashyapgithub/drawio-mcp" target="_blank" rel="noopener noreferrer">
-            <div class="bento-top">
-              <div class="bento-header">
-                <div class="bento-icon-box">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
-                  </svg>
-                </div>
-                <span class="bento-tag">MCP // Architecture</span>
-              </div>
-              <h3 class="bento-title">drawio-mcp</h3>
-              <p class="bento-desc">Model Context Protocol tool server enabling autonomous AI coding agents to inspect, generate, and validate structural system architecture diagrams.</p>
+          <div class="principle-card reveal" data-delay="1">
+            <div class="principle-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/>
+              </svg>
             </div>
-            <div class="bento-footer">
-              <span>Model Context Protocol</span>
-              <span class="stars">View Repo &rarr;</span>
-            </div>
-          </a>
+            <h3>Autonomous Agent Governance</h3>
+            <p>Architect sandboxed AI agents using Model Context Protocol (MCP) tool boundaries, pre-execution AST verification, and Byzantine consensus voting across agent swarms.</p>
+          </div>
 
-          <!-- Card 4: docstruct-redesign -->
-          <a class="bento-card reveal" href="https://github.com/kashyapgithub/demo-website" target="_blank" rel="noopener noreferrer">
-            <div class="bento-top">
-              <div class="bento-header">
-                <div class="bento-icon-box">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                  </svg>
-                </div>
-                <span class="bento-tag">OpenDesign // SaaS</span>
-              </div>
-              <h3 class="bento-title">Docstruct AI</h3>
-              <p class="bento-desc">Zero-touch document processing platform with multi-channel ingestion, custom AI extraction, and universal ERP synchronization connectors.</p>
+          <div class="principle-card reveal" data-delay="2">
+            <div class="principle-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
             </div>
-            <div class="bento-footer">
-              <span>Demo Website Repo</span>
-              <span class="stars">View Repo &rarr;</span>
-            </div>
-          </a>
+            <h3>Resilience &amp; 5-Whys Postmortems</h3>
+            <p>Treat failure as a certainty. Implement automated partition self-healing, graceful degradation under load, and comprehensive root-cause postmortem culture.</p>
+          </div>
 
-          <!-- Card 5: pykiteconnect -->
-          <a class="bento-card reveal" href="https://github.com/kashyapgithub/pykiteconnect" target="_blank" rel="noopener noreferrer">
-            <div class="bento-top">
-              <div class="bento-header">
-                <div class="bento-icon-box">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
-                  </svg>
-                </div>
-                <span class="bento-tag">Python // Trading</span>
-              </div>
-              <h3 class="bento-title">pykiteconnect</h3>
-              <p class="bento-desc">High-performance Python client for the Zerodha Kite Connect trading APIs with real-time WebSocket order stream consumption.</p>
-            </div>
-            <div class="bento-footer">
-              <span>Zerodha Trading API</span>
-              <span class="stars">View Repo &rarr;</span>
-            </div>
-          </a>
+        </div>
 
-          <!-- Card 6: blackout-autoexit-algo -->
-          <a class="bento-card reveal" href="https://github.com/kashyapgithub/combined-algo-extension" target="_blank" rel="noopener noreferrer">
-            <div class="bento-top">
-              <div class="bento-header">
-                <div class="bento-icon-box">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                  </svg>
-                </div>
-                <span class="bento-tag">Trading // Concurrency</span>
-              </div>
-              <h3 class="bento-title">Algo Blackout Guard</h3>
-              <p class="bento-desc">Automated risk-management extension providing blackout auto-exit safeguards and capital protection triggers during volatile market events.</p>
+        <!-- Spotlight Banner: Direct Link to GitHub Profile -->
+        <div class="github-spotlight-card reveal" data-delay="3" data-od-id="github-spotlight">
+          <div class="spotlight-left">
+            <div class="spotlight-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/>
+                <path d="M9 18c-4.51 2-5-2-7-2"/>
+              </svg>
             </div>
-            <div class="bento-footer">
-              <span>Algorithmic Safety</span>
-              <span class="stars">View Repo &rarr;</span>
+            <div class="spotlight-text">
+              <h3>Explore All Open-Source Work &amp; Codebases</h3>
+              <p>Over 230 public repositories spanning low-latency trading libraries, MCP tool servers, agent optimization systems, and distributed platforms.</p>
             </div>
+          </div>
+          <a class="btn btn-primary" href="https://github.com/kashyapgithub" target="_blank" rel="noopener noreferrer">
+            <span>View @kashyapgithub</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+            </svg>
           </a>
-
         </div>
 
       </div>

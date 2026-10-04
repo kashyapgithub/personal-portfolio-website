@@ -2,7 +2,7 @@
    Bhabajit Kashyap — Personal Portfolio & Systems Engineering
    Inspired by: Docstruct AI demo website (refined SaaS / Linear-Stripe craft)
    Features: Dual-font hero, dynamic rotator, mock browser telemetry,
-             cascading workflow timeline, infinite marquee, interactive tabs.
+             cascading workflow timeline, infinite marquee, architecture tabs.
    ============================================================ */
 
 /* ---------- Design Tokens ---------- */
@@ -895,12 +895,6 @@ body {
   margin-bottom: clamp(2rem, 4vw, 3rem);
 }
 
-.section-head.center {
-  margin-left: auto;
-  margin-right: auto;
-  text-align: center;
-}
-
 .eyebrow {
   display: inline-block;
   font-family: var(--font-mono);
@@ -1116,50 +1110,36 @@ body {
 }
 
 /* ============================================================
-   Bento Grid: Shipped Systems & Open Source
+   Engineering Principles & Architectural Rigor
    ============================================================ */
-.bento-grid {
+.principles-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 22px;
+  margin-bottom: 32px;
 }
 
-.bento-card {
+.principle-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 24px;
+  padding: 28px;
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 12px;
   transition: all 0.2s var(--ease);
-  text-decoration: none;
-  color: inherit;
 }
 
-.bento-card:hover {
+.principle-card:hover {
   border-color: var(--border-strong);
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
-.bento-top {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.bento-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.bento-icon-box {
-  width: 38px;
-  height: 38px;
+.principle-icon {
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius);
   background: var(--bg-subtle);
   border: 1px solid var(--border);
@@ -1169,49 +1149,75 @@ body {
   color: var(--accent);
 }
 
-.bento-icon-box svg {
+.principle-icon svg {
   width: 20px;
   height: 20px;
 }
 
-.bento-tag {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: var(--muted);
-  background: var(--bg-subtle);
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-}
-
-.bento-title {
+.principle-card h3 {
   font-size: 1.15rem;
   font-weight: 600;
   letter-spacing: -0.015em;
   color: var(--fg);
 }
 
-.bento-desc {
-  font-size: 0.85rem;
-  line-height: 1.5;
+.principle-card p {
+  font-size: 0.88rem;
+  line-height: 1.55;
   color: var(--muted);
 }
 
-.bento-footer {
+/* GitHub Spotlight Card (High-Impact Direct Profile Banner) */
+.github-spotlight-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 14px;
-  border-top: 1px solid var(--border);
-  font-family: var(--font-mono);
-  font-size: 0.74rem;
-  color: var(--muted);
+  gap: 24px;
+  padding: 28px 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  flex-wrap: wrap;
 }
 
-.bento-footer .stars {
-  display: inline-flex;
+.spotlight-left {
+  display: flex;
   align-items: center;
-  gap: 4px;
-  color: var(--fg-secondary);
+  gap: 20px;
+  max-width: 700px;
+}
+
+.spotlight-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg);
+  flex-shrink: 0;
+}
+
+.spotlight-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.spotlight-text h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  margin-bottom: 4px;
+}
+
+.spotlight-text p {
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 /* ============================================================
@@ -1320,8 +1326,8 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   .panel-grid {
     grid-template-columns: 1fr;
   }
-  .bento-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .principles-grid {
+    grid-template-columns: 1fr;
   }
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1338,13 +1344,14 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   .panel-items {
     grid-template-columns: 1fr;
   }
-  .bento-grid {
-    grid-template-columns: 1fr;
-  }
   .stats-grid {
     grid-template-columns: 1fr;
   }
   .copy-email-btn span {
     display: none;
+  }
+  .github-spotlight-card {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
