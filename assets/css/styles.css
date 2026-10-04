@@ -330,6 +330,20 @@ body {
   gap: clamp(2rem, 3.5vw, 3rem);
 }
 
+/* Faint mesh net overlay, fading toward the edges */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, black 25%, transparent 75%);
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, black 25%, transparent 75%);
+}
+
 .hero-copy {
   display: flex;
   flex-direction: column;
