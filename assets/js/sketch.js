@@ -307,19 +307,6 @@
         ctx.stroke();
       }
       ctx.restore();
-      /* rays */
-      ctx.save();
-      ctx.globalAlpha = 0.07 * li;
-      ctx.strokeStyle = "rgba(255,200,120,1)";
-      ctx.lineWidth = 1.2;
-      for (var r = 0; r < 4; r++) {
-        var ry = top + dh * (0.25 + r * 0.22);
-        ctx.beginPath();
-        ctx.moveTo(doorX + dw / 2, ry);
-        ctx.lineTo(doorX + dw * (2.6 + r * 0.35), ry + 60 * S + r * 14 * S);
-        ctx.stroke();
-      }
-      ctx.restore();
     }
 
     /* frame */
