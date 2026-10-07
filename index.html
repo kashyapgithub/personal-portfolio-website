@@ -58,30 +58,38 @@
     <section class="hero hero--grok" data-od-id="hero" id="hero">
       <canvas id="grok-bot-canvas" aria-label="Interactive 3D Sphere Bot Character"></canvas>
       
-      <div class="hero-bot-content">
-        <!-- Frosted Glass Dialogue Card -->
-        <div class="bot-dialogue-card" id="bot-dialogue" aria-live="polite">
-          <div class="bot-status-pill">
-            <span class="status-indicator"></span>
-            <span class="status-text" id="bot-status-text">Calibrating Grok neural sphere...</span>
-          </div>
-          <p class="bot-speech-text">
-            <span class="speech-quote">&ldquo;</span>In a world that never stops rushing, thank you for taking a moment to pause here.<span class="speech-quote">&rdquo;</span>
-          </p>
-          <p class="bot-speech-sub">
-            Welcome to my portfolio &mdash; exploring deep systems, agentic AI, and product craft.
-          </p>
-          <div class="bot-speech-actions">
-            <a href="#work" class="btn btn-primary bot-cta-scroll" id="bot-cta-scroll">
-              <span>Explore Archive</span>
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
-            </a>
-            <button type="button" class="btn btn-secondary bot-cta-email" id="bot-cta-email">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-              <span>Say Hello</span>
-            </button>
+      <!-- Dynamic Mouth-Emerging Dialogue & Thought Bubble -->
+      <div class="bot-mouth-bubble-wrap" id="bot-bubble-wrap" aria-live="polite">
+        <div class="bot-mouth-bubble" id="bot-mouth-bubble">
+          <div class="bubble-stem" id="bubble-stem" aria-hidden="true"></div>
+          <div class="bubble-inner" id="bubble-inner">
+            <!-- Dynamically populated: thinking effect vs spoken dialogue -->
           </div>
         </div>
+      </div>
+
+      <!-- Minimalist Bottom Dock: Sound Toggle + Explore Link -->
+      <div class="hero-bot-dock" role="toolbar" aria-label="Bot interaction controls">
+        <button type="button" class="bot-sound-btn" id="bot-sound-btn" aria-label="Enable bot voice (currently muted)" title="Enable bot voice">
+          <span class="sound-icon-wrap" aria-hidden="true">
+            <svg class="icon-speaker-muted" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <line x1="23" y1="9" x2="17" y2="15"/>
+              <line x1="17" y1="9" x2="23" y2="15"/>
+            </svg>
+            <svg class="icon-speaker-on" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+            </svg>
+          </span>
+          <span class="sound-label" id="sound-label">Unmute Voice</span>
+        </button>
+
+        <a href="#work" class="bot-explore-cta" id="bot-explore-cta" aria-label="Explore Portfolio Archive">
+          <span>Explore Archive</span>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+        </a>
       </div>
     </section>
 

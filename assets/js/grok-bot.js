@@ -1,12 +1,13 @@
 /* ============================================================
    Grok-Inspired 3D Sphere Bot — Interactive Hero Engine
-   - Perfect 1:1 circular aspect ratio with high-DPI Retina support
-   - Snappy physical entrance: drops and bounces into center within 0.8s
-   - Rotates on loading for ~2.5s with 3D spherical eye mapping
-   - "Notices the user" double-take: curious head tilt, wide eyes, inquisitive blink
-   - Delighted recognition: warm smiling crescents (⌒  ⌒) + mouth arc
-   - Frosted glass dialogue card reveal with elevated copywriting
-   - Responsive cursor eye contact with spring damping
+   - 1:1 circular aspect ratio with high-DPI Retina support
+   - Snappy physical entrance: drops and bounces into view (0.0s - 0.85s)
+   - Rotates on loading for ~2.3s with 3D spherical eye mapping (0.85s - 3.2s)
+   - "Visitor detected" thinking effect: neural ripple waves + thought bubble (3.2s - 3.8s)
+   - Delighted recognition & speech: hops, smiles, dialogue card emerges from mouth (3.8s+)
+   - Real-time mouth lip-sync articulation while speaking
+   - Web Speech Synthesis: muted by default with a speaker toggle below
+   - Tap bubble to swallow back into mouth; click sphere to hop and speak
    ============================================================ */
 
 (function () {
@@ -16,11 +17,11 @@
   if (!canvas) return;
 
   var hero = canvas.closest(".hero") || canvas.parentElement;
-  var dialogueCard = document.getElementById("bot-dialogue");
-  var statusPillText = document.getElementById("bot-status-text");
-  var statusIndicator = document.querySelector(".status-indicator");
-  var scrollCta = document.getElementById("bot-cta-scroll");
-  var emailCta = document.getElementById("bot-cta-email");
+  var bubbleEl = document.getElementById("bot-mouth-bubble");
+  var bubbleInner = document.getElementById("bubble-inner");
+  var soundBtn = document.getElementById("bot-sound-btn");
+  var soundLabel = document.getElementById("sound-label");
+  var scrollCta = document.getElementById("bot-explore-cta");
 
   var ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -32,7 +33,7 @@
 
   // Ambient Stardust Particles
   var stars = [];
-  var STAR_COUNT = 40;
+  var STAR_COUNT = 42;
 
   function initStars() {
     stars = [];
@@ -41,7 +42,7 @@
         x: Math.random() * (W || window.innerWidth),
         y: Math.random() * (H || 600),
         r: 0.7 + Math.random() * 1.3,
-        alpha: 0.08 + Math.random() * 0.26,
+        alpha: 0.08 + Math.random() * 0.28,
         vx: (Math.random() - 0.5) * 0.1,
         vy: -0.05 - Math.random() * 0.12
       });
@@ -61,20 +62,20 @@
 
     // Responsive sphere radius
     if (W < 640) {
-      R = Math.max(64, Math.min(76, W * 0.19));
+      R = Math.max(68, Math.min(84, W * 0.21));
     } else if (W < 1024) {
-      R = Math.max(90, Math.min(108, W * 0.15));
+      R = Math.max(95, Math.min(115, W * 0.16));
     } else {
-      R = Math.max(105, Math.min(125, W * 0.11));
+      R = Math.max(110, Math.min(130, W * 0.12));
     }
 
     cx = Math.round(W * 0.5);
 
-    // Compute targetCy: vertically centered in space above dialogue card with generous clearance
+    // Vertical positioning with ample space for mouth bubble
     var headerH = W < 640 ? 56 : 70;
-    var cardHeightApprox = W < 640 ? 270 : 220;
-    var availableH = Math.max(180, H - headerH - cardHeightApprox);
-    targetCy = Math.round(headerH + availableH * 0.36);
+    var dockH = 65;
+    var availableH = Math.max(260, H - headerH - dockH);
+    targetCy = Math.round(headerH + availableH * 0.38);
 
     if (stars.length === 0) initStars();
   }
@@ -94,20 +95,216 @@
   var targetYaw = 0;
   var targetPitch = 0;
 
-  var curY = -180; // Starts just above screen
+  var curY = -180;
   var scaleX = 1;
   var scaleY = 1;
 
-  var blink = 0; // 0 = open, 1 = closed
+  var blink = 0;
   var eyeWiden = 1.0;
   var smileProgress = 0;
   var hopY = 0;
 
-  var phase = "entrance"; // entrance -> spinning -> notice -> smile -> active
-  var dialogueRevealed = false;
-
+  var phase = "entrance"; // entrance -> spinning -> thinking -> smile -> active
   var lastBlinkTime = 0;
   var nextBlinkInterval = 4.2;
+
+  // Mouth coordinates in screen pixels
+  var screenMouthX = 0;
+  var screenMouthY = 0;
+
+  // Speech Bubble State Machine: 'hidden' | 'thinking' | 'closing_thinking' | 'speaking' | 'swallowed'
+  var bubbleState = "hidden";
+  var isMuted = true; // By default kept in mute per user instructions
+  var speechUtterance = null;
+  var availableVoice = null;
+  var speechTriggered = false;
+
+  // =============================================================
+  // CUTE HIGH-DEFINITION MALE VOICE SYNTHESIS & ACOUSTIC ENGINE
+  // =============================================================
+  function pickCuteMaleVoice() {
+    if (!("speechSynthesis" in window)) return null;
+    var voices = window.speechSynthesis.getVoices();
+    if (!voices || !voices.length) return null;
+
+    var english = voices.filter(function (v) {
+      return v.lang && v.lang.toLowerCase().startsWith("en");
+    });
+    if (!english.length) english = voices;
+
+    var maleNames = [
+      "guy", "ryan", "daniel", "arthur", "oliver", "george",
+      "andrew", "brian", "alex", "david", "mark", "male", "james", "aaron", "fred"
+    ];
+    var femaleFilter = ["female", "zira", "susan", "samantha", "victoria", "karen", "catherine", "hazel", "jenny", "aria", "ava", "emma", "sonia", "lisa"];
+
+    // 1. Prioritize High-Definition / Natural / Online Male voices
+    var cuteMale = english.find(function (v) {
+      var n = v.name.toLowerCase();
+      var hasMale = maleNames.some(function (k) { return n.includes(k); });
+      var isFemale = femaleFilter.some(function (f) { return n.includes(f); });
+      return hasMale && !isFemale && (n.includes("natural") || n.includes("online") || n.includes("google") || n.includes("premium") || n.includes("daniel"));
+    });
+
+    // 2. Any English male voice
+    if (!cuteMale) {
+      cuteMale = english.find(function (v) {
+        var n = v.name.toLowerCase();
+        var hasMale = maleNames.some(function (k) { return n.includes(k); });
+        var isFemale = femaleFilter.some(function (f) { return n.includes(f); });
+        return hasMale && !isFemale;
+      });
+    }
+
+    // 3. Fallback to any voice that is not explicitly female
+    if (!cuteMale) {
+      cuteMale = english.find(function (v) {
+        var n = v.name.toLowerCase();
+        return !femaleFilter.some(function (f) { return n.includes(f); });
+      });
+    }
+
+    return cuteMale || english[0];
+  }
+
+  function playCuteChirp() {
+    if (isMuted) return;
+    try {
+      var AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      var actx = new AudioCtx();
+      var osc = actx.createOscillator();
+      var gain = actx.createGain();
+      osc.type = "sine";
+      var now = actx.currentTime;
+      // High-definition cute 2-tone harmonic chime (D5 -> A5)
+      osc.frequency.setValueAtTime(587.33, now);
+      osc.frequency.exponentialRampToValueAtTime(880.0, now + 0.12);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+      osc.connect(gain);
+      gain.connect(actx.destination);
+      osc.start(now);
+      osc.stop(now + 0.30);
+    } catch (e) { /* ignore */ }
+  }
+
+  function initSpeech() {
+    if (!("speechSynthesis" in window)) return;
+    function updateVoices() {
+      availableVoice = pickCuteMaleVoice();
+    }
+    updateVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = updateVoices;
+    }
+  }
+
+  function speakGreeting() {
+    if (isMuted || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      playCuteChirp();
+
+      var text = "In a world that never stops rushing, thank you for taking a moment to pause here.";
+      speechUtterance = new SpeechSynthesisUtterance(text);
+      if (!availableVoice) availableVoice = pickCuteMaleVoice();
+      if (availableVoice) speechUtterance.voice = availableVoice;
+
+      // Cute male AI companion tuning:
+      // Pitch: 1.22 gives an energetic, friendly, adorable young AI character tone
+      // Rate: 1.04 keeps it lively, articulate, and crisp
+      speechUtterance.pitch = 1.22;
+      speechUtterance.rate = 1.04;
+      speechUtterance.volume = 1.0;
+
+      window.speechSynthesis.speak(speechUtterance);
+    } catch (e) {
+      console.warn("Speech synthesis error", e);
+    }
+  }
+
+  initSpeech();
+
+  // Speaker button listener
+  if (soundBtn) {
+    var iconMuted = soundBtn.querySelector(".icon-speaker-muted");
+    var iconOn = soundBtn.querySelector(".icon-speaker-on");
+
+    soundBtn.addEventListener("click", function () {
+      isMuted = !isMuted;
+      if (isMuted) {
+        soundBtn.classList.remove("is-active");
+        soundBtn.setAttribute("aria-label", "Enable bot voice (currently muted)");
+        soundBtn.setAttribute("title", "Enable bot voice");
+        if (iconMuted) iconMuted.style.display = "block";
+        if (iconOn) iconOn.style.display = "none";
+        if (soundLabel) soundLabel.textContent = "Unmute Voice";
+        if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+      } else {
+        soundBtn.classList.add("is-active");
+        soundBtn.setAttribute("aria-label", "Mute bot voice");
+        soundBtn.setAttribute("title", "Mute bot voice");
+        if (iconMuted) iconMuted.style.display = "none";
+        if (iconOn) iconOn.style.display = "block";
+        if (soundLabel) soundLabel.textContent = "Mute Voice";
+
+        openSpeechBubble();
+        speakGreeting();
+      }
+    });
+  }
+
+  // =============================================================
+  // SPEECH & THOUGHT BUBBLE CONTROLS
+  // =============================================================
+  function showThinkingBubble() {
+    if (!bubbleEl || bubbleState === "thinking") return;
+    bubbleState = "thinking";
+    bubbleEl.className = "bot-mouth-bubble is-open is-thinking";
+    if (bubbleInner) {
+      bubbleInner.innerHTML =
+        '<div class="thinking-text">' +
+        '<span>💭 Visitor detected</span>' +
+        '<span class="thinking-dots"><span></span><span></span><span></span></span>' +
+        '</div>';
+    }
+  }
+
+  function retractThinkingBubble() {
+    if (!bubbleEl || bubbleState !== "thinking") return;
+    bubbleState = "closing_thinking";
+    bubbleEl.className = "bot-mouth-bubble is-closing is-thinking";
+  }
+
+  function openSpeechBubble() {
+    if (!bubbleEl) return;
+    bubbleState = "speaking";
+    bubbleEl.className = "bot-mouth-bubble is-open is-speaking";
+    if (bubbleInner) {
+      bubbleInner.innerHTML =
+        '<p class="bubble-speech-text"><span class="bubble-speech-quote">&ldquo;</span>In a world that never stops rushing, thank you for taking a moment to pause here.<span class="bubble-speech-quote">&rdquo;</span></p>' +
+        '<span class="bubble-tap-hint">tap to swallow</span>';
+    }
+  }
+
+  function swallowSpeechBubble() {
+    if (!bubbleEl) return;
+    bubbleState = "swallowed";
+    bubbleEl.className = "bot-mouth-bubble is-closing";
+    if ("speechSynthesis" in window && window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+    }
+  }
+
+  if (bubbleEl) {
+    bubbleEl.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (bubbleState === "speaking") {
+        swallowSpeechBubble();
+      }
+    });
+  }
 
   // Mouse / Pointer Eye Contact Tracking
   function onPointerMove(clientX, clientY) {
@@ -119,7 +316,6 @@
     var dx = (mouseX - cx) / (W * 0.5);
     var dy = (mouseY - targetCy) / (H * 0.5);
 
-    // Responsive 3D yaw and pitch with comfortable limits
     targetYaw = Math.max(-0.48, Math.min(0.48, dx * 0.44));
     targetPitch = Math.max(-0.32, Math.min(0.32, dy * 0.28));
   }
@@ -134,10 +330,16 @@
     }
   }, { passive: true });
 
-  // Click Interaction: Playful bounce & double blink
+  // Click Interaction: Playful bounce & speak
   canvas.addEventListener("click", function () {
     if (phase === "entrance") return;
     triggerPlayfulHop();
+    if (bubbleState === "swallowed" || !bubbleEl.classList.contains("is-open")) {
+      openSpeechBubble();
+    }
+    if (!isMuted) {
+      speakGreeting();
+    }
   });
 
   function triggerPlayfulHop() {
@@ -181,8 +383,8 @@
     // 2. Yaw around Y
     var cosY = Math.cos(curYaw), sinY = Math.sin(curYaw);
     var x2 = x1 * cosY + z1 * sinY;
-    var y2 = y1;
     var z2 = -x1 * sinY + z1 * cosY;
+    var y2 = y1;
 
     // 3. Roll around Z
     var cosR = Math.cos(curRoll), sinR = Math.sin(curRoll);
@@ -193,51 +395,42 @@
     return { x: x3, y: y3, z: z3 };
   }
 
-  // Animation Loop
+  // =============================================================
+  // MAIN RENDER LOOP & TIMELINE
+  // =============================================================
   var startTime = performance.now();
 
   function render(now) {
-    var elapsedSec = (now - startTime) / 1000;
-    if (debugTime !== null && !isNaN(debugTime)) {
-      elapsedSec = debugTime;
-    }
+    var elapsedSec = (debugTime !== null) ? debugTime : (now - startTime) / 1000;
 
     // -------------------------------------------------------------
-    // 1. CHOREOGRAPHY & CHARACTER ANIMATION TIMELINE
+    // 1. TIMELINE & CHOREOGRAPHY
     // -------------------------------------------------------------
 
-    // --- PHASE 1: SNAPPY BOUNCY ARRIVAL (0.0s - 0.85s) ---
+    // --- PHASE 1: PHYSICAL ENTRANCE (0.0s - 0.85s) ---
     if (elapsedSec < 0.85) {
       phase = "entrance";
       var t = elapsedSec;
-      var startY = -R - 35;
       var floorY = targetCy;
 
-      if (t < 0.45) {
-        // Drop in quickly with gravity acceleration
-        var pDrop = t / 0.45;
-        curY = startY + (floorY - startY) * (pDrop * pDrop);
-        yaw = -Math.PI * 4.0 * (1 - pDrop * 0.15);
-        scaleX = 0.95; scaleY = 1.05; // Air stretch
-        roll = Math.sin(pDrop * Math.PI) * 0.12;
+      if (t < 0.44) {
+        var pFall = t / 0.44;
+        curY = -R - 80 + (floorY - (-R - 80)) * (pFall * pFall);
+        scaleX = 0.94; scaleY = 1.08;
+        yaw = -Math.PI * 4.0;
       } else if (t < 0.58) {
-        // Impact 1: Squash on landing - EYES FACE FRONT!
-        var pSq = (t - 0.45) / 0.13;
-        var sqAmt = Math.sin(pSq * Math.PI) * 0.18;
-        curY = floorY + Math.sin(pSq * Math.PI) * 8;
-        scaleY = 1.0 - sqAmt;
-        scaleX = 1.0 + sqAmt * 0.8;
+        var pSq = (t - 0.44) / 0.14;
+        curY = floorY;
+        var sq = Math.sin(pSq * Math.PI);
+        scaleX = 1.0 + sq * 0.18;
+        scaleY = 1.0 - sq * 0.18;
         yaw = -Math.PI * 4.0;
-        roll = 0.04;
       } else if (t < 0.76) {
-        // Gentle Rebound Arc
-        var pReb = (t - 0.58) / 0.18;
-        curY = floorY - Math.sin(pReb * Math.PI) * 26;
+        var pRb = (t - 0.58) / 0.18;
+        curY = floorY - Math.sin(pRb * Math.PI) * 22;
+        scaleX = 0.96; scaleY = 1.05;
         yaw = -Math.PI * 4.0;
-        scaleX = 1.0; scaleY = 1.0;
-        roll = 0;
       } else {
-        // Settles to floor
         var pSet = (t - 0.76) / 0.09;
         curY = floorY + Math.sin(pSet * Math.PI) * 4;
         scaleX = 1.0; scaleY = 1.0;
@@ -256,7 +449,6 @@
 
       var tSpin = elapsedSec - 0.85; // 0 to 2.35s
       var spinProg = tSpin / 2.35;
-      // Smooth cubic ease out: exactly 2 full turns (-4*PI to 0)
       var easedSpin = 1 - Math.pow(1 - spinProg, 2.5);
 
       yaw = -Math.PI * 4.0 * (1 - easedSpin);
@@ -266,101 +458,82 @@
       smileProgress = 0;
       blink = 0;
       eyeWiden = 1.0;
-
-      if (statusPillText && statusPillText.textContent !== "Calibrating Grok neural sphere...") {
-        statusPillText.textContent = "Calibrating Grok neural sphere...";
-      }
     }
-    // --- PHASE 3: THE DOUBLE-TAKE / NOTICES VISITOR! (3.2s - 3.7s) ---
-    else if (elapsedSec < 3.7) {
-      phase = "notice";
+    // --- PHASE 3: THINKING EFFECT / VISITOR DETECTED (3.2s - 3.8s) ---
+    else if (elapsedSec < 3.8) {
+      phase = "thinking";
       curY = targetCy;
       scaleX = 1; scaleY = 1;
 
-      var tNotice = elapsedSec - 3.2; // 0 to 0.5s
-      var pNotice = tNotice / 0.5;
+      var tThink = elapsedSec - 3.2; // 0 to 0.6s
+      var pThink = Math.min(1, tThink / 0.45);
 
-      // Cocks head with curious wonder! (+8 deg roll tilt, looks slightly up)
-      roll = Math.sin(pNotice * Math.PI * 0.5) * 0.14;
-      pitch = -0.06 * Math.sin(pNotice * Math.PI * 0.5);
-      yaw = -0.04 * Math.sin(pNotice * Math.PI * 0.5);
+      // Cocks head inquisitively (+9 deg roll, looking slightly up)
+      roll = Math.sin(pThink * Math.PI * 0.5) * 0.15;
+      pitch = -0.06 * Math.sin(pThink * Math.PI * 0.5);
+      yaw = -0.04 * Math.sin(pThink * Math.PI * 0.5);
 
-      // Eyes widen with astonishment!
-      eyeWiden = 1.0 + Math.sin(pNotice * Math.PI * 0.5) * 0.28;
+      // Wide inquisitive eyes
+      eyeWiden = 1.0 + Math.sin(pThink * Math.PI * 0.5) * 0.28;
 
-      // Inquisitive surprised blink (3.35s - 3.55s)
-      if (tNotice > 0.15 && tNotice < 0.38) {
-        var bP = (tNotice - 0.15) / 0.23;
+      // Thinking blink
+      if (tThink > 0.12 && tThink < 0.32) {
+        var bP = (tThink - 0.12) / 0.20;
         blink = Math.sin(bP * Math.PI);
       } else {
         blink = 0;
       }
 
-      if (statusPillText && statusPillText.textContent !== "Visitor detected... 👀") {
-        statusPillText.textContent = "Visitor detected... 👀";
-      }
-
       smileProgress = 0;
+
+      if (elapsedSec < 3.72) {
+        showThinkingBubble();
+      } else {
+        retractThinkingBubble();
+      }
     }
-    // --- PHASE 4: DELIGHTED RECOGNITION & THE SMILE (3.7s - 4.2s) ---
-    else if (elapsedSec < 4.2) {
+    // --- PHASE 4: DELIGHTED RECOGNITION & SMILE (3.8s - 4.3s) ---
+    else if (elapsedSec < 4.3) {
       phase = "smile";
       curY = targetCy;
-      var tSm = elapsedSec - 3.7; // 0 to 0.5s
+      var tSm = elapsedSec - 3.8; // 0 to 0.5s
 
-      // Head straightens proudly
       roll += (0 - roll) * 0.12;
       pitch += (0.02 - pitch) * 0.12;
       eyeWiden += (1.0 - eyeWiden) * 0.10;
 
-      // Smile morphs from 0 to 1
-      smileProgress = Math.min(1, tSm / 0.35);
+      smileProgress = Math.min(1, tSm / 0.32);
 
-      // Buoyant happy hop
-      if (tSm < 0.38) {
-        hopY = -Math.sin((tSm / 0.38) * Math.PI) * 9.0;
+      // Happy recognition hop
+      if (tSm < 0.36) {
+        hopY = -Math.sin((tSm / 0.36) * Math.PI) * 9.5;
       } else {
         hopY = 0;
       }
 
-      // Status Pill Updates
-      if (statusPillText) {
-        if (elapsedSec < 3.2) {
-          statusPillText.textContent = "Calibrating Grok neural sphere...";
-          if (statusIndicator) statusIndicator.classList.remove("is-online");
-        } else if (elapsedSec < 3.7) {
-          statusPillText.textContent = "Visitor detected... 👀";
-          if (statusIndicator) statusIndicator.classList.remove("is-online");
-        } else {
-          statusPillText.textContent = "Spotted you! Welcome";
-          if (statusIndicator) statusIndicator.classList.add("is-online");
+      if (elapsedSec >= 3.88 && bubbleState !== "speaking" && bubbleState !== "swallowed") {
+        openSpeechBubble();
+        if (!speechTriggered && !isMuted) {
+          speechTriggered = true;
+          speakGreeting();
         }
       }
-
-      // Reveal Dialogue Card at 3.9s
-      if (elapsedSec >= 3.9 && !dialogueRevealed) {
-        dialogueRevealed = true;
-        if (dialogueCard) dialogueCard.classList.add("is-visible");
-      }
     }
-    // --- PHASE 5: LIVING INTERACTIVE EYE CONTACT (4.2s+) ---
+    // --- PHASE 5: LIVING INTERACTIVE EYE CONTACT (4.3s+) ---
     else {
       phase = "active";
       curY = targetCy;
       smileProgress = 1;
       eyeWiden = 1.0;
 
-      if (statusPillText) {
-        statusPillText.textContent = "Spotted you! Welcome";
-        if (statusIndicator) statusIndicator.classList.add("is-online");
+      if (bubbleState !== "speaking" && bubbleState !== "swallowed") {
+        openSpeechBubble();
       }
 
-      // Attentive eye contact: tracks cursor with smooth spring damping
       yaw += (targetYaw - yaw) * 0.08;
       pitch += (targetPitch - pitch) * 0.08;
       roll += (0 - roll) * 0.08;
 
-      // Natural idle blinking every 4-5s
       if (elapsedSec - lastBlinkTime > nextBlinkInterval) {
         lastBlinkTime = elapsedSec;
         nextBlinkInterval = 3.6 + Math.random() * 2.4;
@@ -373,31 +546,65 @@
       }
     }
 
-    // Gentle breathing float once settled
     var floatY = (elapsedSec >= 0.85) ? Math.sin(elapsedSec * 1.8) * 5.5 : 0;
     var currentCy = curY + floatY + hopY;
+
+    // -------------------------------------------------------------
+    // DYNAMIC MOUTH COORDINATE TRACKING
+    // -------------------------------------------------------------
+    var pMouth0 = sphericalTo3D(MOUTH_CENTER.phi, MOUTH_CENTER.theta);
+    var pMouthRot = rotate3D(pMouth0, yaw, pitch, roll);
+    screenMouthX = cx + R * pMouthRot.x;
+    screenMouthY = currentCy + R * pMouthRot.y;
+
+    if (bubbleEl) {
+      var bubbleTop = currentCy + R + 18;
+      bubbleEl.style.setProperty("--mouth-x", screenMouthX.toFixed(1) + "px");
+      bubbleEl.style.setProperty("--mouth-y", screenMouthY.toFixed(1) + "px");
+      bubbleEl.style.setProperty("--bubble-y", bubbleTop.toFixed(1) + "px");
+    }
 
     // -------------------------------------------------------------
     // 2. CLEAR CANVAS & BACKGROUND STARDUST
     // -------------------------------------------------------------
     ctx.clearRect(0, 0, W, H);
 
-    for (var s = 0; s < stars.length; s++) {
-      var star = stars[s];
-      star.y += star.vy;
-      star.x += star.vx;
-      if (star.y < 0) { star.y = H; star.x = Math.random() * W; }
-      if (star.x < 0) star.x = W;
-      if (star.x > W) star.x = 0;
+    for (var i = 0; i < stars.length; i++) {
+      var s = stars[i];
+      s.x += s.vx;
+      s.y += s.vy;
+      if (s.x < 0) s.x = W;
+      if (s.x > W) s.x = 0;
+      if (s.y < 0) s.y = H;
+      if (s.y > H) s.y = 0;
 
-      ctx.fillStyle = "rgba(255, 255, 255, " + star.alpha.toFixed(3) + ")";
+      var pulse = 0.8 + Math.sin(elapsedSec * 2.5 + i) * 0.2;
+      ctx.fillStyle = "rgba(255, 255, 255, " + (s.alpha * pulse).toFixed(3) + ")";
       ctx.beginPath();
-      ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
       ctx.fill();
     }
 
     // -------------------------------------------------------------
-    // 3. DYNAMIC GROUND SHADOW (SCALES WITH SPHERE ALTITUDE)
+    // 3. THINKING NEURAL RIPPLE WAVES (EMITS AROUND HEAD)
+    // -------------------------------------------------------------
+    if (phase === "thinking") {
+      var thinkT = (elapsedSec - 3.2);
+      for (var w = 0; w < 3; w++) {
+        var waveProg = ((thinkT * 2.2 + w * 0.33) % 1.0);
+        var waveRadius = R * (1.06 + waveProg * 0.42);
+        var waveAlpha = (1.0 - waveProg) * 0.40;
+
+        ctx.strokeStyle = "rgba(165, 180, 252, " + waveAlpha.toFixed(3) + ")";
+        ctx.lineWidth = Math.max(1.5, 3.2 * (1.0 - waveProg));
+        ctx.beginPath();
+        ctx.arc(cx, currentCy - R * 0.12, waveRadius, -Math.PI * 0.88, -Math.PI * 0.12);
+        ctx.stroke();
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 4. DYNAMIC GROUND SHADOW
     // -------------------------------------------------------------
     var shadowFloorY = targetCy + R + 38;
     var altitude = Math.max(0, shadowFloorY - (currentCy + R));
@@ -422,59 +629,54 @@
     }
 
     // -------------------------------------------------------------
-    // 4. WHITE PORCELAIN MATTE 3D SPHERE
+    // 5. WHITE PORCELAIN MATTE 3D SPHERE
     // -------------------------------------------------------------
     ctx.save();
     ctx.translate(cx, currentCy);
     ctx.scale(scaleX, scaleY);
     ctx.translate(-cx, -currentCy);
 
-    // Key directional light coming from upper-left-front
     var keyLightX = cx - R * 0.32;
     var keyLightY = currentCy - R * 0.36;
 
     var sphereGrad = ctx.createRadialGradient(keyLightX, keyLightY, R * 0.04, cx, currentCy, R * 1.05);
-    // Smooth Grok-style porcelain white shading
     sphereGrad.addColorStop(0.00, "#ffffff");
     sphereGrad.addColorStop(0.22, "#f8fafc");
     sphereGrad.addColorStop(0.50, "#e2e8f0");
-    sphereGrad.addColorStop(0.76, "#cbd5e1");
-    sphereGrad.addColorStop(0.93, "#94a3b8");
-    sphereGrad.addColorStop(1.00, "#64748b");
+    sphereGrad.addColorStop(0.78, "#94a3b8");
+    sphereGrad.addColorStop(0.94, "#64748b");
+    sphereGrad.addColorStop(1.00, "#475569");
 
     ctx.beginPath();
     ctx.arc(cx, currentCy, R, 0, Math.PI * 2);
     ctx.fillStyle = sphereGrad;
     ctx.fill();
 
-    // Subtle luminous rim / fresnel edge backlight
     var rimGrad = ctx.createRadialGradient(cx, currentCy, R * 0.84, cx, currentCy, R);
     rimGrad.addColorStop(0.0, "rgba(255, 255, 255, 0)");
     rimGrad.addColorStop(0.7, "rgba(255, 255, 255, 0.12)");
-    rimGrad.addColorStop(1.0, "rgba(255, 255, 255, 0.44)");
-
+    rimGrad.addColorStop(1.0, "rgba(255, 255, 255, 0.32)");
     ctx.beginPath();
     ctx.arc(cx, currentCy, R, 0, Math.PI * 2);
     ctx.fillStyle = rimGrad;
     ctx.fill();
 
-    // -------------------------------------------------------------
-    // 5. 3D PROJECTED EYES & SMILE ON SPHERE SURFACE
-    // -------------------------------------------------------------
-    renderEye(EYE_LEFT, -1, currentCy);
-    renderEye(EYE_RIGHT, 1, currentCy);
-
-    if (smileProgress > 0.01) {
-      renderSmile(currentCy);
-    }
-
     ctx.restore();
+
+    // -------------------------------------------------------------
+    // 6. 3D PROJECTED EYES & REAL-TIME LIP-SYNC MOUTH
+    // -------------------------------------------------------------
+    renderEye(EYE_LEFT, currentCy, false);
+    renderEye(EYE_RIGHT, currentCy, true);
+    renderSmile(currentCy, elapsedSec);
 
     requestAnimationFrame(render);
   }
 
-  // Eye Rendering with 3D Foreshortening, Widen & Smile Morph
-  function renderEye(eyeCoord, sideSign, sphereY) {
+  // =============================================================
+  // 3D EYE PROJECTION & RENDERING
+  // =============================================================
+  function renderEye(eyeCoord, sphereY, isRightEye) {
     var p0 = sphericalTo3D(eyeCoord.phi, eyeCoord.theta);
     var pRot = rotate3D(p0, yaw, pitch, roll);
 
@@ -483,37 +685,37 @@
     var screenX = cx + R * pRot.x;
     var screenY = sphereY + R * pRot.y;
 
-    var normalForeshorten = Math.max(0.12, pRot.z);
+    var normalForeshorten = Math.max(0.18, pRot.z);
+    var baseEyeW = R * 0.090 * normalForeshorten;
+    var baseEyeH = R * 0.115 * eyeWiden;
 
-    // Dynamic eye sizing with widening factor
-    var baseEyeW = R * 0.092 * normalForeshorten * eyeWiden;
-    var baseEyeH = R * 0.135 * eyeWiden;
-
-    var openFactor = Math.max(0.04, 1 - blink * 0.94);
+    var openFactor = Math.max(0.06, 1.0 - blink);
     var curEyeH = baseEyeH * openFactor;
 
     ctx.save();
     ctx.translate(screenX, screenY);
-    ctx.rotate(pRot.x * 0.25 * sideSign + roll);
+    ctx.rotate(pRot.x * 0.32 + roll);
 
     var sm = smileProgress;
 
-    if (sm < 0.22) {
-      // --- CURIOUS / NEUTRAL BLACK EYE ---
+    if (sm < 0.55) {
+      // Curious inquisitive eye (●)
+      var morphW = baseEyeW * (1.0 + sm * 0.25);
+      var morphH = curEyeH * (1.0 - sm * 0.45);
+
       ctx.fillStyle = "#090a0f";
       ctx.beginPath();
-      ctx.ellipse(0, 0, baseEyeW, curEyeH, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, Math.max(1.8, morphW), Math.max(1.5, morphH), 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Specular reflection catchlight
-      if (openFactor > 0.35) {
+      if (openFactor > 0.45) {
         ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
         ctx.beginPath();
         ctx.arc(baseEyeW * 0.28, -curEyeH * 0.30, Math.max(1.2, baseEyeW * 0.30), 0, Math.PI * 2);
         ctx.fill();
       }
     } else {
-      // --- JOYFUL SMILING CRESCENT (⌒) ---
+      // Joyful smiling crescent (⌒)
       var strokeW = Math.max(2.5, R * 0.038 * normalForeshorten);
       ctx.strokeStyle = "#090a0f";
       ctx.lineWidth = strokeW;
@@ -538,8 +740,10 @@
     ctx.restore();
   }
 
-  // Smile Mouth Arc Rendering
-  function renderSmile(sphereY) {
+  // =============================================================
+  // REAL-TIME LIP-SYNC SMILE MOUTH RENDERING
+  // =============================================================
+  function renderSmile(sphereY, elapsedSec) {
     var p0 = sphericalTo3D(MOUTH_CENTER.phi, MOUTH_CENTER.theta);
     var pRot = rotate3D(p0, yaw, pitch, roll);
 
@@ -549,8 +753,14 @@
     var screenY = sphereY + R * pRot.y;
 
     var normalForeshorten = Math.max(0.15, pRot.z);
-    var mouthW = R * 0.17 * normalForeshorten * smileProgress;
-    var mouthDepth = R * 0.058 * smileProgress;
+
+    // Dynamic lip-sync speech oscillation
+    var isSpeakingNow = (bubbleState === "speaking" && elapsedSec < 6.8) || ("speechSynthesis" in window && window.speechSynthesis.speaking);
+    var talkVibe = isSpeakingNow ? Math.sin(elapsedSec * 22) * 0.38 : 0;
+    var mouthTalkDepth = isSpeakingNow ? (Math.sin(elapsedSec * 20) * 0.5 + 0.5) * R * 0.022 : 0;
+
+    var mouthW = Math.max(2, (R * 0.17 * normalForeshorten + talkVibe * R * 0.015) * smileProgress);
+    var mouthDepth = Math.max(0.5, (R * 0.058 + mouthTalkDepth) * smileProgress);
     var strokeW = Math.max(2.2, R * 0.026 * normalForeshorten);
 
     ctx.save();
@@ -569,9 +779,9 @@
     ctx.restore();
   }
 
-  // -------------------------------------------------------------
-  // 6. INTERACTIVE CTA ACTION HOOKS
-  // -------------------------------------------------------------
+  // =============================================================
+  // CTA SCROLL ACTION HOOK
+  // =============================================================
   if (scrollCta) {
     scrollCta.addEventListener("click", function (e) {
       e.preventDefault();
@@ -580,25 +790,6 @@
         var headerH = 70;
         var topPos = target.getBoundingClientRect().top + window.pageYOffset - headerH;
         window.scrollTo({ top: topPos, behavior: "smooth" });
-      }
-    });
-  }
-
-  if (emailCta) {
-    emailCta.addEventListener("click", function () {
-      var globalCopyBtn = document.getElementById("copy-email-btn");
-      if (globalCopyBtn) {
-        globalCopyBtn.click();
-      } else {
-        var email = "bhabajitkashyapik@gmail.com";
-        navigator.clipboard.writeText(email).then(function () {
-          var toast = document.getElementById("copy-toast");
-          if (toast) {
-            toast.textContent = "Email copied: " + email;
-            toast.classList.add("show");
-            setTimeout(function () { toast.classList.remove("show"); }, 2800);
-          }
-        });
       }
     });
   }
