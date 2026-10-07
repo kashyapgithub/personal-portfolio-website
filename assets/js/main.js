@@ -975,18 +975,16 @@
         var Mtop = (modalRect && modalRect.top) ? modalRect.top : (window.innerHeight - Mh) / 2;
         var Mleft = (modalRect && modalRect.left) ? modalRect.left : (window.innerWidth - Mw) / 2;
         var Mcx = Mleft + Mw / 2;
-        var Mbottom = Mtop + Mh;
 
         // Calculate Book Origin Rect (Anchor point on shelf)
         var bookRect = cardEl ? cardEl.getBoundingClientRect() : null;
-        var Bw = (bookRect && bookRect.width > 20) ? bookRect.width : 160;
-        var Bh = (bookRect && bookRect.height > 20) ? bookRect.height : 230;
-        var Bcx = (bookRect && bookRect.left) ? (bookRect.left + bookRect.width * 0.45) : (window.innerWidth * 0.25);
-        var Bcy = (bookRect && bookRect.top) ? (bookRect.top + bookRect.height * 0.5) : (window.innerHeight * 0.6);
-        var anchorW = Math.max(24, Bw * 0.75);
-        var anchorH = Math.max(16, Bh * 0.2);
-        var anchorX = Bcx;
-        var anchorY = Bcy;
+        var Bw = (bookRect && bookRect.width > 20) ? bookRect.width * 0.88 : 140;
+        var Bh = (bookRect && bookRect.height > 20) ? bookRect.height : 210;
+        var Btop = (bookRect && bookRect.top) ? bookRect.top : (window.innerHeight - Bh - 60);
+        var Bcx = (bookRect && bookRect.left) ? (bookRect.left + bookRect.width / 2) : (window.innerWidth / 2);
+
+        // Maximum chimney height connecting modal top down to shelf volume
+        var Hchimney = Math.max(Mh + 40, Btop - Mtop);
 
         // Create snapshot canvas with matching high-fidelity bright neumorphic styling
         var snapshot = createSnapshot(data, Mw, Mh, bookId);
@@ -999,153 +997,138 @@
         var snapH = snapshot.height;
 
         isAnimating = true;
-        var duration = isOpening ? 500 : 440; // Authentic macOS timing (ms)
+        var duration = isOpening ? 520 : 460; // Authentic macOS timing (ms)
         var startTime = null;
         var N = 80; // High slice density for continuous organic curvature
+        var split = 0.38; // Dual-phase transition boundary
+
+        function smoothstep(min, max, value) {
+          var x = Math.max(0, Math.min(1, (value - min) / (max - min)));
+          return x * x * (3 - 2 * x);
+        }
 
         function easeInOutCubic(val) {
           return val < 0.5 ? 4 * val * val * val : 1 - Math.pow(-2 * val + 2, 3) / 2;
+        }
+
+        function getGeometry(k, j, vty) {
+          var fullHeight = Mh + (Hchimney - Mh) * k;
+          var currentHeight = fullHeight * (1 - j);
+          var topY = Mtop + (Btop - Mtop) * j;
+          var screenY = topY + currentHeight * vty;
+
+          // Non-linear flared trumpet waist profile (authentic macOS Catalina curve)
+          var profile = Math.pow(1 - vty, 1.45);
+          var w = Bw + (Mw - Bw) * ((1 - j) * profile + (1 - k) * (1 - profile));
+
+          // Centerline with Compiz harmonic S-swish
+          var centerShift = (Bcx - Mcx) * (vty * k + (1 - vty) * j);
+          var swish = Math.sin(vty * Math.PI) * (Bcx - Mcx) * 0.25 * k * (1 - j);
+          var centerX = Mcx + centerShift + swish;
+
+          return {
+            screenY: screenY,
+            centerX: centerX,
+            w: Math.max(4, w),
+            leftX: centerX - w * 0.5,
+            rightX: centerX + w * 0.5
+          };
         }
 
         function step(timestamp) {
           if (!startTime) startTime = timestamp;
           var elapsed = timestamp - startTime;
           var t = Math.min(1, elapsed / duration);
-          var p = easeInOutCubic(t);
 
-          var topY, bottomY, pTop, pBottom;
+          var p = easeInOutCubic(t);
+          var k, j;
 
           if (isOpening) {
             // Opening (Unminimize): Top shoots up first, bottom releases into place
-            pTop = Math.min(1, p / 0.62);
-            pTop = pTop < 0.5 ? 4 * pTop * pTop * pTop : 1 - Math.pow(-2 * pTop + 2, 3) / 2;
-
-            pBottom = Math.max(0, (p - 0.28) / 0.72);
-            pBottom = pBottom < 0.5 ? 4 * pBottom * pBottom * pBottom : 1 - Math.pow(-2 * pBottom + 2, 3) / 2;
-
-            topY = anchorY + (Mtop - anchorY) * pTop;
-            bottomY = (anchorY + anchorH) + (Mbottom - (anchorY + anchorH)) * pBottom;
+            j = 1 - smoothstep(0, 1 - split, p);
+            k = 1 - smoothstep(1 - split, 1, p);
           } else {
-            // Closing (Minimize): Bottom docks into book first, top gets sucked in after
-            pBottom = Math.min(1, p / 0.62);
-            pBottom = pBottom < 0.5 ? 4 * pBottom * pBottom * pBottom : 1 - Math.pow(-2 * pBottom + 2, 3) / 2;
-
-            pTop = Math.max(0, (p - 0.28) / 0.72);
-            pTop = pTop < 0.5 ? 4 * pTop * pTop * pTop : 1 - Math.pow(-2 * pTop + 2, 3) / 2;
-
-            bottomY = Mbottom + ((anchorY + anchorH) - Mbottom) * pBottom;
-            topY = Mtop + (anchorY - Mtop) * pTop;
+            // Closing (Minimize): Bottom docks into book first, top gets sucked down
+            k = smoothstep(0, split, p);
+            j = smoothstep(split, 1, p);
           }
-
-          if (bottomY < topY + 4) bottomY = topY + 4;
-          var totalH = bottomY - topY;
 
           clearCanvas();
 
           var leftPath = [];
           var rightPath = [];
 
-          function getSlice(vty) {
-            var screenY = topY + totalH * vty;
-            var u;
-            if (isOpening) {
-              u = pTop * (1 - vty) + pBottom * vty;
-            } else {
-              u = 1 - (pTop * (1 - vty) + pBottom * vty);
-            }
-            u = Math.max(0, Math.min(1, u));
-
-            // Non-linear flared trumpet waist profile (macOS Catalina signature curve)
-            var flare = Math.pow(1 - vty, 1.4);
-            var waist = Math.sin(vty * Math.PI) * 0.22 * (1 - u);
-            var w = anchorW + (Mw - anchorW) * (u + (1 - u) * flare * 0.35) * (1 - waist);
-            w = Math.max(4, Math.min(Mw * 1.04, w));
-
-            // Centerline with Compiz harmonic S-swish
-            var swish = Math.sin(vty * Math.PI) * (anchorX - Mcx) * 0.24 * (1 - u);
-            var centerX = Mcx + (anchorX - Mcx) * (1 - u) + swish;
-
-            return {
-              screenY: screenY,
-              centerX: centerX,
-              w: w,
-              leftX: centerX - w * 0.5,
-              rightX: centerX + w * 0.5
-            };
-          }
-
-          // 80 Slices with continuous anti-aliased trapezoid clipping
+          // 80 Slices with continuous exact boundary interpolation
           for (var i = 0; i < N; i++) {
             var vty0 = i / N;
             var vty1 = (i + 1) / N;
 
-            var g0 = getSlice(vty0);
-            var g1 = getSlice(vty1);
+            var s0 = getGeometry(k, j, vty0);
+            var s1 = getGeometry(k, j, vty1);
 
-            var dy = g1.screenY - g0.screenY;
-            if (dy <= 0.05) continue;
+            var y0 = s0.screenY;
+            var y1 = s1.screenY;
+            var dh = (y1 - y0) + 0.35; // subpixel antialiasing guard
 
-            var sy0 = Math.floor(vty0 * snapH);
-            var sy1 = Math.ceil(vty1 * snapH);
-            var sH = Math.max(1, sy1 - sy0);
-
-            var sliceW = Math.max(g0.w, g1.w);
-            var sliceDx = Math.min(g0.leftX, g1.leftX);
-
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(g0.leftX, g0.screenY);
-            ctx.lineTo(g0.rightX, g0.screenY);
-            ctx.lineTo(g1.rightX, g1.screenY + 0.6);
-            ctx.lineTo(g1.leftX, g1.screenY + 0.6);
-            ctx.closePath();
-            ctx.clip();
-
-            ctx.drawImage(
-              snapshot,
-              0, sy0, snapW, sH,
-              sliceDx - 1, g0.screenY, sliceW + 2, dy + 1
-            );
-            ctx.restore();
+            var cx = (s0.centerX + s1.centerX) * 0.5;
+            var w = (s0.w + s1.w) * 0.5;
+            var x = cx - w * 0.5;
 
             if (i === 0) {
-              leftPath.push({ x: g0.leftX, y: g0.screenY });
-              rightPath.push({ x: g0.rightX, y: g0.screenY });
+              leftPath.push({ x: s0.leftX, y: y0 });
+              rightPath.push({ x: s0.rightX, y: y0 });
             }
-            leftPath.push({ x: g1.leftX, y: g1.screenY });
-            rightPath.push({ x: g1.rightX, y: g1.screenY });
+            leftPath.push({ x: s1.leftX, y: y1 });
+            rightPath.push({ x: s1.rightX, y: y1 });
+
+            // Exact continuous source partition
+            var sy = vty0 * snapH;
+            var sh = (vty1 - vty0) * snapH;
+
+            ctx.drawImage(snapshot, 0, sy, snapW, sh, x, y0, w, dh);
           }
 
-          // Liquid Surface Sheen Highlight along the expanding boundary
-          if (leftPath.length > 2) {
+          // Liquid Outer Rails Glass Sheen (Subtle Catalina specular highlight)
+          var edgeAlpha = (1 - p) * 0.35;
+          if (edgeAlpha > 0.02) {
             ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(leftPath[0].x, leftPath[0].y);
-            for (var m = 1; m < leftPath.length; m++) {
-              ctx.lineTo(leftPath[m].x, leftPath[m].y);
-            }
-            for (var n = rightPath.length - 1; n >= 0; n--) {
-              ctx.lineTo(rightPath[n].x, rightPath[n].y);
-            }
-            ctx.closePath();
+            ctx.lineWidth = 1.2;
+            ctx.strokeStyle = "rgba(255, 255, 255, " + edgeAlpha + ")";
 
-            var sheenGrad = ctx.createLinearGradient(0, topY, 0, bottomY);
-            var sheenAlpha = isOpening ? (1 - p) * 0.16 : p * 0.16;
-            sheenGrad.addColorStop(0, "rgba(255, 255, 255, " + sheenAlpha.toFixed(3) + ")");
-            sheenGrad.addColorStop(0.5, "rgba(255, 255, 255, " + (sheenAlpha * 0.6).toFixed(3) + ")");
-            sheenGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
-            ctx.fillStyle = sheenGrad;
-            ctx.fill();
+            ctx.beginPath();
+            for (var m = 0; m < leftPath.length; m++) {
+              if (m === 0) ctx.moveTo(leftPath[m].x, leftPath[m].y);
+              else ctx.lineTo(leftPath[m].x, leftPath[m].y);
+            }
+            ctx.stroke();
+
+            ctx.beginPath();
+            for (var n = 0; n < rightPath.length; n++) {
+              if (n === 0) ctx.moveTo(rightPath[n].x, rightPath[n].y);
+              else ctx.lineTo(rightPath[n].x, rightPath[n].y);
+            }
+            ctx.stroke();
             ctx.restore();
           }
 
           if (t < 1) {
             activeAnimId = requestAnimationFrame(step);
           } else {
-            isAnimating = false;
-            activeAnimId = null;
-            if (callback) callback();
-            clearCanvas();
+            // Flicker-free handoff: reveal live DOM modal first
+            if (isOpening) {
+              overlay.classList.remove("is-genie-active");
+              overlay.classList.add("genie-settled");
+              if (callback) callback();
+            }
+            // Allow DOM paint to commit before clearing canvas to avoid 1-frame blank gap
+            requestAnimationFrame(function () {
+              clearCanvas();
+              isAnimating = false;
+              activeAnimId = null;
+              if (!isOpening && callback) {
+                callback();
+              }
+            });
           }
         }
 
@@ -1177,26 +1160,27 @@
         }
       });
 
+      // Play smooth 3D physical book opening animation on the shelf
       if (cardEl) {
         cardEl.classList.remove("is-closing");
         cardEl.classList.add("is-opening");
       }
 
-      renderChapter(idx);
+      // Allow 300ms for the 3D book cover to swing open, then launch macOS Genie
+      setTimeout(function () {
+        renderChapter(idx);
+        var key = CHAPTER_KEYS[idx];
+        var data = CHAPTERS[key];
 
-      var key = CHAPTER_KEYS[idx];
-      var data = CHAPTERS[key];
+        overlay.classList.remove("genie-settled");
+        overlay.classList.add("is-active", "is-genie-active");
+        overlay.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
 
-      overlay.classList.remove("genie-settled");
-      overlay.classList.add("is-active", "is-genie-active");
-      overlay.setAttribute("aria-hidden", "false");
-      document.body.style.overflow = "hidden";
-
-      GenieFX.open(cardEl, overlay, containerEl, data, key, function () {
-        overlay.classList.remove("is-genie-active");
-        overlay.classList.add("genie-settled");
-        if (closeBtn) closeBtn.focus();
-      });
+        GenieFX.open(cardEl, overlay, containerEl, data, key, function () {
+          if (closeBtn) closeBtn.focus();
+        });
+      }, 300);
     }
 
     function closeChapter() {
