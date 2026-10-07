@@ -112,8 +112,10 @@
   var screenMouthX = 0;
   var screenMouthY = 0;
 
-  // Speech Bubble State Machine: 'hidden' | 'thinking' | 'closing_thinking' | 'speaking' | 'swallowed'
-  var bubbleState = "hidden";
+  // Speech Bubble State Machine & Auto-Scroll Flow State
+  var bubbleState = "hidden"; // 'hidden' | 'thinking' | 'closing_thinking' | 'speaking' | 'closing_dialogue'
+  var speechFlowState = "idle"; // 'idle' | 'speaking' | 'holding' | 'closed'
+  var holdTimer = null;
   var isMuted = true; // By default kept in mute per user instructions
   var speechUtterance = null;
   var availableVoice = null;
@@ -218,9 +220,17 @@
       speechUtterance.rate = 1.04;
       speechUtterance.volume = 1.0;
 
+      speechUtterance.onend = function () {
+        markFinishedSaying();
+      };
+      speechUtterance.onerror = function () {
+        markFinishedSaying();
+      };
+
       window.speechSynthesis.speak(speechUtterance);
     } catch (e) {
       console.warn("Speech synthesis error", e);
+      markFinishedSaying();
     }
   }
 
@@ -249,6 +259,8 @@
         if (iconOn) iconOn.style.display = "block";
         if (soundLabel) soundLabel.textContent = "Mute Voice";
 
+        if (holdTimer) clearTimeout(holdTimer);
+        speechFlowState = "speaking";
         openSpeechBubble();
         speakGreeting();
       }
@@ -280,29 +292,178 @@
   function openSpeechBubble() {
     if (!bubbleEl) return;
     bubbleState = "speaking";
+    speechFlowState = "speaking";
     bubbleEl.className = "bot-mouth-bubble is-open is-speaking";
     if (bubbleInner) {
+      // Texts appear at once with warm typography
       bubbleInner.innerHTML =
-        '<p class="bubble-speech-text"><span class="bubble-speech-quote">&ldquo;</span>In a world that never stops rushing, thank you for taking a moment to pause here.<span class="bubble-speech-quote">&rdquo;</span></p>' +
-        '<span class="bubble-tap-hint">tap to swallow</span>';
+        '<p class="bubble-speech-text"><span class="bubble-speech-quote">&ldquo;</span>In a world that never stops rushing, thank you for taking a moment to pause here.<span class="bubble-speech-quote">&rdquo;</span></p>';
     }
   }
 
-  function swallowSpeechBubble() {
+  function retractSpeechBubble() {
     if (!bubbleEl) return;
-    bubbleState = "swallowed";
+    bubbleState = "closing_dialogue";
     bubbleEl.className = "bot-mouth-bubble is-closing";
     if ("speechSynthesis" in window && window.speechSynthesis.speaking) {
       window.speechSynthesis.cancel();
     }
   }
 
-  if (bubbleEl) {
-    bubbleEl.addEventListener("click", function (e) {
-      e.stopPropagation();
-      if (bubbleState === "speaking") {
-        swallowSpeechBubble();
+  function markFinishedSaying() {
+    if (speechFlowState !== "speaking") return;
+    speechFlowState = "holding";
+
+    // "after it is finished saying it stays there for 2 seconds then the auto scroll"
+    if (holdTimer) clearTimeout(holdTimer);
+    holdTimer = setTimeout(function () {
+      if (speechFlowState === "holding") {
+        speechFlowState = "closed";
+        retractSpeechBubble();
+        // Allow 240ms for the dialogue card to retract into the mouth before the forced scroll begins
+        setTimeout(function () {
+          triggerForcedBookshelfScroll();
+        }, 240);
       }
+    }, 2000);
+  }
+
+  /* ============================================================
+     Forced Smooth Scroll to The Systems & Product Bookshelf
+     - Cinematic 1400ms cubic-bezier smooth transition
+     - FORCED: captures and prevents wheel, touchmove, touchstart,
+       and navigation keys so interruption is impossible ("at any cost").
+     - Enforces position on every rAF frame and scroll event.
+     - Strictly runs ONE TIME ("scroll one time at any cost").
+     ============================================================ */
+  var hasTriggeredBookshelfScroll = false;
+  var isForcedScrolling = false;
+
+  function triggerForcedBookshelfScroll() {
+    if (hasTriggeredBookshelfScroll || isForcedScrolling) return;
+
+    var targetEl = document.getElementById("work") || document.querySelector(".bookshelf-section");
+    if (!targetEl) return;
+
+    var headerHeight = window.innerWidth < 640 ? 56 : 60;
+    var startY = window.pageYOffset || (document.documentElement ? document.documentElement.scrollTop : 0) || (document.body ? document.body.scrollTop : 0) || 0;
+    var targetRect = targetEl.getBoundingClientRect();
+    var targetY = Math.max(0, Math.round(targetRect.top + startY - headerHeight));
+
+    // If already at or past the bookshelf section, mark completed and return
+    if (startY >= targetY - 30) {
+      hasTriggeredBookshelfScroll = true;
+      return;
+    }
+
+    hasTriggeredBookshelfScroll = true;
+    isForcedScrolling = true;
+
+    var duration = 1400; // ms
+    var startTime = null;
+    var expectedY = startY;
+
+    // 1. Intercept user attempts to stop or interrupt the scroll
+    function blockInterruption(e) {
+      if (!isForcedScrolling) return;
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+      e.stopImmediatePropagation();
+    }
+
+    function blockKeyScroll(e) {
+      if (!isForcedScrolling) return;
+      var scrollKeys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " ", "Spacebar"];
+      if (scrollKeys.indexOf(e.key) !== -1 || e.keyCode === 32 || (e.keyCode >= 33 && e.keyCode <= 40)) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+        e.stopImmediatePropagation();
+      }
+    }
+
+    function enforceScrollPosition() {
+      if (!isForcedScrolling) return;
+      var currentY = window.pageYOffset || (document.documentElement ? document.documentElement.scrollTop : 0) || (document.body ? document.body.scrollTop : 0) || 0;
+      if (Math.abs(currentY - expectedY) > 2) {
+        window.scrollTo(0, expectedY);
+        if (document.documentElement) document.documentElement.scrollTop = expectedY;
+        if (document.body) document.body.scrollTop = expectedY;
+      }
+    }
+
+    // Capture listeners with non-passive flag
+    window.addEventListener("wheel", blockInterruption, { passive: false, capture: true });
+    window.addEventListener("touchmove", blockInterruption, { passive: false, capture: true });
+    window.addEventListener("touchstart", blockInterruption, { passive: false, capture: true });
+    window.addEventListener("keydown", blockKeyScroll, { capture: true });
+    window.addEventListener("scroll", enforceScrollPosition, { passive: false, capture: true });
+
+    // Temporarily ensure html/body doesn't fight rAF interpolation
+    var docEl = document.documentElement;
+    var origScrollBehavior = docEl ? docEl.style.scrollBehavior : "";
+    if (docEl) docEl.style.scrollBehavior = "auto";
+
+    // Cubic bezier easing (easeInOutCubic)
+    function easeInOutCubic(x) {
+      return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+    }
+
+    function cleanup() {
+      isForcedScrolling = false;
+      window.removeEventListener("wheel", blockInterruption, { capture: true });
+      window.removeEventListener("touchmove", blockInterruption, { capture: true });
+      window.removeEventListener("touchstart", blockInterruption, { capture: true });
+      window.removeEventListener("keydown", blockKeyScroll, { capture: true });
+      window.removeEventListener("scroll", enforceScrollPosition, { capture: true });
+      if (docEl) docEl.style.scrollBehavior = origScrollBehavior;
+
+      // Final precise alignment
+      var finalRect = targetEl.getBoundingClientRect();
+      var curY = window.pageYOffset || (document.documentElement ? document.documentElement.scrollTop : 0) || (document.body ? document.body.scrollTop : 0) || 0;
+      var finalY = Math.max(0, Math.round(finalRect.top + curY - headerHeight));
+      window.scrollTo(0, finalY);
+    }
+
+    function step(now) {
+      if (!startTime) startTime = now;
+      var elapsed = now - startTime;
+      var progress = Math.min(elapsed / duration, 1);
+      var eased = easeInOutCubic(progress);
+
+      // Re-evaluate targetY in case of responsive layout shifts
+      var currentScroll = window.pageYOffset || (document.documentElement ? document.documentElement.scrollTop : 0) || (document.body ? document.body.scrollTop : 0) || 0;
+      var currentRect = targetEl.getBoundingClientRect();
+      var dynamicTargetY = Math.max(0, Math.round(currentRect.top + currentScroll - headerHeight));
+
+      expectedY = Math.round(startY + (dynamicTargetY - startY) * eased);
+      window.scrollTo(0, expectedY);
+      if (document.documentElement) document.documentElement.scrollTop = expectedY;
+      if (document.body) document.body.scrollTop = expectedY;
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        cleanup();
+      }
+    }
+
+    requestAnimationFrame(step);
+  }
+
+  // Expose globally for testing and manual triggers
+  window.forceScrollToBookshelf = triggerForcedBookshelfScroll;
+
+  // Explore Archive button handler
+  var exploreCta = document.getElementById("bot-explore-cta");
+  if (exploreCta) {
+    exploreCta.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (holdTimer) clearTimeout(holdTimer);
+      speechFlowState = "closed";
+      retractSpeechBubble();
+      triggerForcedBookshelfScroll();
     });
   }
 
@@ -511,7 +672,7 @@
         hopY = 0;
       }
 
-      if (elapsedSec >= 3.88 && bubbleState !== "speaking" && bubbleState !== "swallowed") {
+      if (elapsedSec >= 3.88 && bubbleState !== "speaking" && speechFlowState === "idle") {
         openSpeechBubble();
         if (!speechTriggered && !isMuted) {
           speechTriggered = true;
@@ -526,8 +687,16 @@
       smileProgress = 1;
       eyeWiden = 1.0;
 
-      if (bubbleState !== "speaking" && bubbleState !== "swallowed") {
+      if (bubbleState !== "speaking" && speechFlowState === "idle") {
         openSpeechBubble();
+      }
+
+      // Check if finished saying when muted (or as speech timeout fallback)
+      if (speechFlowState === "speaking" && elapsedSec >= 8.1) {
+        var isActivelySpeaking = ("speechSynthesis" in window) && window.speechSynthesis.speaking;
+        if (!isActivelySpeaking) {
+          markFinishedSaying();
+        }
       }
 
       yaw += (targetYaw - yaw) * 0.08;
@@ -755,7 +924,7 @@
     var normalForeshorten = Math.max(0.15, pRot.z);
 
     // Dynamic lip-sync speech oscillation
-    var isSpeakingNow = (bubbleState === "speaking" && elapsedSec < 6.8) || ("speechSynthesis" in window && window.speechSynthesis.speaking);
+    var isSpeakingNow = (speechFlowState === "speaking" && elapsedSec >= 3.88 && elapsedSec < 8.1) || ("speechSynthesis" in window && window.speechSynthesis.speaking);
     var talkVibe = isSpeakingNow ? Math.sin(elapsedSec * 22) * 0.38 : 0;
     var mouthTalkDepth = isSpeakingNow ? (Math.sin(elapsedSec * 20) * 0.5 + 0.5) * R * 0.022 : 0;
 
