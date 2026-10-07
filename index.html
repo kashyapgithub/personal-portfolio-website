@@ -54,11 +54,34 @@
 
   <main id="main">
 
-    <!-- ============ Hero ============ -->
-    <section class="hero" data-od-id="hero">
-      <canvas id="sketch-canvas" aria-hidden="true"></canvas>
-      <div class="container hero-grid">
-
+    <!-- ============ Hero: Grok 3D Bot Experience ============ -->
+    <section class="hero hero--grok" data-od-id="hero" id="hero">
+      <div class="hero-bot-stage">
+        <canvas id="grok-bot-canvas" aria-label="Interactive 3D Sphere Bot Character"></canvas>
+        
+        <!-- Frosted Glass Dialogue Card -->
+        <div class="bot-dialogue-card" id="bot-dialogue" aria-live="polite">
+          <div class="bot-status-pill">
+            <span class="status-indicator"></span>
+            <span class="status-text" id="bot-status-text">Booting neural greeting...</span>
+          </div>
+          <p class="bot-speech-text">
+            <span class="speech-quote">&ldquo;</span>In a world that never stops rushing, thank you for taking a moment to pause here.<span class="speech-quote">&rdquo;</span>
+          </p>
+          <p class="bot-speech-sub">
+            Welcome to my portfolio &mdash; exploring deep systems, agentic AI, and product craft.
+          </p>
+          <div class="bot-speech-actions">
+            <a href="#work" class="btn btn-primary bot-cta-scroll" id="bot-cta-scroll">
+              <span>Explore Archive</span>
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+            </a>
+            <button type="button" class="btn btn-secondary bot-cta-email" id="bot-cta-email">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              <span>Say Hello</span>
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -858,7 +881,7 @@
 
   <div class="toast" id="copy-toast" role="status" aria-live="polite"></div>
 
-  <script src="assets/js/sketch.js"></script>
+  <script src="assets/js/grok-bot.js"></script>
   <script src="assets/js/main.js"></script>
 </body>
 </html>
