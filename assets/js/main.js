@@ -326,6 +326,8 @@
     var metricsEl = document.getElementById("chapter-metrics");
     var tagsEl = document.getElementById("chapter-tags");
     var artDisplayEl = document.getElementById("chapter-book-display");
+    var bookCards = document.querySelectorAll(".book-card");
+    if (!overlay || !bookCards.length) return;
 
     /* ------------------------------------------------------------
        Harry Potter Magical Particle Canvas Engine (SpellFX)
