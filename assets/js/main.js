@@ -647,10 +647,19 @@
         artDisplayEl.innerHTML = "";
         var cardOnShelf = document.querySelector('.book-card[data-book-id="' + key + '"]');
         if (cardOnShelf) {
-          var cover = cardOnShelf.querySelector(".book-cover");
+          // Synchronize shelf open card with active chapter
+          if (cardOnShelf !== currentTriggerCard && overlay.classList.contains("is-active")) {
+            if (currentTriggerCard) {
+              currentTriggerCard.classList.remove("is-opening", "is-closing");
+            }
+            currentTriggerCard = cardOnShelf;
+            currentTriggerCard.classList.add("is-opening");
+          }
+
+          var cover = cardOnShelf.querySelector(".book-cover-front");
           if (cover) {
             var clone = cover.cloneNode(true);
-            clone.className = "book-cover modal-book-clone book-card--" + key;
+            clone.className = "book-cover-front modal-book-clone book-card--" + key;
             artDisplayEl.appendChild(clone);
           }
         }
@@ -662,26 +671,30 @@
       if (idx === -1) idx = 0;
       currentTriggerCard = cardEl;
 
-      // Play tactile 3D opening animation
+      // Close any other open book cards on the shelves
+      bookCards.forEach(function (c) {
+        if (c !== cardEl) {
+          c.classList.remove("is-opening", "is-closing");
+        }
+      });
+
+      // Play smooth 3D physical book opening animation
       if (cardEl) {
+        cardEl.classList.remove("is-closing");
         cardEl.classList.add("is-opening");
       }
 
-      // Allow opening animation to unfold, then launch the chapter reader
+      // Allow 600ms for the front cover to swing wide open and the page to flutter
       setTimeout(function () {
         renderChapter(idx);
         overlay.classList.add("is-active");
         overlay.setAttribute("aria-hidden", "false");
         document.body.style.overflow = "hidden";
 
-        if (cardEl) {
-          cardEl.classList.remove("is-opening");
-        }
-
         if (closeBtn) {
           closeBtn.focus();
         }
-      }, 260);
+      }, 600);
     }
 
     function closeChapter() {
@@ -689,9 +702,17 @@
       overlay.setAttribute("aria-hidden", "true");
       document.body.style.overflow = "";
 
+      // Smoothly fold the book back shut onto the shelf
       if (currentTriggerCard) {
-        currentTriggerCard.focus();
-        currentTriggerCard = null;
+        var cardToClose = currentTriggerCard;
+        cardToClose.classList.remove("is-opening");
+        cardToClose.classList.add("is-closing");
+
+        setTimeout(function () {
+          cardToClose.classList.remove("is-closing");
+        }, 500);
+
+        cardToClose.focus();
       }
     }
 
