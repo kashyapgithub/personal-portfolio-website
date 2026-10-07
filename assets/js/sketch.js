@@ -1072,6 +1072,134 @@
     }
   }
 
+  /* ============================================================
+     Forced Smooth Scroll to The Systems & Product Bookshelf
+     - Triggers automatically when the human goes inside (t >= 20.8s)
+     - Cinematic 1400ms cubic-bezier smooth transition
+     - FORCED: captures and prevents wheel, touchmove, touchstart,
+       and navigation keys so interruption is impossible ("at any cost").
+     - Enforces position on every rAF frame and scroll event.
+     - Strictly runs ONE TIME ("scroll one time at any cost").
+     ============================================================ */
+  var hasTriggeredBookshelfScroll = false;
+  var isForcedScrolling = false;
+
+  function triggerForcedBookshelfScroll() {
+    if (hasTriggeredBookshelfScroll || isForcedScrolling) return;
+
+    var targetEl = document.getElementById("work") || document.querySelector(".bookshelf-section");
+    if (!targetEl) return;
+
+    var headerHeight = 60;
+    var startY = window.pageYOffset || (document.documentElement ? document.documentElement.scrollTop : 0) || (document.body ? document.body.scrollTop : 0) || 0;
+    var targetRect = targetEl.getBoundingClientRect();
+    var targetY = Math.max(0, Math.round(targetRect.top + startY - headerHeight));
+
+    // If already at or past the bookshelf section, mark completed and return
+    if (startY >= targetY - 30) {
+      hasTriggeredBookshelfScroll = true;
+      return;
+    }
+
+    hasTriggeredBookshelfScroll = true;
+    isForcedScrolling = true;
+
+    var duration = 1400; // ms
+    var startTime = null;
+    var expectedY = startY;
+
+    // 1. Intercept user attempts to stop or interrupt the scroll
+    function blockInterruption(e) {
+      if (!isForcedScrolling) return;
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+      e.stopImmediatePropagation();
+    }
+
+    function blockKeyScroll(e) {
+      if (!isForcedScrolling) return;
+      var scrollKeys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " ", "Spacebar"];
+      if (scrollKeys.indexOf(e.key) !== -1 || e.keyCode === 32 || (e.keyCode >= 33 && e.keyCode <= 40)) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+        e.stopImmediatePropagation();
+      }
+    }
+
+    function enforceScrollPosition() {
+      if (!isForcedScrolling) return;
+      var currentY = window.pageYOffset || (document.documentElement ? document.documentElement.scrollTop : 0) || (document.body ? document.body.scrollTop : 0) || 0;
+      if (Math.abs(currentY - expectedY) > 2) {
+        window.scrollTo(0, expectedY);
+        if (document.documentElement) document.documentElement.scrollTop = expectedY;
+        if (document.body) document.body.scrollTop = expectedY;
+      }
+    }
+
+    // Capture listeners with non-passive flag
+    window.addEventListener("wheel", blockInterruption, { passive: false, capture: true });
+    window.addEventListener("touchmove", blockInterruption, { passive: false, capture: true });
+    window.addEventListener("touchstart", blockInterruption, { passive: false, capture: true });
+    window.addEventListener("keydown", blockKeyScroll, { capture: true });
+    window.addEventListener("scroll", enforceScrollPosition, { passive: false, capture: true });
+
+    // Temporarily ensure html/body doesn't fight rAF interpolation
+    var docEl = document.documentElement;
+    var origScrollBehavior = docEl ? docEl.style.scrollBehavior : "";
+    if (docEl) docEl.style.scrollBehavior = "auto";
+
+    // Cubic bezier easing (easeInOutCubic)
+    function easeInOutCubic(x) {
+      return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+    }
+
+    function cleanup() {
+      isForcedScrolling = false;
+      window.removeEventListener("wheel", blockInterruption, { capture: true });
+      window.removeEventListener("touchmove", blockInterruption, { capture: true });
+      window.removeEventListener("touchstart", blockInterruption, { capture: true });
+      window.removeEventListener("keydown", blockKeyScroll, { capture: true });
+      window.removeEventListener("scroll", enforceScrollPosition, { capture: true });
+      if (docEl) docEl.style.scrollBehavior = origScrollBehavior;
+
+      // Final precise alignment
+      var finalRect = targetEl.getBoundingClientRect();
+      var curY = window.pageYOffset || (document.documentElement ? document.documentElement.scrollTop : 0) || (document.body ? document.body.scrollTop : 0) || 0;
+      var finalY = Math.max(0, Math.round(finalRect.top + curY - headerHeight));
+      window.scrollTo(0, finalY);
+    }
+
+    function step(now) {
+      if (!startTime) startTime = now;
+      var elapsed = now - startTime;
+      var progress = Math.min(elapsed / duration, 1);
+      var eased = easeInOutCubic(progress);
+
+      // Re-evaluate targetY in case of responsive layout shifts
+      var currentScroll = window.pageYOffset || (document.documentElement ? document.documentElement.scrollTop : 0) || (document.body ? document.body.scrollTop : 0) || 0;
+      var currentRect = targetEl.getBoundingClientRect();
+      var dynamicTargetY = Math.max(0, Math.round(currentRect.top + currentScroll - headerHeight));
+
+      expectedY = Math.round(startY + (dynamicTargetY - startY) * eased);
+      window.scrollTo(0, expectedY);
+      if (document.documentElement) document.documentElement.scrollTop = expectedY;
+      if (document.body) document.body.scrollTop = expectedY;
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        cleanup();
+      }
+    }
+
+    requestAnimationFrame(step);
+  }
+
+  // Expose globally for testing and manual triggers
+  window.forceScrollToBookshelf = triggerForcedBookshelfScroll;
+
   resize();
   window.addEventListener("resize", resize);
 
@@ -1093,7 +1221,17 @@
   (function loop(now) {
     if (!running || !inView || document.hidden) { requestAnimationFrame(loop); return; }
     var t = ((now || performance.now()) - start) / 1000;
-    if (t >= T_END) { scene(T_END); finished = true; return; }
+    if (t >= 20.8 && !hasTriggeredBookshelfScroll) {
+      triggerForcedBookshelfScroll();
+    }
+    if (t >= T_END) {
+      scene(T_END);
+      finished = true;
+      if (!hasTriggeredBookshelfScroll) {
+        triggerForcedBookshelfScroll();
+      }
+      return;
+    }
     scene(t);
     requestAnimationFrame(loop);
   })();
