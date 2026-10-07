@@ -953,7 +953,7 @@
 
         resizeCanvas();
 
-        // Calculate Modal Target Rect
+        // Calculate Modal Target Rect (Fixed destination in viewport)
         var modalRect = containerEl ? containerEl.getBoundingClientRect() : null;
         var Mw = (modalRect && modalRect.width > 50) ? modalRect.width : Math.min(window.innerWidth * 0.92, 980);
         var Mh = (modalRect && modalRect.height > 50) ? modalRect.height : Math.min(window.innerHeight * 0.88, 640);
@@ -961,13 +961,13 @@
         var Mbot = Mtop + Mh;
         var Mcx = (modalRect && modalRect.left) ? (modalRect.left + Mw / 2) : (window.innerWidth / 2);
 
-        // Calculate Book Origin Rect (Anchor point on shelf)
+        // Calculate Book Origin Rect (Stable anchor on shelf)
         var bookRect = cardEl ? cardEl.getBoundingClientRect() : null;
-        var Bw = (bookRect && bookRect.width > 20) ? bookRect.width : 150;
-        var Bh = (bookRect && bookRect.height > 20) ? bookRect.height : 220;
+        var Bw = (bookRect && bookRect.width > 20) ? bookRect.width * 0.9 : 140;
+        var Bh = (bookRect && bookRect.height > 20) ? bookRect.height : 210;
         var Btop = (bookRect && bookRect.top) ? bookRect.top : (window.innerHeight - Bh - 60);
         var Bbot = Btop + Bh;
-        var Bcx = (bookRect && bookRect.left) ? (bookRect.left + Bw / 2) : (window.innerWidth / 2);
+        var Bcx = (bookRect && bookRect.left) ? (bookRect.left + bookRect.width / 2) : (window.innerWidth / 2);
 
         // Create snapshot canvas
         var snapshot = createSnapshot(data, Mw, Mh, bookId);
@@ -980,9 +980,9 @@
         var snapH = snapshot.height;
 
         isAnimating = true;
-        var duration = isOpening ? 440 : 400; // ms
+        var duration = isOpening ? 480 : 420; // Silky macOS timing (ms)
         var startTime = null;
-        var N = 48; // number of horizontal slices
+        var N = 64; // High slice density for mathematically smooth curvature
 
         function step(timestamp) {
           if (!startTime) startTime = timestamp;
@@ -991,18 +991,18 @@
 
           var pTop, pBot;
           if (isOpening) {
-            // Opening: Top shoots up first, bottom lingers at dock then accelerates
-            pTop = 1 - Math.pow(1 - t, 2.6);
-            pBot = t < 0.18 ? 0 : Math.pow((t - 0.18) / 0.82, 2.2);
+            // Opening: Smooth C^2 velocity profile (zero initial jerk, natural acceleration)
+            pTop = 1 - Math.pow(1 - t, 2.8);
+            pBot = Math.pow(t, 2.6);
           } else {
-            // Closing: Bottom collapses down into dock first, top follows
-            pBot = 1 - Math.min(1, Math.pow(t / 0.82, 2.2));
-            pTop = t < 0.18 ? 1 : 1 - Math.pow((t - 0.18) / 0.82, 2.6);
+            // Closing: Bottom accelerates into book first, top follows smoothly
+            pBot = 1 - (1 - Math.pow(1 - t, 2.6));
+            pTop = 1 - Math.pow(t, 2.8);
           }
 
           var Ytop = Btop + (Mtop - Btop) * pTop;
           var Ybot = Bbot + (Mbot - Bbot) * pBot;
-          var totalH = Math.max(2, Ybot - Ytop);
+          var totalH = Math.max(1, Ybot - Ytop);
 
           var Xbot = Bcx + (Mcx - Bcx) * pBot;
           var Xtop = Bcx + (Mcx - Bcx) * pTop;
@@ -1012,70 +1012,49 @@
 
           clearCanvas();
 
-          // Collect outer contour rails for drop shadow & glass sheen
+          // Collect outer contour rails for glass sheen
           var leftPath = [];
           var rightPath = [];
 
+          // Sliced Window Texture Warp with continuous exact boundaries (Zero jitter/drift)
           for (var i = 0; i < N; i++) {
-            var v = i / (N - 1); // 0 at top, 1 at bottom
-            var u = 1 - v;       // 1 at top, 0 at bottom
+            var v0 = i / N;
+            var v1 = (i + 1) / N;
 
-            var y = Ytop + totalH * v;
+            var y0 = Ytop + totalH * v0;
+            var y1 = Ytop + totalH * v1;
+            var dh = (y1 - y0) + 0.35; // 0.35px subpixel seam guard
+
+            var uMid = 1 - (v0 + v1) * 0.5;
 
             // Hermite cubic S-curve center
-            var s = 3 * u * u - 2 * u * u * u;
+            var s = uMid * uMid * (3 - 2 * uMid);
             var cx = Xbot + (Xtop - Xbot) * s;
 
-            // Non-linear waist profile (macOS flared trumpet)
-            var profile = Math.pow(u, 1.6);
-            var w = Math.max(12, Wbot + (Wtop - Wbot) * profile);
-            var x = cx - w / 2;
+            // Flared trumpet waist profile (macOS Catalina signature curve)
+            var profile = Math.pow(uMid, 1.55);
+            var w = Wbot + (Wtop - Wbot) * profile;
+            var x = cx - w * 0.5;
 
-            leftPath.push({ x: x, y: y });
-            rightPath.push({ x: x + w, y: y });
+            if (i === 0) {
+              leftPath.push({ x: cx - w * 0.5, y: y0 });
+              rightPath.push({ x: cx + w * 0.5, y: y0 });
+            }
+            leftPath.push({ x: x, y: y1 });
+            rightPath.push({ x: x + w, y: y1 });
+
+            // Continuous source partition (no rounding artifacts)
+            var sy = v0 * snapH;
+            var sh = (v1 - v0) * snapH;
+
+            ctx.drawImage(snapshot, 0, sy, snapW, sh, x, y0, w, dh);
           }
 
-          // 1. Soft Ambient Drop Shadow under Genie
-          var shadowProgress = isOpening ? Math.max(pBot, 0.2) : Math.max(pTop, 0.2);
-          ctx.save();
-          ctx.shadowColor = "rgba(15, 23, 42, " + (0.35 * shadowProgress) + ")";
-          ctx.shadowBlur = 24 * shadowProgress;
-          ctx.shadowOffsetX = 4;
-          ctx.shadowOffsetY = 12 * shadowProgress;
-
-          ctx.beginPath();
-          ctx.moveTo(leftPath[0].x, leftPath[0].y);
-          ctx.lineTo(rightPath[0].x, rightPath[0].y);
-          for (var rIdx = 0; rIdx < rightPath.length; rIdx++) {
-            ctx.lineTo(rightPath[rIdx].x, rightPath[rIdx].y);
-          }
-          for (var lIdx = leftPath.length - 1; lIdx >= 0; lIdx--) {
-            ctx.lineTo(leftPath[lIdx].x, leftPath[lIdx].y);
-          }
-          ctx.closePath();
-          ctx.fillStyle = "#edf2f8";
-          ctx.fill();
-          ctx.restore();
-
-          // 2. Sliced Window Texture Warp
-          for (var k = 0; k < N; k++) {
-            var vK = k / (N - 1);
-            var yK = leftPath[k].y;
-            var xK = leftPath[k].x;
-            var wK = rightPath[k].x - leftPath[k].x;
-            var dhK = (totalH / N) + 1.2;
-
-            var sy = Math.round(vK * (snapH - snapH / N));
-            var sh = Math.ceil(snapH / N);
-
-            ctx.drawImage(snapshot, 0, sy, snapW, sh, xK, yK, wK, dhK);
-          }
-
-          // 3. Liquid Outer Rails Glass Sheen (macOS Catalina contour highlight)
-          var edgeAlpha = isOpening ? (1 - t * 0.7) * 0.45 : (1 - (1 - t) * 0.7) * 0.45;
-          if (edgeAlpha > 0.05) {
+          // Liquid Outer Rails Glass Sheen (Subtle Catalina specular highlight)
+          var edgeAlpha = isOpening ? (1 - t) * 0.35 : t * 0.35;
+          if (edgeAlpha > 0.02) {
             ctx.save();
-            ctx.lineWidth = 1.6;
+            ctx.lineWidth = 1.2;
             ctx.strokeStyle = "rgba(255, 255, 255, " + edgeAlpha + ")";
 
             ctx.beginPath();
@@ -1097,10 +1076,21 @@
           if (t < 1) {
             activeAnimId = requestAnimationFrame(step);
           } else {
-            clearCanvas();
-            isAnimating = false;
-            activeAnimId = null;
-            if (callback) callback();
+            // Flicker-free handoff: reveal live DOM modal first
+            if (isOpening) {
+              overlay.classList.remove("is-genie-active");
+              overlay.classList.add("genie-settled");
+              if (callback) callback();
+            }
+            // Allow DOM paint to commit before clearing canvas to avoid 1-frame blank gap
+            requestAnimationFrame(function () {
+              clearCanvas();
+              isAnimating = false;
+              activeAnimId = null;
+              if (!isOpening && callback) {
+                callback();
+              }
+            });
           }
         }
 

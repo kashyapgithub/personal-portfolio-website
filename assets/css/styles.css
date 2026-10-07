@@ -2275,8 +2275,11 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  z-index: 9998;
+  z-index: 10000;
   opacity: 1;
+  filter: drop-shadow(0 20px 36px rgba(15, 23, 42, 0.32));
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .chapter-modal-overlay.is-genie-active .chapter-modal-container {
