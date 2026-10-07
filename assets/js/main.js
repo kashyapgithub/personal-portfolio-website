@@ -310,6 +310,8 @@
   (function initChapterReader() {
     var overlay = document.getElementById("chapter-modal-overlay");
     var backdrop = document.getElementById("chapter-modal-backdrop");
+    var containerEl = overlay ? overlay.querySelector(".chapter-modal-container") : null;
+    var genieCanvas = document.getElementById("genie-canvas");
     var closeBtn = document.getElementById("chapter-close-btn");
     var prevBtn = document.getElementById("chapter-prev-btn");
     var nextBtn = document.getElementById("chapter-next-btn");
@@ -671,7 +673,455 @@
       }
     }
 
+    /* ------------------------------------------------------------
+       macOS Catalina Dock Genie Animation Engine
+       ------------------------------------------------------------ */
+    var GenieFX = (function () {
+      var canvas = genieCanvas;
+      var ctx = canvas ? canvas.getContext("2d") : null;
+      var activeAnimId = null;
+      var isAnimating = false;
+
+      var THEME_COLORS = {
+        genie: { bg1: "#061917", bg2: "#0c332e", accent: "#00d4c8" },
+        mrp: { bg1: "#240b12", bg2: "#3e121d", accent: "#f43f5e" },
+        tui: { bg1: "#211606", bg2: "#3a270d", accent: "#ffa42b" },
+        dryrun: { bg1: "#091728", bg2: "#122b4a", accent: "#38bdf8" },
+        cred: { bg1: "#161514", bg2: "#292622", accent: "#e5c07b" },
+        fyers: { bg1: "#091c16", bg2: "#132f25", accent: "#10b981" },
+        imagine: { bg1: "#1b0e2f", bg2: "#311854", accent: "#a855f7" },
+        zomato: { bg1: "#260a0f", bg2: "#3e1218", accent: "#fbbf24" },
+        cloud: { bg1: "#091a24", bg2: "#102e3f", accent: "#2dd4bf" }
+      };
+
+      function resizeCanvas() {
+        if (!canvas) return;
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var w = window.innerWidth;
+        var h = window.innerHeight;
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+        if (ctx) {
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+      }
+
+      window.addEventListener("resize", resizeCanvas);
+
+      function clearCanvas() {
+        if (!ctx || !canvas) return;
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+      }
+
+      function drawRoundRect(c, x, y, w, h, r) {
+        if (c.roundRect) {
+          c.roundRect(x, y, w, h, r);
+          return;
+        }
+        if (w < 2 * r) r = w / 2;
+        if (h < 2 * r) r = h / 2;
+        c.moveTo(x + r, y);
+        c.arcTo(x + w, y, x + w, y + h, r);
+        c.arcTo(x + w, y + h, x, y + h, r);
+        c.arcTo(x, y + h, x, y, r);
+        c.arcTo(x, y, x + w, y, r);
+        c.closePath();
+      }
+
+      function createSnapshot(data, width, height, bookId) {
+        if (!width || !height) return null;
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var offCanvas = document.createElement("canvas");
+        offCanvas.width = Math.round(width * dpr);
+        offCanvas.height = Math.round(height * dpr);
+        var sctx = offCanvas.getContext("2d");
+        if (!sctx) return null;
+        sctx.scale(dpr, dpr);
+
+        var theme = THEME_COLORS[bookId] || THEME_COLORS.genie;
+
+        // Base Neumorphic Modal Plate
+        sctx.save();
+        sctx.beginPath();
+        drawRoundRect(sctx, 0, 0, width, height, 28);
+        sctx.fillStyle = "#edf2f8";
+        sctx.fill();
+        sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+        sctx.lineWidth = 1.5;
+        sctx.stroke();
+
+        // Top Navigation Bar
+        var pillX = 28, pillY = 22, pillW = 145, pillH = 30;
+        sctx.beginPath();
+        drawRoundRect(sctx, pillX, pillY, pillW, pillH, 15);
+        sctx.fillStyle = "#e2e8f0";
+        sctx.fill();
+        sctx.fillStyle = "#0284c7";
+        sctx.font = "700 11px 'Courier New', monospace";
+        sctx.fillText("CHAPTER " + (data.chapterNum || "01") + " OF 09", pillX + 16, pillY + 19);
+
+        // Close Button in Header
+        var closeX = width - 64, closeY = 20;
+        sctx.beginPath();
+        drawRoundRect(sctx, closeX, closeY, 36, 36, 10);
+        sctx.fillStyle = "#e2e8f0";
+        sctx.fill();
+        sctx.strokeStyle = "#64748b";
+        sctx.lineWidth = 2;
+        sctx.beginPath();
+        sctx.moveTo(closeX + 11, closeY + 11);
+        sctx.lineTo(closeX + 25, closeY + 25);
+        sctx.moveTo(closeX + 25, closeY + 11);
+        sctx.lineTo(closeX + 11, closeY + 25);
+        sctx.stroke();
+
+        // Divider
+        sctx.beginPath();
+        sctx.moveTo(28, 68);
+        sctx.lineTo(width - 28, 68);
+        sctx.strokeStyle = "rgba(166, 178, 195, 0.4)";
+        sctx.lineWidth = 1;
+        sctx.stroke();
+
+        // Layout Columns
+        var isTwoCol = width >= 700;
+        var artColW = isTwoCol ? 260 : width - 56;
+        var startY = 86;
+
+        // Artwork Card (Left Column)
+        var artCardH = isTwoCol ? 280 : 190;
+        sctx.beginPath();
+        drawRoundRect(sctx, 28, startY, artColW, artCardH, 18);
+        sctx.fillStyle = "#e8eef6";
+        sctx.fill();
+
+        // Book Cover 3D Clone
+        var bW = isTwoCol ? 150 : 110;
+        var bH = isTwoCol ? 200 : 140;
+        var bX = 28 + (artColW - bW) / 2;
+        var bY = startY + 18;
+
+        var bookGrad = sctx.createLinearGradient(bX, bY, bX + bW, bY + bH);
+        bookGrad.addColorStop(0, theme.bg1);
+        bookGrad.addColorStop(0.5, theme.bg2);
+        bookGrad.addColorStop(1, theme.bg1);
+
+        sctx.beginPath();
+        drawRoundRect(sctx, bX, bY, bW, bH, 8);
+        sctx.fillStyle = bookGrad;
+        sctx.fill();
+        sctx.strokeStyle = theme.accent;
+        sctx.lineWidth = 1;
+        sctx.stroke();
+
+        // Spine Line
+        sctx.fillStyle = theme.accent;
+        sctx.fillRect(bX + 8, bY + 12, 2, bH - 24);
+
+        // Book Cover Text
+        sctx.fillStyle = theme.accent;
+        sctx.font = "700 9px monospace";
+        sctx.fillText("CHAPTER " + (data.chapterNum || "01"), bX + 16, bY + 32);
+
+        sctx.fillStyle = "#ffffff";
+        sctx.font = "700 12px sans-serif";
+        var titleWord = (data.title || "").split(":")[0];
+        sctx.fillText(titleWord.slice(0, 16), bX + 16, bY + 52);
+
+        // Era Stamp under Artwork
+        var eraY = startY + artCardH - 34;
+        sctx.beginPath();
+        drawRoundRect(sctx, 42, eraY, artColW - 28, 22, 11);
+        sctx.fillStyle = "#edf2f8";
+        sctx.fill();
+        sctx.fillStyle = "#64748b";
+        sctx.font = "700 9px monospace";
+        sctx.textAlign = "center";
+        sctx.fillText((data.era || "").slice(0, 34), 42 + (artColW - 28) / 2, eraY + 15);
+        sctx.textAlign = "left";
+
+        // Metrics Card
+        var metY = startY + artCardH + 16;
+        var metH = 130;
+        sctx.beginPath();
+        drawRoundRect(sctx, 28, metY, artColW, metH, 14);
+        sctx.fillStyle = "#e8eef6";
+        sctx.fill();
+        sctx.fillStyle = "#64748b";
+        sctx.font = "700 10px monospace";
+        sctx.fillText("KEY METRICS · PLATFORM", 40, metY + 22);
+
+        if (data.metrics && data.metrics.length) {
+          data.metrics.slice(0, 4).forEach(function (m, idx) {
+            var my = metY + 44 + idx * 22;
+            sctx.fillStyle = "#64748b";
+            sctx.font = "11px monospace";
+            sctx.fillText(m.label, 40, my);
+            sctx.fillStyle = "#0f172a";
+            sctx.font = "700 11px monospace";
+            sctx.textAlign = "right";
+            sctx.fillText(m.val, 28 + artColW - 12, my);
+            sctx.textAlign = "left";
+          });
+        }
+
+        // Right Column (Editorial Story)
+        var storyX = isTwoCol ? 28 + artColW + 28 : 28;
+        var storyW = width - storyX - 28;
+        var sY = isTwoCol ? startY : metY + metH + 18;
+
+        // Eyebrow Category
+        sctx.fillStyle = "#0284c7";
+        sctx.font = "700 11px monospace";
+        sctx.fillText(data.category || "", storyX, sY + 12);
+
+        // Main Title
+        sctx.fillStyle = "#0f172a";
+        sctx.font = "800 22px sans-serif";
+        sctx.fillText(data.title || "", storyX, sY + 40);
+
+        // Subtitle / Tagline
+        sctx.fillStyle = "#475569";
+        sctx.font = "500 13px sans-serif";
+        sctx.fillText(data.tagline || "", storyX, sY + 64);
+
+        // Quote Box
+        var qY = sY + 82;
+        sctx.beginPath();
+        drawRoundRect(sctx, storyX, qY, storyW, 60, 10);
+        sctx.fillStyle = "#f8fafc";
+        sctx.fill();
+        sctx.fillStyle = "#0284c7";
+        sctx.fillRect(storyX, qY, 4, 60);
+
+        sctx.fillStyle = "#334155";
+        sctx.font = "italic 12px Georgia, serif";
+        var qClean = (data.quote || "").replace(/[“”"]/g, "");
+        sctx.fillText('"' + qClean.slice(0, 75) + '...', storyX + 16, qY + 26);
+        if (qClean.length > 75) {
+          sctx.fillText(qClean.slice(75, 145) + '"', storyX + 16, qY + 44);
+        }
+
+        // Narrative Section
+        var nY = qY + 76;
+        sctx.fillStyle = "#64748b";
+        sctx.font = "700 10px monospace";
+        sctx.fillText("THE STORY BEHIND THIS CHAPTER", storyX, nY);
+
+        if (data.narrative && data.narrative.length) {
+          sctx.fillStyle = "#334155";
+          sctx.font = "12px sans-serif";
+          var p1 = data.narrative[0] || "";
+          sctx.fillText(p1.slice(0, 70), storyX, nY + 20);
+          sctx.fillText(p1.slice(70, 140), storyX, nY + 36);
+          sctx.fillText(p1.slice(140, 210) + "...", storyX, nY + 52);
+        }
+
+        // Action Buttons at Bottom
+        var btnY = height - 54;
+        sctx.beginPath();
+        drawRoundRect(sctx, storyX, btnY, 175, 38, 10);
+        sctx.fillStyle = "#0284c7";
+        sctx.fill();
+        sctx.fillStyle = "#ffffff";
+        sctx.font = "700 12px sans-serif";
+        sctx.fillText("Read Next Chapter →", storyX + 20, btnY + 24);
+
+        sctx.restore();
+        return offCanvas;
+      }
+
+      function animateGenie(isOpening, cardEl, overlay, containerEl, data, bookId, callback) {
+        if (!canvas || !ctx) {
+          if (callback) callback();
+          return;
+        }
+
+        var prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (prefersReduced) {
+          if (callback) callback();
+          return;
+        }
+
+        if (activeAnimId) {
+          cancelAnimationFrame(activeAnimId);
+          activeAnimId = null;
+        }
+
+        resizeCanvas();
+
+        // Calculate Modal Target Rect
+        var modalRect = containerEl ? containerEl.getBoundingClientRect() : null;
+        var Mw = (modalRect && modalRect.width > 50) ? modalRect.width : Math.min(window.innerWidth * 0.92, 980);
+        var Mh = (modalRect && modalRect.height > 50) ? modalRect.height : Math.min(window.innerHeight * 0.88, 640);
+        var Mtop = (modalRect && modalRect.top) ? modalRect.top : (window.innerHeight - Mh) / 2;
+        var Mbot = Mtop + Mh;
+        var Mcx = (modalRect && modalRect.left) ? (modalRect.left + Mw / 2) : (window.innerWidth / 2);
+
+        // Calculate Book Origin Rect (Anchor point on shelf)
+        var bookRect = cardEl ? cardEl.getBoundingClientRect() : null;
+        var Bw = (bookRect && bookRect.width > 20) ? bookRect.width : 150;
+        var Bh = (bookRect && bookRect.height > 20) ? bookRect.height : 220;
+        var Btop = (bookRect && bookRect.top) ? bookRect.top : (window.innerHeight - Bh - 60);
+        var Bbot = Btop + Bh;
+        var Bcx = (bookRect && bookRect.left) ? (bookRect.left + Bw / 2) : (window.innerWidth / 2);
+
+        // Create snapshot canvas
+        var snapshot = createSnapshot(data, Mw, Mh, bookId);
+        if (!snapshot) {
+          if (callback) callback();
+          return;
+        }
+
+        var snapW = snapshot.width;
+        var snapH = snapshot.height;
+
+        isAnimating = true;
+        var duration = isOpening ? 440 : 400; // ms
+        var startTime = null;
+        var N = 48; // number of horizontal slices
+
+        function step(timestamp) {
+          if (!startTime) startTime = timestamp;
+          var elapsed = timestamp - startTime;
+          var t = Math.min(1, elapsed / duration);
+
+          var pTop, pBot;
+          if (isOpening) {
+            // Opening: Top shoots up first, bottom lingers at dock then accelerates
+            pTop = 1 - Math.pow(1 - t, 2.6);
+            pBot = t < 0.18 ? 0 : Math.pow((t - 0.18) / 0.82, 2.2);
+          } else {
+            // Closing: Bottom collapses down into dock first, top follows
+            pBot = 1 - Math.min(1, Math.pow(t / 0.82, 2.2));
+            pTop = t < 0.18 ? 1 : 1 - Math.pow((t - 0.18) / 0.82, 2.6);
+          }
+
+          var Ytop = Btop + (Mtop - Btop) * pTop;
+          var Ybot = Bbot + (Mbot - Bbot) * pBot;
+          var totalH = Math.max(2, Ybot - Ytop);
+
+          var Xbot = Bcx + (Mcx - Bcx) * pBot;
+          var Xtop = Bcx + (Mcx - Bcx) * pTop;
+
+          var Wbot = Bw + (Mw - Bw) * pBot;
+          var Wtop = Bw + (Mw - Bw) * pTop;
+
+          clearCanvas();
+
+          // Collect outer contour rails for drop shadow & glass sheen
+          var leftPath = [];
+          var rightPath = [];
+
+          for (var i = 0; i < N; i++) {
+            var v = i / (N - 1); // 0 at top, 1 at bottom
+            var u = 1 - v;       // 1 at top, 0 at bottom
+
+            var y = Ytop + totalH * v;
+
+            // Hermite cubic S-curve center
+            var s = 3 * u * u - 2 * u * u * u;
+            var cx = Xbot + (Xtop - Xbot) * s;
+
+            // Non-linear waist profile (macOS flared trumpet)
+            var profile = Math.pow(u, 1.6);
+            var w = Math.max(12, Wbot + (Wtop - Wbot) * profile);
+            var x = cx - w / 2;
+
+            leftPath.push({ x: x, y: y });
+            rightPath.push({ x: x + w, y: y });
+          }
+
+          // 1. Soft Ambient Drop Shadow under Genie
+          var shadowProgress = isOpening ? Math.max(pBot, 0.2) : Math.max(pTop, 0.2);
+          ctx.save();
+          ctx.shadowColor = "rgba(15, 23, 42, " + (0.35 * shadowProgress) + ")";
+          ctx.shadowBlur = 24 * shadowProgress;
+          ctx.shadowOffsetX = 4;
+          ctx.shadowOffsetY = 12 * shadowProgress;
+
+          ctx.beginPath();
+          ctx.moveTo(leftPath[0].x, leftPath[0].y);
+          ctx.lineTo(rightPath[0].x, rightPath[0].y);
+          for (var rIdx = 0; rIdx < rightPath.length; rIdx++) {
+            ctx.lineTo(rightPath[rIdx].x, rightPath[rIdx].y);
+          }
+          for (var lIdx = leftPath.length - 1; lIdx >= 0; lIdx--) {
+            ctx.lineTo(leftPath[lIdx].x, leftPath[lIdx].y);
+          }
+          ctx.closePath();
+          ctx.fillStyle = "#edf2f8";
+          ctx.fill();
+          ctx.restore();
+
+          // 2. Sliced Window Texture Warp
+          for (var k = 0; k < N; k++) {
+            var vK = k / (N - 1);
+            var yK = leftPath[k].y;
+            var xK = leftPath[k].x;
+            var wK = rightPath[k].x - leftPath[k].x;
+            var dhK = (totalH / N) + 1.2;
+
+            var sy = Math.round(vK * (snapH - snapH / N));
+            var sh = Math.ceil(snapH / N);
+
+            ctx.drawImage(snapshot, 0, sy, snapW, sh, xK, yK, wK, dhK);
+          }
+
+          // 3. Liquid Outer Rails Glass Sheen (macOS Catalina contour highlight)
+          var edgeAlpha = isOpening ? (1 - t * 0.7) * 0.45 : (1 - (1 - t) * 0.7) * 0.45;
+          if (edgeAlpha > 0.05) {
+            ctx.save();
+            ctx.lineWidth = 1.6;
+            ctx.strokeStyle = "rgba(255, 255, 255, " + edgeAlpha + ")";
+
+            ctx.beginPath();
+            for (var m = 0; m < leftPath.length; m++) {
+              if (m === 0) ctx.moveTo(leftPath[m].x, leftPath[m].y);
+              else ctx.lineTo(leftPath[m].x, leftPath[m].y);
+            }
+            ctx.stroke();
+
+            ctx.beginPath();
+            for (var n = 0; n < rightPath.length; n++) {
+              if (n === 0) ctx.moveTo(rightPath[n].x, rightPath[n].y);
+              else ctx.lineTo(rightPath[n].x, rightPath[n].y);
+            }
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          if (t < 1) {
+            activeAnimId = requestAnimationFrame(step);
+          } else {
+            clearCanvas();
+            isAnimating = false;
+            activeAnimId = null;
+            if (callback) callback();
+          }
+        }
+
+        activeAnimId = requestAnimationFrame(step);
+      }
+
+      return {
+        open: function (cardEl, overlay, containerEl, data, bookId, cb) {
+          animateGenie(true, cardEl, overlay, containerEl, data, bookId, cb);
+        },
+        close: function (cardEl, overlay, containerEl, data, bookId, cb) {
+          animateGenie(false, cardEl, overlay, containerEl, data, bookId, cb);
+        },
+        isBusy: function () {
+          return isAnimating;
+        }
+      };
+    })();
+
     function openChapter(bookId, cardEl) {
+      if (GenieFX.isBusy()) return;
       var idx = CHAPTER_KEYS.indexOf(bookId);
       if (idx === -1) idx = 0;
       currentTriggerCard = cardEl;
@@ -683,42 +1133,61 @@
         }
       });
 
-      // Play smooth 3D physical book opening animation
+      // Play smooth 3D physical book opening animation on the shelf
       if (cardEl) {
         cardEl.classList.remove("is-closing");
         cardEl.classList.add("is-opening");
       }
 
-      // Allow 380ms for the realistic 3D book cover to swing open smoothly
+      // Allow 320ms for the 3D book cover to swing open, then launch macOS Genie
       setTimeout(function () {
         renderChapter(idx);
-        overlay.classList.add("is-active");
+        var key = CHAPTER_KEYS[idx];
+        var data = CHAPTERS[key];
+
+        overlay.classList.remove("genie-settled");
+        overlay.classList.add("is-active", "is-genie-active");
         overlay.setAttribute("aria-hidden", "false");
         document.body.style.overflow = "hidden";
 
-        if (closeBtn) {
-          closeBtn.focus();
-        }
-      }, 380);
+        GenieFX.open(cardEl, overlay, containerEl, data, key, function () {
+          overlay.classList.remove("is-genie-active");
+          overlay.classList.add("genie-settled");
+          if (closeBtn) {
+            closeBtn.focus();
+          }
+        });
+      }, 320);
     }
 
     function closeChapter() {
-      overlay.classList.remove("is-active");
-      overlay.setAttribute("aria-hidden", "true");
-      document.body.style.overflow = "";
+      if (GenieFX.isBusy()) return;
+      if (!overlay.classList.contains("is-active")) return;
 
-      // Smoothly fold the book back shut onto the shelf
-      if (currentTriggerCard) {
-        var cardToClose = currentTriggerCard;
-        cardToClose.classList.remove("is-opening");
-        cardToClose.classList.add("is-closing");
+      var key = CHAPTER_KEYS[currentChapterIndex];
+      var data = CHAPTERS[key];
+      var cardToClose = currentTriggerCard || document.querySelector('.book-card[data-book-id="' + key + '"]');
 
-        setTimeout(function () {
-          cardToClose.classList.remove("is-closing");
-        }, 420);
+      overlay.classList.remove("genie-settled");
+      overlay.classList.add("is-genie-active");
 
-        cardToClose.focus();
-      }
+      GenieFX.close(cardToClose, overlay, containerEl, data, key, function () {
+        overlay.classList.remove("is-active", "is-genie-active");
+        overlay.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+
+        // Smoothly fold the book back shut onto the shelf
+        if (cardToClose) {
+          cardToClose.classList.remove("is-opening");
+          cardToClose.classList.add("is-closing");
+
+          setTimeout(function () {
+            cardToClose.classList.remove("is-closing");
+          }, 450);
+
+          cardToClose.focus();
+        }
+      });
     }
 
     function prevChapter() {

@@ -2266,6 +2266,32 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   -webkit-backdrop-filter: blur(14px);
 }
 
+/* ============================================================
+   macOS Catalina Genie Effect Canvas & Window Warp
+   ============================================================ */
+.genie-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 1;
+}
+
+.chapter-modal-overlay.is-genie-active .chapter-modal-container {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+.chapter-modal-overlay.genie-settled .chapter-modal-container {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
+
 .chapter-modal-container {
   position: relative;
   z-index: 10;
