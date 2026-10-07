@@ -743,27 +743,56 @@
         drawRoundRect(sctx, 0, 0, width, height, 28);
         sctx.fillStyle = "#edf2f8";
         sctx.fill();
-        sctx.strokeStyle = "rgba(255, 255, 255, 0.85)";
+        sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
         sctx.lineWidth = 1.5;
         sctx.stroke();
 
         // Top Navigation Bar
-        var pillX = 28, pillY = 20, pillW = 150, pillH = 28;
+        var pillX = 36, pillY = 22, pillW = 150, pillH = 28;
         sctx.beginPath();
         drawRoundRect(sctx, pillX, pillY, pillW, pillH, 14);
         sctx.fillStyle = "#edf2f8";
         sctx.fill();
-        sctx.strokeStyle = "rgba(166, 178, 195, 0.4)";
+        sctx.strokeStyle = "rgba(166, 178, 195, 0.45)";
         sctx.lineWidth = 1;
         sctx.stroke();
         sctx.fillStyle = "#0284c7";
         sctx.font = "700 11px monospace";
         sctx.fillText("CHAPTER " + (data.chapterNum || "01") + " OF 09", pillX + 14, pillY + 18);
 
-        // Close Button in Header
-        var closeX = width - 64, closeY = 16;
+        // Header Navigation Controls (Prev / Next / Close)
+        var btnW = 104, btnH = 32, btnY = 20;
+        var prevX = width - 280;
+        var nextX = width - 165;
+        var closeX = width - 52, closeSize = 34;
+
+        // Prev Chapter Button
         sctx.beginPath();
-        drawRoundRect(sctx, closeX, closeY, 36, 36, 10);
+        drawRoundRect(sctx, prevX, btnY, btnW, btnH, 10);
+        sctx.fillStyle = "#edf2f8";
+        sctx.fill();
+        sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+        sctx.lineWidth = 1;
+        sctx.stroke();
+        sctx.fillStyle = "#334155";
+        sctx.font = "600 11px monospace";
+        sctx.fillText("‹ Prev Chapter", prevX + 12, btnY + 20);
+
+        // Next Chapter Button
+        sctx.beginPath();
+        drawRoundRect(sctx, nextX, btnY, btnW, btnH, 10);
+        sctx.fillStyle = "#edf2f8";
+        sctx.fill();
+        sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+        sctx.lineWidth = 1;
+        sctx.stroke();
+        sctx.fillStyle = "#334155";
+        sctx.font = "600 11px monospace";
+        sctx.fillText("Next Chapter ›", nextX + 12, btnY + 20);
+
+        // Close Button (Square Pill)
+        sctx.beginPath();
+        drawRoundRect(sctx, closeX, btnY - 1, closeSize, closeSize, 10);
         sctx.fillStyle = "#edf2f8";
         sctx.fill();
         sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
@@ -772,40 +801,40 @@
         sctx.strokeStyle = "#64748b";
         sctx.lineWidth = 2;
         sctx.beginPath();
-        sctx.moveTo(closeX + 12, closeY + 12);
-        sctx.lineTo(closeX + 24, closeY + 24);
-        sctx.moveTo(closeX + 24, closeY + 12);
-        sctx.lineTo(closeX + 12, closeY + 24);
+        sctx.moveTo(closeX + 11, btnY + 10);
+        sctx.lineTo(closeX + 23, btnY + 22);
+        sctx.moveTo(closeX + 23, btnY + 10);
+        sctx.lineTo(closeX + 11, btnY + 22);
         sctx.stroke();
 
         // Header Divider
         sctx.beginPath();
-        sctx.moveTo(28, 62);
-        sctx.lineTo(width - 28, 62);
-        sctx.strokeStyle = "rgba(166, 178, 195, 0.35)";
+        sctx.moveTo(36, 68);
+        sctx.lineTo(width - 36, 68);
+        sctx.strokeStyle = "rgba(166, 178, 195, 0.4)";
         sctx.lineWidth = 1;
         sctx.stroke();
 
-        // Layout Columns
+        // Layout Columns (2-Column Desktop Grid)
         var isTwoCol = width >= 700;
-        var artColW = isTwoCol ? 260 : width - 56;
-        var startY = 78;
+        var artColW = isTwoCol ? 280 : width - 72;
+        var startY = 88;
 
         // Artwork Card (Left Column)
-        var artCardH = isTwoCol ? 280 : 190;
+        var artCardH = 340;
         sctx.beginPath();
-        drawRoundRect(sctx, 28, startY, artColW, artCardH, 20);
+        drawRoundRect(sctx, 36, startY, artColW, artCardH, 20);
         sctx.fillStyle = "#edf2f8";
         sctx.fill();
         sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
         sctx.lineWidth = 1;
         sctx.stroke();
 
-        // Book Cover 3D Clone
-        var bW = isTwoCol ? 140 : 100;
-        var bH = isTwoCol ? 190 : 135;
-        var bX = 28 + (artColW - bW) / 2;
-        var bY = startY + 16;
+        // 3D Book Cover inside Artwork Card
+        var bW = 190;
+        var bH = 265;
+        var bX = 36 + (artColW - bW) / 2;
+        var bY = startY + 20;
 
         var bookGrad = sctx.createLinearGradient(bX, bY, bX + bW, bY + bH);
         bookGrad.addColorStop(0, theme.bg1);
@@ -813,7 +842,7 @@
         bookGrad.addColorStop(1, theme.bg1);
 
         sctx.beginPath();
-        drawRoundRect(sctx, bX, bY, bW, bH, 8);
+        drawRoundRect(sctx, bX, bY, bW, bH, 10);
         sctx.fillStyle = bookGrad;
         sctx.fill();
         sctx.strokeStyle = theme.accent;
@@ -822,22 +851,47 @@
 
         // Book Spine & Accent line
         sctx.fillStyle = theme.accent;
-        sctx.fillRect(bX + 8, bY + 12, 2, bH - 24);
+        sctx.fillRect(bX + 10, bY + 14, 2, bH - 28);
 
-        // Book Cover Text
+        // Book Cover Badges
         sctx.fillStyle = theme.accent;
         sctx.font = "700 9px monospace";
-        sctx.fillText("CH. " + (data.chapterNum || "01"), bX + 16, bY + 30);
+        sctx.fillText("HFT · 12–100 μs", bX + 18, bY + 28);
+        sctx.fillText("CH. " + (data.chapterNum || "01"), bX + bW - 48, bY + 28);
 
+        // Book Cover Central Radar Reticle
+        var iconCx = bX + bW / 2;
+        var iconCy = bY + bH / 2 - 8;
+        sctx.beginPath();
+        sctx.arc(iconCx, iconCy, 24, 0, Math.PI * 2);
+        sctx.strokeStyle = theme.accent;
+        sctx.lineWidth = 1.2;
+        sctx.stroke();
+        sctx.beginPath();
+        sctx.arc(iconCx, iconCy, 14, 0, Math.PI * 2);
+        sctx.strokeStyle = theme.accent;
+        sctx.stroke();
+        sctx.beginPath();
+        sctx.moveTo(iconCx - 32, iconCy);
+        sctx.lineTo(iconCx + 32, iconCy);
+        sctx.moveTo(iconCx, iconCy - 32);
+        sctx.lineTo(iconCx, iconCy + 32);
+        sctx.strokeStyle = theme.accent;
+        sctx.stroke();
+
+        // Book Cover Bottom Titles
+        sctx.fillStyle = theme.accent;
+        sctx.font = "700 8px monospace";
+        sctx.fillText("ALPHA GENERATION", bX + 18, bY + bH - 34);
         sctx.fillStyle = "#ffffff";
-        sctx.font = "700 13px sans-serif";
+        sctx.font = "800 13px sans-serif";
         var titleWord = (data.title || "").split(":")[0];
-        sctx.fillText(titleWord.slice(0, 16), bX + 16, bY + 50);
+        sctx.fillText(titleWord.slice(0, 16), bX + 18, bY + bH - 18);
 
         // Era Stamp under Artwork
         var eraY = startY + artCardH - 32;
         sctx.beginPath();
-        drawRoundRect(sctx, 42, eraY, artColW - 28, 22, 11);
+        drawRoundRect(sctx, 52, eraY, artColW - 32, 22, 11);
         sctx.fillStyle = "#edf2f8";
         sctx.fill();
         sctx.strokeStyle = "rgba(166, 178, 195, 0.4)";
@@ -846,14 +900,14 @@
         sctx.fillStyle = "#64748b";
         sctx.font = "700 9px monospace";
         sctx.textAlign = "center";
-        sctx.fillText((data.era || "").slice(0, 34), 42 + (artColW - 28) / 2, eraY + 15);
+        sctx.fillText((data.era || "").slice(0, 36), 52 + (artColW - 32) / 2, eraY + 15);
         sctx.textAlign = "left";
 
-        // Metrics Card
-        var metY = startY + artCardH + 16;
-        var metH = 130;
+        // Key Metrics Card
+        var metY = startY + artCardH + 18;
+        var metH = 135;
         sctx.beginPath();
-        drawRoundRect(sctx, 28, metY, artColW, metH, 16);
+        drawRoundRect(sctx, 36, metY, artColW, metH, 16);
         sctx.fillStyle = "#edf2f8";
         sctx.fill();
         sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
@@ -861,26 +915,58 @@
         sctx.stroke();
         sctx.fillStyle = "#64748b";
         sctx.font = "700 9px monospace";
-        sctx.fillText("KEY METRICS · PLATFORM", 40, metY + 22);
+        sctx.fillText("KEY METRICS · PLATFORM", 48, metY + 22);
 
         if (data.metrics && data.metrics.length) {
           data.metrics.slice(0, 4).forEach(function (m, idx) {
             var my = metY + 44 + idx * 22;
             sctx.fillStyle = "#64748b";
             sctx.font = "11px monospace";
-            sctx.fillText(m.label, 40, my);
+            sctx.fillText(m.label, 48, my);
             sctx.fillStyle = "#0f172a";
             sctx.font = "700 11px monospace";
             sctx.textAlign = "right";
-            sctx.fillText(m.val, 28 + artColW - 12, my);
+            sctx.fillText(m.val, 36 + artColW - 14, my);
             sctx.textAlign = "left";
           });
         }
 
+        // Domain Tags Card
+        var tagsY = metY + metH + 18;
+        var tagsH = 80;
+        sctx.beginPath();
+        drawRoundRect(sctx, 36, tagsY, artColW, tagsH, 16);
+        sctx.fillStyle = "#edf2f8";
+        sctx.fill();
+        sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+        sctx.lineWidth = 1;
+        sctx.stroke();
+        sctx.fillStyle = "#64748b";
+        sctx.font = "700 9px monospace";
+        sctx.fillText("DOMAIN · ARTIFACTS", 48, tagsY + 22);
+
+        if (data.tags && data.tags.length) {
+          var tx = 48, ty = tagsY + 36;
+          data.tags.slice(0, 4).forEach(function (tag) {
+            var tagW = Math.min(100, tag.length * 7 + 14);
+            sctx.beginPath();
+            drawRoundRect(sctx, tx, ty, tagW, 20, 6);
+            sctx.fillStyle = "#edf2f8";
+            sctx.fill();
+            sctx.strokeStyle = "rgba(166, 178, 195, 0.4)";
+            sctx.lineWidth = 1;
+            sctx.stroke();
+            sctx.fillStyle = "#475569";
+            sctx.font = "600 9px monospace";
+            sctx.fillText(tag.slice(0, 14), tx + 6, ty + 14);
+            tx += tagW + 6;
+          });
+        }
+
         // Right Column (Editorial Story)
-        var storyX = isTwoCol ? 28 + artColW + 28 : 28;
-        var storyW = width - storyX - 28;
-        var sY = isTwoCol ? startY : metY + metH + 18;
+        var storyX = isTwoCol ? 36 + artColW + 36 : 36;
+        var storyW = width - storyX - 36;
+        var sY = isTwoCol ? startY : tagsY + tagsH + 18;
 
         // Eyebrow Category
         sctx.fillStyle = "#0284c7";
@@ -900,50 +986,70 @@
         // Quote Box (Bright Neumorphic with Left Blue Border)
         var qY = sY + 84;
         sctx.beginPath();
-        drawRoundRect(sctx, storyX, qY, storyW, 56, 8);
+        drawRoundRect(sctx, storyX, qY, storyW, 58, 8);
         sctx.fillStyle = "#edf2f8";
         sctx.fill();
         sctx.strokeStyle = "rgba(166, 178, 195, 0.4)";
         sctx.lineWidth = 1;
         sctx.stroke();
         sctx.fillStyle = "#0284c7";
-        sctx.fillRect(storyX, qY, 3.5, 56);
+        sctx.fillRect(storyX, qY, 3.5, 58);
 
         sctx.fillStyle = "#334155";
         sctx.font = "italic 12px Georgia, serif";
         var qClean = (data.quote || "").replace(/[“”"]/g, "");
-        sctx.fillText('"' + qClean.slice(0, 75) + '...', storyX + 16, qY + 24);
-        if (qClean.length > 75) {
-          sctx.fillText(qClean.slice(75, 145) + '"', storyX + 16, qY + 42);
+        sctx.fillText('"' + qClean.slice(0, 80) + '...', storyX + 16, qY + 24);
+        if (qClean.length > 80) {
+          sctx.fillText(qClean.slice(80, 160) + '"', storyX + 16, qY + 44);
         }
 
         // Narrative Section
-        var nY = qY + 74;
+        var nY = qY + 76;
         sctx.fillStyle = "#64748b";
         sctx.font = "700 10px monospace";
         sctx.fillText("THE STORY BEHIND THIS CHAPTER", storyX, nY);
 
         if (data.narrative && data.narrative.length) {
+          // Drop cap
+          var firstChar = data.narrative[0].charAt(0);
+          sctx.fillStyle = "#0284c7";
+          sctx.font = "800 36px Georgia, serif";
+          sctx.fillText(firstChar, storyX, nY + 36);
+
           sctx.fillStyle = "#334155";
           sctx.font = "12px sans-serif";
-          var p1 = data.narrative[0] || "";
-          sctx.fillText(p1.slice(0, 70), storyX, nY + 20);
-          sctx.fillText(p1.slice(70, 140), storyX, nY + 36);
-          sctx.fillText(p1.slice(140, 210) + "...", storyX, nY + 52);
+          var restP1 = data.narrative[0].slice(1);
+          sctx.fillText(restP1.slice(0, 72), storyX + 32, nY + 18);
+          sctx.fillText(restP1.slice(72, 150), storyX + 32, nY + 34);
+          sctx.fillText(restP1.slice(150, 230), storyX, nY + 52);
+          sctx.fillText(restP1.slice(230, 310) + "...", storyX, nY + 68);
         }
 
-        // Action Buttons at Bottom (Bright Primary Blue Button)
-        var btnY = height - 54;
+        // Architectural Footprint & Lessons Box
+        var footY = nY + 92;
+        var footH = 110;
         sctx.beginPath();
-        drawRoundRect(sctx, storyX, btnY, 185, 38, 10);
-        sctx.fillStyle = "#0284c7";
+        drawRoundRect(sctx, storyX, footY, storyW, footH, 14);
+        sctx.fillStyle = "#edf2f8";
         sctx.fill();
-        sctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+        sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
         sctx.lineWidth = 1;
         sctx.stroke();
-        sctx.fillStyle = "#ffffff";
-        sctx.font = "700 12px sans-serif";
-        sctx.fillText("Read Next Chapter →", storyX + 22, btnY + 24);
+        sctx.fillStyle = "#64748b";
+        sctx.font = "700 10px monospace";
+        sctx.fillText("ARCHITECTURAL FOOTPRINT · LESSONS", storyX + 16, footY + 22);
+
+        if (data.highlights && data.highlights.length) {
+          data.highlights.slice(0, 3).forEach(function (h, idx) {
+            var hy = footY + 44 + idx * 20;
+            sctx.fillStyle = "#0284c7";
+            sctx.font = "700 11px sans-serif";
+            sctx.fillText("•", storyX + 16, hy);
+            sctx.fillStyle = "#334155";
+            sctx.font = "11px sans-serif";
+            sctx.fillText(h.slice(0, 85), storyX + 28, hy);
+          });
+        }
 
         sctx.restore();
         return offCanvas;
@@ -1053,12 +1159,17 @@
             j = smoothstep(split, 1, p);
           }
 
+          var fullHeight = Mh + (Hchimney - Mh) * k;
+          var currentHeight = fullHeight * (1 - j);
+          var elevation = isOpening ? p : (1 - p);
+
           clearCanvas();
 
           var leftPath = [];
           var rightPath = [];
+          var sliceGeoms = [];
 
-          // 80 Slices with continuous exact boundary interpolation
+          // Precompute slices and exact contour paths
           for (var i = 0; i < N; i++) {
             var vty0 = i / N;
             var vty1 = (i + 1) / N;
@@ -1081,16 +1192,77 @@
             leftPath.push({ x: s1.leftX, y: y1 });
             rightPath.push({ x: s1.rightX, y: y1 });
 
-            // Exact continuous source partition
-            var sy = vty0 * snapH;
-            var sh = (vty1 - vty0) * snapH;
+            sliceGeoms.push({
+              sy: vty0 * snapH,
+              sh: (vty1 - vty0) * snapH,
+              x: x,
+              y0: y0,
+              w: w,
+              dh: dh
+            });
+          }
 
-            ctx.drawImage(snapshot, 0, sy, snapW, sh, x, y0, w, dh);
+          // Build closed contour for continuous neumorphic flight shadow rendering
+          function traceContour(c) {
+            c.beginPath();
+            c.moveTo(leftPath[0].x, leftPath[0].y);
+            c.lineTo(rightPath[0].x, rightPath[0].y);
+            for (var m = 1; m < rightPath.length; m++) {
+              c.lineTo(rightPath[m].x, rightPath[m].y);
+            }
+            c.lineTo(leftPath[leftPath.length - 1].x, leftPath[leftPath.length - 1].y);
+            for (var n = leftPath.length - 2; n >= 0; n--) {
+              c.lineTo(leftPath[n].x, leftPath[n].y);
+            }
+            c.closePath();
+          }
+
+          // Progressive 3-Tier Neumorphic Shadow & Specular Glow along the Contour
+          // Scales smoothly with elevation so shadows match .chapter-modal-container exactly at landing
+          if (elevation > 0.04 && currentHeight > 12) {
+            // Tier 1: Deep ambient elevation shadow
+            ctx.save();
+            ctx.shadowColor = "rgba(15, 23, 42, " + (0.22 * elevation) + ")";
+            ctx.shadowBlur = 48 * elevation;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 24 * elevation;
+            ctx.fillStyle = "#edf2f8";
+            traceContour(ctx);
+            ctx.fill();
+            ctx.restore();
+
+            // Tier 2: Soft dark bevel shadow
+            ctx.save();
+            ctx.shadowColor = "rgba(166, 178, 195, " + (0.42 * elevation) + ")";
+            ctx.shadowBlur = 22 * elevation;
+            ctx.shadowOffsetX = 8 * elevation;
+            ctx.shadowOffsetY = 8 * elevation;
+            ctx.fillStyle = "#edf2f8";
+            traceContour(ctx);
+            ctx.fill();
+            ctx.restore();
+
+            // Tier 3: Top-left white specular glow
+            ctx.save();
+            ctx.shadowColor = "rgba(255, 255, 255, " + (0.85 * elevation) + ")";
+            ctx.shadowBlur = 16 * elevation;
+            ctx.shadowOffsetX = -6 * elevation;
+            ctx.shadowOffsetY = -6 * elevation;
+            ctx.fillStyle = "#edf2f8";
+            traceContour(ctx);
+            ctx.fill();
+            ctx.restore();
+          }
+
+          // Draw the 80 high-density horizontal slices
+          for (var s = 0; s < N; s++) {
+            var g = sliceGeoms[s];
+            ctx.drawImage(snapshot, 0, g.sy, snapW, g.sh, g.x, g.y0, g.w, g.dh);
           }
 
           // Liquid Outer Rails Glass Sheen (Subtle Catalina specular highlight)
-          var edgeAlpha = (1 - p) * 0.35;
-          if (edgeAlpha > 0.02) {
+          var edgeAlpha = (1 - elevation) * 0.35;
+          if (edgeAlpha > 0.02 && currentHeight > 12) {
             ctx.save();
             ctx.lineWidth = 1.2;
             ctx.strokeStyle = "rgba(255, 255, 255, " + edgeAlpha + ")";
@@ -1114,21 +1286,25 @@
           if (t < 1) {
             activeAnimId = requestAnimationFrame(step);
           } else {
-            // Flicker-free handoff: reveal live DOM modal first
             if (isOpening) {
+              // Seamless handoff: reveal live DOM modal with smooth opacity cross-fade
               overlay.classList.remove("is-genie-active");
               overlay.classList.add("genie-settled");
+              isAnimating = false;
               if (callback) callback();
-            }
-            // Allow DOM paint to commit before clearing canvas to avoid 1-frame blank gap
-            requestAnimationFrame(function () {
+
+              // Smoothly clear canvas after live modal is revealed
+              setTimeout(function () {
+                clearCanvas();
+                activeAnimId = null;
+              }, 140);
+            } else {
+              // Closing finished: clear canvas immediately and execute close callback
               clearCanvas();
               isAnimating = false;
               activeAnimId = null;
-              if (!isOpening && callback) {
-                callback();
-              }
-            });
+              if (callback) callback();
+            }
           }
         }
 

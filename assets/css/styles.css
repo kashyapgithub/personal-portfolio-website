@@ -1845,7 +1845,7 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 .book-inside {
   position: absolute;
   inset: 2px 3px 2px 3px;
-  border-radius: 3px 7px 7px 3px;
+  border-radius: 6px 12px 12px 6px;
   transform-style: preserve-3d;
   z-index: 1;
   pointer-events: none;
@@ -1854,14 +1854,14 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 .book-page-base {
   position: absolute;
   inset: 0;
-  background: #faf8f5;
-  border-radius: 3px 7px 7px 3px;
-  border: 1px solid #e2ded5;
+  background: #edf2f8;
+  border-radius: 6px 12px 12px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.95);
   box-shadow: 
-    inset 0 0 16px rgba(220, 210, 195, 0.45),
-    inset 1px 0 3px rgba(255, 255, 255, 0.8),
-    0 4px 12px rgba(120, 138, 162, 0.25);
-  padding: 12px 10px 10px 18px;
+    inset 2px 2px 6px rgba(166, 178, 195, 0.35),
+    inset -2px -2px 6px rgba(255, 255, 255, 0.95),
+    0 4px 14px rgba(166, 178, 195, 0.35);
+  padding: 12px 10px 10px 16px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1875,11 +1875,10 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   left: 0;
   top: 0;
   bottom: 0;
-  width: 22px;
+  width: 18px;
   background: linear-gradient(90deg, 
-    rgba(25, 20, 15, 0.45) 0%, 
-    rgba(25, 20, 15, 0.18) 40%, 
-    rgba(25, 20, 15, 0.04) 75%, 
+    rgba(15, 23, 42, 0.22) 0%, 
+    rgba(15, 23, 42, 0.08) 40%, 
     transparent 100%
   );
   z-index: 5;
@@ -1890,7 +1889,7 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 .page-cover-shadow {
   position: absolute;
   inset: 0;
-  background: rgba(15, 23, 42, 0.28);
+  background: rgba(15, 23, 42, 0.22);
   transition: opacity 0.45s ease;
   z-index: 4;
   pointer-events: none;
@@ -1902,12 +1901,23 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   justify-content: space-between;
   align-items: center;
   font-family: var(--font-mono);
-  font-size: 0.56rem;
+  font-size: 0.58rem;
   font-weight: 700;
   letter-spacing: 0.05em;
-  color: #8b7355;
-  border-bottom: 1px solid #e8e2d5;
+  color: #0284c7;
+  border-bottom: 1px solid rgba(166, 178, 195, 0.35);
   padding-bottom: 3px;
+}
+
+.page-vol {
+  color: #0284c7;
+  font-weight: 800;
+}
+
+.page-year {
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.52rem;
 }
 
 .page-chapter-label {
@@ -1916,15 +1926,15 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #a89f91;
+  color: #64748b;
   margin-top: 4px;
 }
 
 .page-title {
   font-family: var(--font);
-  font-size: 0.84rem;
-  font-weight: 700;
-  color: #1e293b;
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #0f172a;
   line-height: 1.15;
   letter-spacing: -0.015em;
   margin: 2px 0 3px;
@@ -1934,14 +1944,14 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   display: flex;
   align-items: center;
   gap: 5px;
-  color: #c5a880;
+  color: #0284c7;
   margin: 1px 0 4px;
 }
 
 .page-rule-ornament span {
   flex: 1;
   height: 1px;
-  background: #e5ded2;
+  background: rgba(166, 178, 195, 0.35);
 }
 
 .page-rule-ornament i {
@@ -1952,12 +1962,13 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 .page-preview-lines {
   display: flex;
   flex-direction: column;
-  gap: 3.5px;
+  gap: 4px;
 }
 
 .page-line {
-  height: 2.5px;
-  background: #e4ded3;
+  height: 3px;
+  background: rgba(166, 178, 195, 0.4);
+  box-shadow: inset 1px 1px 2px rgba(166, 178, 195, 0.25), inset -1px -1px 2px rgba(255, 255, 255, 0.85);
   border-radius: 2px;
 }
 
@@ -1976,23 +1987,23 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   font-family: var(--font-mono);
   font-size: 0.5rem;
   font-weight: 700;
-  color: #8b7355;
+  color: #0284c7;
   letter-spacing: 0.04em;
-  border-top: 1px solid #e8e2d5;
-  padding-top: 3px;
+  border-top: 1px solid rgba(166, 178, 195, 0.35);
+  padding-top: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Fluttering intermediate page leaf (adds multi-layered paper depth) */
+/* Fluttering intermediate page leaf (adds multi-layered depth) */
 .book-page-leaf {
   position: absolute;
   inset: 1px 2px 1px 2px;
-  background: #fdfcf9;
-  border-radius: 3px 6px 6px 3px;
-  border: 1px solid #e8e4da;
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.08);
+  background: #f1f5f9;
+  border-radius: 5px 10px 10px 5px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: -2px 0 8px rgba(166, 178, 195, 0.25);
   transform-origin: 0% 50%;
   transform: rotateY(0deg);
   transition: transform 0.62s cubic-bezier(0.25, 1, 0.5, 1) 0.06s, box-shadow 0.62s ease;
@@ -2010,8 +2021,9 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 }
 
 .page-leaf-line {
-  height: 2.5px;
-  background: #e8e2d5;
+  height: 3px;
+  background: rgba(166, 178, 195, 0.35);
+  box-shadow: inset 1px 1px 2px rgba(166, 178, 195, 0.2), inset -1px -1px 2px rgba(255, 255, 255, 0.8);
   border-radius: 2px;
 }
 
@@ -2022,9 +2034,9 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   top: 4px;
   bottom: 4px;
   width: 4px;
-  background: repeating-linear-gradient(180deg, #e4e7eb 0px, #cbd3de 1.5px, #b0bccb 3px);
+  background: repeating-linear-gradient(180deg, #edf2f8 0px, #e2e8f0 1.5px, #cbd5e1 3px);
   border-radius: 0 2px 2px 0;
-  box-shadow: 1px 0 3px rgba(0, 0, 0, 0.4);
+  box-shadow: 1px 0 3px rgba(166, 178, 195, 0.4);
   z-index: -1;
   pointer-events: none;
   transition: transform 0.4s ease;
@@ -2502,15 +2514,13 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 }
 
 .chapter-modal-overlay.is-genie-active .chapter-modal-container {
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .chapter-modal-overlay.genie-settled .chapter-modal-container {
-  opacity: 1 !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .chapter-modal-container {
@@ -2529,8 +2539,9 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   border: 1px solid rgba(255, 255, 255, 0.7);
   padding: clamp(22px, 3.5vw, 36px);
   color: #1e293b;
-  will-change: transform, opacity;
+  will-change: opacity;
   transform-origin: center center;
+  transition: opacity 0.12s ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
