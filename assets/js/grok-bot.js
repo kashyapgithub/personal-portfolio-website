@@ -1,8 +1,9 @@
 /* ============================================================
    Grok-Inspired 3D Sphere Bot — Interactive Hero Engine
-   - Physical bouncy entrance from above the viewport
-   - 3D tumbling rotation while falling & bouncing
-   - "Notices the user" double-take: curious head tilt, wide eyes, surprised blink
+   - Perfect 1:1 circular aspect ratio with high-DPI Retina support
+   - Snappy physical entrance: drops and bounces into center within 0.8s
+   - Rotates on loading for ~2.5s with 3D spherical eye mapping
+   - "Notices the user" double-take: curious head tilt, wide eyes, inquisitive blink
    - Delighted recognition: warm smiling crescents (⌒  ⌒) + mouth arc
    - Frosted glass dialogue card reveal with elevated copywriting
    - Responsive cursor eye contact with spring damping
@@ -17,22 +18,21 @@
   var hero = canvas.closest(".hero") || canvas.parentElement;
   var dialogueCard = document.getElementById("bot-dialogue");
   var statusPillText = document.getElementById("bot-status-text");
+  var statusIndicator = document.querySelector(".status-indicator");
   var scrollCta = document.getElementById("bot-cta-scroll");
   var emailCta = document.getElementById("bot-cta-email");
 
   var ctx = canvas.getContext("2d");
   if (!ctx) return;
 
-  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
   // Screen & Dimensions
   var W = 0, H = 0, DPR = 1;
-  var R = 120; // Sphere radius in CSS px
+  var R = 115; // Sphere radius in CSS px
   var cx = 0, targetCy = 0;
 
   // Ambient Stardust Particles
   var stars = [];
-  var STAR_COUNT = 45;
+  var STAR_COUNT = 40;
 
   function initStars() {
     stars = [];
@@ -40,42 +40,53 @@
       stars.push({
         x: Math.random() * (W || window.innerWidth),
         y: Math.random() * (H || 600),
-        r: 0.7 + Math.random() * 1.4,
-        alpha: 0.08 + Math.random() * 0.28,
-        vx: (Math.random() - 0.5) * 0.12,
-        vy: -0.06 - Math.random() * 0.14
+        r: 0.7 + Math.random() * 1.3,
+        alpha: 0.08 + Math.random() * 0.26,
+        vx: (Math.random() - 0.5) * 0.1,
+        vy: -0.05 - Math.random() * 0.12
       });
     }
   }
 
   function resize() {
-    DPR = Math.min(window.devicePixelRatio || 1, 2.5);
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
     W = hero ? hero.clientWidth : window.innerWidth;
-    H = hero ? hero.clientHeight : Math.max(540, window.innerHeight * 0.85);
+    H = hero ? hero.clientHeight : (window.innerHeight - 70);
 
     canvas.width = Math.round(W * DPR);
     canvas.height = Math.round(H * DPR);
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 
-    // Responsive sphere radius & resting position
+    // Responsive sphere radius
     if (W < 640) {
-      R = Math.max(85, Math.min(105, W * 0.24));
-      cx = W * 0.5;
-      targetCy = Math.round(Math.max(R + 25, H * 0.32));
+      R = Math.max(64, Math.min(76, W * 0.19));
     } else if (W < 1024) {
-      R = Math.max(105, Math.min(125, W * 0.18));
-      cx = W * 0.5;
-      targetCy = Math.round(Math.max(R + 35, H * 0.35));
+      R = Math.max(90, Math.min(108, W * 0.15));
     } else {
-      R = Math.max(120, Math.min(145, W * 0.13));
-      cx = W * 0.5;
-      targetCy = Math.round(Math.max(R + 40, H * 0.38));
+      R = Math.max(105, Math.min(125, W * 0.11));
     }
+
+    cx = Math.round(W * 0.5);
+
+    // Compute targetCy: vertically centered in space above dialogue card with generous clearance
+    var headerH = W < 640 ? 56 : 70;
+    var cardHeightApprox = W < 640 ? 270 : 220;
+    var availableH = Math.max(180, H - headerH - cardHeightApprox);
+    targetCy = Math.round(headerH + availableH * 0.36);
 
     if (stars.length === 0) initStars();
   }
 
-  // 3D Orientation & Animation States
+  // Check for test/debug timestamp override
+  var debugTime = null;
+  try {
+    var q = new URLSearchParams(window.location.search).get("botTime");
+    if (q !== null && q !== "") debugTime = parseFloat(q);
+  } catch (err) { /* ignore */ }
+
+  // 3D Orientation & States
   var yaw = 0;
   var pitch = 0;
   var roll = 0;
@@ -83,24 +94,24 @@
   var targetYaw = 0;
   var targetPitch = 0;
 
-  var curY = -250; // Starts offscreen above viewport
+  var curY = -180; // Starts just above screen
   var scaleX = 1;
   var scaleY = 1;
 
   var blink = 0; // 0 = open, 1 = closed
-  var eyeWiden = 1; // Eye scale factor (widens when noticing visitor)
-  var smileProgress = 0; // 0 = neutral, 1 = full warm smile
+  var eyeWiden = 1.0;
+  var smileProgress = 0;
   var hopY = 0;
 
-  var phase = "entrance"; // entrance -> notice -> smile -> active
+  var phase = "entrance"; // entrance -> spinning -> notice -> smile -> active
   var dialogueRevealed = false;
 
   var lastBlinkTime = 0;
   var nextBlinkInterval = 4.2;
 
-  // Mouse / Touch Tracking (Eye Contact)
+  // Mouse / Pointer Eye Contact Tracking
   function onPointerMove(clientX, clientY) {
-    if (phase === "entrance") return;
+    if (phase === "entrance" || phase === "spinning") return;
     var rect = canvas.getBoundingClientRect();
     var mouseX = clientX - rect.left;
     var mouseY = clientY - rect.top;
@@ -108,9 +119,9 @@
     var dx = (mouseX - cx) / (W * 0.5);
     var dy = (mouseY - targetCy) / (H * 0.5);
 
-    // Responsive 3D yaw and pitch
-    targetYaw = Math.max(-0.52, Math.min(0.52, dx * 0.46));
-    targetPitch = Math.max(-0.35, Math.min(0.35, dy * 0.32));
+    // Responsive 3D yaw and pitch with comfortable limits
+    targetYaw = Math.max(-0.48, Math.min(0.48, dx * 0.44));
+    targetPitch = Math.max(-0.32, Math.min(0.32, dy * 0.28));
   }
 
   window.addEventListener("mousemove", function (e) {
@@ -123,7 +134,7 @@
     }
   }, { passive: true });
 
-  // Click Interaction: Playful bounce & wink
+  // Click Interaction: Playful bounce & double blink
   canvas.addEventListener("click", function () {
     if (phase === "entrance") return;
     triggerPlayfulHop();
@@ -131,11 +142,11 @@
 
   function triggerPlayfulHop() {
     var hopStart = performance.now();
-    var duration = 480;
+    var duration = 460;
     function animHop(now) {
       var p = (now - hopStart) / duration;
       if (p < 1) {
-        hopY = -Math.sin(p * Math.PI) * 14;
+        hopY = -Math.sin(p * Math.PI) * 12;
         blink = Math.sin(p * Math.PI * 2) > 0.3 ? 0.95 : 0;
         requestAnimationFrame(animHop);
       } else {
@@ -182,191 +193,192 @@
     return { x: x3, y: y3, z: z3 };
   }
 
-  // Render Loop
+  // Animation Loop
   var startTime = performance.now();
 
   function render(now) {
     var elapsedSec = (now - startTime) / 1000;
+    if (debugTime !== null && !isNaN(debugTime)) {
+      elapsedSec = debugTime;
+    }
 
     // -------------------------------------------------------------
     // 1. CHOREOGRAPHY & CHARACTER ANIMATION TIMELINE
     // -------------------------------------------------------------
-    if (reduceMotion) {
+
+    // --- PHASE 1: SNAPPY BOUNCY ARRIVAL (0.0s - 0.85s) ---
+    if (elapsedSec < 0.85) {
+      phase = "entrance";
+      var t = elapsedSec;
+      var startY = -R - 35;
+      var floorY = targetCy;
+
+      if (t < 0.45) {
+        // Drop in quickly with gravity acceleration
+        var pDrop = t / 0.45;
+        curY = startY + (floorY - startY) * (pDrop * pDrop);
+        yaw = -Math.PI * 4.0 * (1 - pDrop * 0.15);
+        scaleX = 0.95; scaleY = 1.05; // Air stretch
+        roll = Math.sin(pDrop * Math.PI) * 0.12;
+      } else if (t < 0.58) {
+        // Impact 1: Squash on landing - EYES FACE FRONT!
+        var pSq = (t - 0.45) / 0.13;
+        var sqAmt = Math.sin(pSq * Math.PI) * 0.18;
+        curY = floorY + Math.sin(pSq * Math.PI) * 8;
+        scaleY = 1.0 - sqAmt;
+        scaleX = 1.0 + sqAmt * 0.8;
+        yaw = -Math.PI * 4.0;
+        roll = 0.04;
+      } else if (t < 0.76) {
+        // Gentle Rebound Arc
+        var pReb = (t - 0.58) / 0.18;
+        curY = floorY - Math.sin(pReb * Math.PI) * 26;
+        yaw = -Math.PI * 4.0;
+        scaleX = 1.0; scaleY = 1.0;
+        roll = 0;
+      } else {
+        // Settles to floor
+        var pSet = (t - 0.76) / 0.09;
+        curY = floorY + Math.sin(pSet * Math.PI) * 4;
+        scaleX = 1.0; scaleY = 1.0;
+        yaw = -Math.PI * 4.0;
+      }
+
+      smileProgress = 0;
+      blink = 0;
+      eyeWiden = 1.0;
+    }
+    // --- PHASE 2: ROTATING ON LOADING (0.85s - 3.2s) ---
+    else if (elapsedSec < 3.2) {
+      phase = "spinning";
       curY = targetCy;
-      yaw = 0; pitch = 0; roll = 0;
       scaleX = 1; scaleY = 1;
-      smileProgress = 1;
-      eyeWiden = 1;
-      phase = "active";
-      if (!dialogueRevealed && dialogueCard) {
-        dialogueRevealed = true;
-        dialogueCard.classList.add("is-visible");
-        if (statusPillText) statusPillText.textContent = "Online & Glad you're here";
+
+      var tSpin = elapsedSec - 0.85; // 0 to 2.35s
+      var spinProg = tSpin / 2.35;
+      // Smooth cubic ease out: exactly 2 full turns (-4*PI to 0)
+      var easedSpin = 1 - Math.pow(1 - spinProg, 2.5);
+
+      yaw = -Math.PI * 4.0 * (1 - easedSpin);
+      pitch = Math.sin(tSpin * 3.5) * 0.04 * (1 - spinProg);
+      roll = Math.sin(tSpin * 4.0) * 0.03 * (1 - spinProg);
+
+      smileProgress = 0;
+      blink = 0;
+      eyeWiden = 1.0;
+
+      if (statusPillText && statusPillText.textContent !== "Calibrating Grok neural sphere...") {
+        statusPillText.textContent = "Calibrating Grok neural sphere...";
       }
-    } else {
-      // --- PHASE A: BOUNCY ENTRANCE FROM SKY (0.0s - 2.0s) ---
-      if (elapsedSec < 2.0) {
-        phase = "entrance";
-        var t = elapsedSec;
-        var startY = -R - 90;
-        var floorY = targetCy;
+    }
+    // --- PHASE 3: THE DOUBLE-TAKE / NOTICES VISITOR! (3.2s - 3.7s) ---
+    else if (elapsedSec < 3.7) {
+      phase = "notice";
+      curY = targetCy;
+      scaleX = 1; scaleY = 1;
 
-        // Multi-bounce physical decay curve
-        if (t < 0.65) {
-          // Fall 1 (Accelerate with gravity)
-          var p1 = t / 0.65;
-          curY = startY + (floorY - startY) * (p1 * p1);
-          // 3D Tumbling while dropping
-          yaw = -Math.PI * 4.8 * (1 - p1 * 0.6);
-          roll = Math.sin(p1 * Math.PI) * 0.22;
-          pitch = (1 - p1) * 0.15;
-          scaleX = 0.95; scaleY = 1.05; // Air stretch
-        } else if (t < 0.78) {
-          // Bounce 1 Impact & Squash!
-          var pSquash = (t - 0.65) / 0.13;
-          curY = floorY + Math.sin(pSquash * Math.PI) * 14;
-          var squashAmt = Math.sin(pSquash * Math.PI) * 0.22;
-          scaleY = 1.0 - squashAmt;
-          scaleX = 1.0 + squashAmt * 0.9;
-          yaw = -Math.PI * 2.2;
-          roll = 0.05;
-        } else if (t < 1.30) {
-          // Rebound 1 (Arc up to 55px above targetCy)
-          var p2 = (t - 0.78) / 0.52;
-          var bounceH = 65;
-          curY = floorY - Math.sin(p2 * Math.PI) * bounceH;
-          yaw = -Math.PI * 2.2 * (1 - p2 * 0.65);
-          roll = Math.sin(p2 * Math.PI) * -0.12;
-          scaleX = 0.97; scaleY = 1.03;
-        } else if (t < 1.42) {
-          // Bounce 2 Impact & Smaller Squash
-          var pSquash2 = (t - 1.30) / 0.12;
-          curY = floorY + Math.sin(pSquash2 * Math.PI) * 6;
-          var sAmt2 = Math.sin(pSquash2 * Math.PI) * 0.12;
-          scaleY = 1.0 - sAmt2;
-          scaleX = 1.0 + sAmt2 * 0.7;
-          yaw = -Math.PI * 0.6;
-        } else {
-          // Final Settling Spring
-          var p3 = (t - 1.42) / 0.58;
-          var bounceH2 = 18;
-          curY = floorY - Math.sin(p3 * Math.PI) * bounceH2 * (1 - p3);
-          yaw = -Math.PI * 0.6 * (1 - p3);
-          roll = 0;
-          scaleX = 1; scaleY = 1;
-        }
+      var tNotice = elapsedSec - 3.2; // 0 to 0.5s
+      var pNotice = tNotice / 0.5;
 
-        smileProgress = 0;
+      // Cocks head with curious wonder! (+8 deg roll tilt, looks slightly up)
+      roll = Math.sin(pNotice * Math.PI * 0.5) * 0.14;
+      pitch = -0.06 * Math.sin(pNotice * Math.PI * 0.5);
+      yaw = -0.04 * Math.sin(pNotice * Math.PI * 0.5);
+
+      // Eyes widen with astonishment!
+      eyeWiden = 1.0 + Math.sin(pNotice * Math.PI * 0.5) * 0.28;
+
+      // Inquisitive surprised blink (3.35s - 3.55s)
+      if (tNotice > 0.15 && tNotice < 0.38) {
+        var bP = (tNotice - 0.15) / 0.23;
+        blink = Math.sin(bP * Math.PI);
+      } else {
         blink = 0;
-        eyeWiden = 1.0;
       }
-      // --- PHASE B: "NOTICES THE USER" DOUBLE-TAKE (2.0s - 3.4s) ---
-      else if (elapsedSec < 3.4) {
-        phase = "notice";
-        curY += (targetCy - curY) * 0.15;
-        scaleX = 1; scaleY = 1;
 
-        var tNotice = elapsedSec - 2.0; // 0 to 1.4s
-
-        if (tNotice < 0.55) {
-          // Settles forward facing the camera
-          yaw += (0 - yaw) * 0.15;
-          pitch += (0 - pitch) * 0.15;
-          roll += (0 - roll) * 0.15;
-          eyeWiden = 1.0;
-        } else if (tNotice < 1.0) {
-          // THE DOUBLE-TAKE! Cocks head with curious surprise ("Wait, someone is watching me?!")
-          var pSurprise = (tNotice - 0.55) / 0.45;
-          var easedS = 1 - Math.pow(1 - pSurprise, 2);
-          roll = easedS * 0.14; // +8 deg cute head tilt
-          pitch = easedS * -0.08; // slightly looks up towards user
-          yaw = easedS * -0.06;
-          eyeWiden = 1.0 + easedS * 0.32; // Eyes widen in wonder!
-
-          // Surprised blink in disbelief
-          if (tNotice > 0.75 && tNotice < 0.95) {
-            var bP = (tNotice - 0.75) / 0.20;
-            blink = Math.sin(bP * Math.PI);
-          } else {
-            blink = 0;
-          }
-
-          if (statusPillText && statusPillText.textContent !== "Visitor detected... 👀") {
-            statusPillText.textContent = "Visitor detected... 👀";
-          }
-        } else {
-          // Pause and look right at the visitor with wide, curious eyes
-          roll = 0.12;
-          pitch = -0.06;
-          eyeWiden = 1.30;
-          blink = 0;
-        }
-
-        smileProgress = 0;
+      if (statusPillText && statusPillText.textContent !== "Visitor detected... 👀") {
+        statusPillText.textContent = "Visitor detected... 👀";
       }
-      // --- PHASE C: DELIGHTED RECOGNITION & SMILE (3.4s - 4.1s) ---
-      else if (elapsedSec < 4.1) {
-        phase = "smile";
-        var tSmile = elapsedSec - 3.4; // 0 to 0.7s
 
-        // Head tilts back to joyful upright posture
-        roll += (0 - roll) * 0.12;
-        pitch += (0.02 - pitch) * 0.12;
-        eyeWiden += (1.0 - eyeWiden) * 0.10;
+      smileProgress = 0;
+    }
+    // --- PHASE 4: DELIGHTED RECOGNITION & THE SMILE (3.7s - 4.2s) ---
+    else if (elapsedSec < 4.2) {
+      phase = "smile";
+      curY = targetCy;
+      var tSm = elapsedSec - 3.7; // 0 to 0.5s
 
-        // Smile morphs from 0 to 1
-        smileProgress = Math.min(1, tSmile / 0.45);
+      // Head straightens proudly
+      roll += (0 - roll) * 0.12;
+      pitch += (0.02 - pitch) * 0.12;
+      eyeWiden += (1.0 - eyeWiden) * 0.10;
 
-        // Buoyant joyful recognition hop!
-        if (tSmile < 0.45) {
-          hopY = -Math.sin((tSmile / 0.45) * Math.PI) * 9.5;
+      // Smile morphs from 0 to 1
+      smileProgress = Math.min(1, tSm / 0.35);
+
+      // Buoyant happy hop
+      if (tSm < 0.38) {
+        hopY = -Math.sin((tSm / 0.38) * Math.PI) * 9.0;
+      } else {
+        hopY = 0;
+      }
+
+      // Status Pill Updates
+      if (statusPillText) {
+        if (elapsedSec < 3.2) {
+          statusPillText.textContent = "Calibrating Grok neural sphere...";
+          if (statusIndicator) statusIndicator.classList.remove("is-online");
+        } else if (elapsedSec < 3.7) {
+          statusPillText.textContent = "Visitor detected... 👀";
+          if (statusIndicator) statusIndicator.classList.remove("is-online");
         } else {
-          hopY = 0;
-        }
-
-        if (statusPillText && statusPillText.textContent !== "Spotted you! Welcome") {
           statusPillText.textContent = "Spotted you! Welcome";
-          var statusDot = document.querySelector(".status-indicator");
-          if (statusDot) statusDot.classList.add("is-online");
-        }
-
-        // Reveal Dialogue Card at 3.9s
-        if (elapsedSec >= 3.9 && !dialogueRevealed) {
-          dialogueRevealed = true;
-          if (dialogueCard) dialogueCard.classList.add("is-visible");
+          if (statusIndicator) statusIndicator.classList.add("is-online");
         }
       }
-      // --- PHASE D: LIVING INTERACTIVE EYE CONTACT (4.1s+) ---
-      else {
-        phase = "active";
-        smileProgress = 1;
-        eyeWiden = 1;
 
-        // Attentive eye contact: tracks visitor's cursor across screen
-        yaw += (targetYaw - yaw) * 0.08;
-        pitch += (targetPitch - pitch) * 0.08;
-        roll += (0 - roll) * 0.08;
+      // Reveal Dialogue Card at 3.9s
+      if (elapsedSec >= 3.9 && !dialogueRevealed) {
+        dialogueRevealed = true;
+        if (dialogueCard) dialogueCard.classList.add("is-visible");
+      }
+    }
+    // --- PHASE 5: LIVING INTERACTIVE EYE CONTACT (4.2s+) ---
+    else {
+      phase = "active";
+      curY = targetCy;
+      smileProgress = 1;
+      eyeWiden = 1.0;
 
-        // Natural idle blinking every 4-5 seconds
-        if (elapsedSec - lastBlinkTime > nextBlinkInterval) {
-          lastBlinkTime = elapsedSec;
-          nextBlinkInterval = 3.6 + Math.random() * 2.4;
-        }
-        var dtB = elapsedSec - lastBlinkTime;
-        if (dtB < 0.20) {
-          blink = Math.sin((dtB / 0.20) * Math.PI);
-        } else {
-          blink = 0;
-        }
+      if (statusPillText) {
+        statusPillText.textContent = "Spotted you! Welcome";
+        if (statusIndicator) statusIndicator.classList.add("is-online");
+      }
+
+      // Attentive eye contact: tracks cursor with smooth spring damping
+      yaw += (targetYaw - yaw) * 0.08;
+      pitch += (targetPitch - pitch) * 0.08;
+      roll += (0 - roll) * 0.08;
+
+      // Natural idle blinking every 4-5s
+      if (elapsedSec - lastBlinkTime > nextBlinkInterval) {
+        lastBlinkTime = elapsedSec;
+        nextBlinkInterval = 3.6 + Math.random() * 2.4;
+      }
+      var dtB = elapsedSec - lastBlinkTime;
+      if (dtB < 0.20) {
+        blink = Math.sin((dtB / 0.20) * Math.PI);
+      } else {
+        blink = 0;
       }
     }
 
-    // Gentle organic floating harmonic once settled
-    var floatY = (phase === "active" || phase === "smile") ? Math.sin(elapsedSec * 1.8) * 5.5 : 0;
+    // Gentle breathing float once settled
+    var floatY = (elapsedSec >= 0.85) ? Math.sin(elapsedSec * 1.8) * 5.5 : 0;
     var currentCy = curY + floatY + hopY;
 
     // -------------------------------------------------------------
-    // 2. CLEAR & BACKGROUND STARDUST
+    // 2. CLEAR CANVAS & BACKGROUND STARDUST
     // -------------------------------------------------------------
     ctx.clearRect(0, 0, W, H);
 
@@ -387,15 +399,15 @@
     // -------------------------------------------------------------
     // 3. DYNAMIC GROUND SHADOW (SCALES WITH SPHERE ALTITUDE)
     // -------------------------------------------------------------
-    var shadowFloorY = targetCy + R + 42;
+    var shadowFloorY = targetCy + R + 38;
     var altitude = Math.max(0, shadowFloorY - (currentCy + R));
-    var altitudeFactor = Math.max(0.05, Math.min(1.0, 1.0 - altitude / 350));
+    var altitudeFactor = Math.max(0.05, Math.min(1.0, 1.0 - altitude / 320));
 
     var shadowRx = R * 0.85 * altitudeFactor * (scaleX || 1);
-    var shadowRy = R * 0.19 * altitudeFactor * (scaleY || 1);
+    var shadowRy = R * 0.18 * altitudeFactor * (scaleY || 1);
     var shadowAlpha = Math.max(0.04, Math.min(0.55, 0.45 * (altitudeFactor * altitudeFactor)));
 
-    if (shadowRx > 2) {
+    if (shadowRx > 3) {
       var shadowGrad = ctx.createRadialGradient(cx, shadowFloorY, 0, cx, shadowFloorY, shadowRx);
       shadowGrad.addColorStop(0, "rgba(0, 0, 0, " + shadowAlpha.toFixed(3) + ")");
       shadowGrad.addColorStop(0.48, "rgba(0, 0, 0, " + (shadowAlpha * 0.42).toFixed(3) + ")");
@@ -410,17 +422,19 @@
     }
 
     // -------------------------------------------------------------
-    // 4. WHITE PORCELAIN MATTE 3D SPHERE (WITH SQUASH & STRETCH)
+    // 4. WHITE PORCELAIN MATTE 3D SPHERE
     // -------------------------------------------------------------
     ctx.save();
     ctx.translate(cx, currentCy);
     ctx.scale(scaleX, scaleY);
     ctx.translate(-cx, -currentCy);
 
+    // Key directional light coming from upper-left-front
     var keyLightX = cx - R * 0.32;
     var keyLightY = currentCy - R * 0.36;
 
     var sphereGrad = ctx.createRadialGradient(keyLightX, keyLightY, R * 0.04, cx, currentCy, R * 1.05);
+    // Smooth Grok-style porcelain white shading
     sphereGrad.addColorStop(0.00, "#ffffff");
     sphereGrad.addColorStop(0.22, "#f8fafc");
     sphereGrad.addColorStop(0.50, "#e2e8f0");
@@ -433,7 +447,7 @@
     ctx.fillStyle = sphereGrad;
     ctx.fill();
 
-    // Luminous rim / fresnel edge backlight
+    // Subtle luminous rim / fresnel edge backlight
     var rimGrad = ctx.createRadialGradient(cx, currentCy, R * 0.84, cx, currentCy, R);
     rimGrad.addColorStop(0.0, "rgba(255, 255, 255, 0)");
     rimGrad.addColorStop(0.7, "rgba(255, 255, 255, 0.12)");

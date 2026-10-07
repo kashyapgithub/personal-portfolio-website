@@ -105,7 +105,9 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
-  overflow-x: clip;
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
 }
 
 body {
@@ -113,6 +115,9 @@ body {
   display: flex;
   flex-direction: column;
   background-color: var(--bg);
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
 }
 
 ::selection {
@@ -239,6 +244,15 @@ body {
   background: var(--surface-hover);
 }
 
+@media (max-width: 640px) {
+  .site-nav {
+    display: none;
+  }
+  .site-header .btn-icon {
+    display: none;
+  }
+}
+
 .nav-actions {
   display: flex;
   align-items: center;
@@ -306,31 +320,19 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-end;
+  align-items: center;
   min-height: calc(100vh - var(--header-h));
   min-height: calc(100svh - var(--header-h));
-  padding: clamp(2rem, 4vw, 3rem) 0 clamp(2.5rem, 4vw, 3.5rem);
+  padding: 0 1.25rem clamp(1.5rem, 3.5vh, 2.75rem);
   border-bottom: 1px solid var(--border);
-  background: radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.012) 40%, transparent 70%), #07080c;
-}
-
-/* Grok 3D Bot Character Hero Stage */
-.hero-bot-stage {
-  position: relative;
-  width: 100%;
-  max-width: 980px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  min-height: clamp(520px, 78vh, 720px);
-  padding: 1.5rem 1rem clamp(1rem, 3vh, 2.5rem);
+  background: radial-gradient(circle at 50% 36%, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.012) 40%, transparent 70%), #07080c;
 }
 
 #grok-bot-canvas {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   display: block;
@@ -344,30 +346,41 @@ body {
   cursor: grabbing;
 }
 
+/* Container for dialogue card positioned cleanly below the 3D sphere */
+.hero-bot-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 580px;
+  margin: 0 auto;
+  padding: 0 12px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
 /* Translucent Frosted Glass Dialogue Card */
 .bot-dialogue-card {
   position: relative;
   z-index: 2;
-  max-width: 600px;
-  width: min(92%, 580px);
-  background: rgba(13, 16, 23, 0.78);
+  width: 100%;
+  background: rgba(13, 16, 23, 0.82);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 22px;
-  padding: clamp(1.25rem, 2.6vw, 1.75rem) clamp(1.4rem, 3.2vw, 2.2rem);
+  border-radius: 20px;
+  padding: clamp(1rem, 2.5vw, 1.6rem) clamp(1rem, 3vw, 2rem);
   text-align: center;
   box-shadow: 0 24px 50px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-  opacity: 0;
-  transform: translateY(22px) scale(0.97);
-  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
-  pointer-events: none;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
 .bot-dialogue-card.is-visible {
   opacity: 1;
-  transform: translateY(0) scale(1);
-  pointer-events: auto;
+  transform: translateY(0);
 }
 
 .bot-status-pill {
@@ -435,6 +448,33 @@ body {
   justify-content: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+@media (max-width: 540px) {
+  .hero {
+    padding: 0 12px 1.25rem;
+  }
+  .hero-bot-content {
+    padding: 0;
+    margin-bottom: 0.5rem;
+  }
+  .bot-dialogue-card {
+    padding: 1.15rem 0.95rem;
+    border-radius: 16px;
+  }
+  .bot-speech-text {
+    font-size: 1.04rem;
+    line-height: 1.4;
+  }
+  .bot-speech-actions {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  .bot-speech-actions .btn {
+    width: 100%;
+    padding: 10px 16px;
+  }
 }
 
 .bot-cta-scroll {
@@ -2874,6 +2914,13 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
     gap: 2.8rem;
     padding: 2rem 0.8rem 2.2rem;
     border-radius: 20px;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .shelf-level {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
   }
   .shelf-books-row {
     display: flex;
@@ -2884,6 +2931,9 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     gap: 14px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   .shelf-books-row::-webkit-scrollbar {
     height: 4px;
