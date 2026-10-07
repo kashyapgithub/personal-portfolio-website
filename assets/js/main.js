@@ -304,4 +304,275 @@
     });
   })();
 
+  /* ------------------------------------------------------------
+     9. Systems & Product Bookshelf Modal & Interactivity
+     ------------------------------------------------------------ */
+  (function initBookshelf() {
+    var overlay = document.getElementById("book-modal-overlay");
+    var closeBtn = document.getElementById("book-modal-close");
+    var closeAction = document.getElementById("modal-close-action");
+    var backdrop = document.getElementById("book-modal-backdrop");
+    var bookCards = document.querySelectorAll(".book-card");
+
+    if (!overlay || !bookCards.length) return;
+
+    var BOOK_DATA = {
+      genie: {
+        title: "Genie 2.0",
+        subtitle: "High-Frequency Alpha Generation Engine on AWS Mumbai",
+        eyebrow: "VOLUME 01 · ALPHA ENGINE",
+        tags: ["HFT", "AWS Mumbai", "12–100 μs", "Python / C++", "Autonomous Execution"],
+        metrics: [
+          { label: "Order Latency", val: "12–100 μs" },
+          { label: "Cloud Node", val: "AWS Mumbai" },
+          { label: "Architecture", val: "HFT Alpha Engine" }
+        ],
+        desc: "Designed and developed (assisted by AI agents) the core alpha generation engine (Genie 2.0) for B. Singularity, a stealth quantitative hedge fund. The system extracts statistical edge and executes sub-millisecond orders under tough, turbulent market conditions.",
+        bullets: [
+          "Achieved average order execution latency between 12 and 100 microseconds for instantaneous market response.",
+          "Deployed directly to AWS Mumbai low-latency availability zones for optimal broker and exchange co-location.",
+          "Orchestrated real-time trade signals alongside dynamic capital allocation rules and position limits."
+        ]
+      },
+      mrp: {
+        title: "Manage Risk Pro (MRP 1.3)",
+        subtitle: "Core Risk Fortress Engine with Multi-Layered Safeguards",
+        eyebrow: "VOLUME 02 · RISK ARCHITECTURE",
+        tags: ["Fortress Risk", "MRP 1.3", "Dynamic Limits", "Drawdown Shield", "Real-Time"],
+        metrics: [
+          { label: "Safeguard Layers", val: "Multi-Tier" },
+          { label: "Risk Version", val: "MRP 1.3" },
+          { label: "Market Mode", val: "Live Production" }
+        ],
+        desc: "Engineered from scratch as B. Singularity's flagship risk fortification system. Manages portfolio volatility, tail-risk events, and margin constraints through active automated circuit breakers and bespoke risk products for hedge fund clients.",
+        bullets: [
+          "Multi-layered safeguards protecting capital, reflecting the enduring strength of time-tested fortification.",
+          "Designed custom risk products tailored for external institutional clients and fund partners.",
+          "Designed primary workflow for AI-assisted risk management guidance features during live trading sessions."
+        ]
+      },
+      tui: {
+        title: "AWS Terminal TUI",
+        subtitle: "Real-Time Terminal Observability for Distributed Cloud Servers",
+        eyebrow: "VOLUME 03 · INFRASTRUCTURE & TUI",
+        tags: ["Terminal UI", "AWS Telemetry", "Real-Time Stream", "SSH Pipeline", "DevOps"],
+        metrics: [
+          { label: "Interface", val: "Custom TUI" },
+          { label: "Data Pipeline", val: "AWS Stream" },
+          { label: "Sync Speed", val: "Sub-second" }
+        ],
+        desc: "Designed the Terminal User Interface (TUI) for the risk and order management engine. Streams live telemetry from AWS server terminals directly to a custom-built client-side display, letting stakeholders monitor automated engines operating in real-time.",
+        bullets: [
+          "Streams telemetry from AWS headless cloud instances into an intuitive, lightweight keyboard-driven TUI.",
+          "Allows clients to monitor live order flows, position deltas, and risk limits as engines execute autonomously.",
+          "Bridges high-performance Unix backend pipes with readable, human-centric telemetry monitors."
+        ]
+      },
+      dryrun: {
+        title: "Dry Run Engine",
+        subtitle: "Deterministic Simulation & Safety Verification Engine",
+        eyebrow: "VOLUME 04 · SIMULATION & SAFETY",
+        tags: ["Simulation", "Zero Slip", "Pre-Flight", "Virtual Order Book", "Deterministic"],
+        metrics: [
+          { label: "Verification", val: "100% Deterministic" },
+          { label: "Engine Type", val: "Pre-Flight Sandbox" },
+          { label: "Error Margin", val: "Zero Slip" }
+        ],
+        desc: "Built the dry-run engine from scratch to simulate order behavior, slippage, and queue positions against historical and synthetic market states before deploying new strategies to live capital.",
+        bullets: [
+          "Eliminated execution surprises by subjecting algorithms to high-stress liquidity and latency dry runs.",
+          "Accurately emulates order book queues, matching engine semantics, and broker throttling constraints.",
+          "Serves as the mandatory validation gatekeeper before releasing alpha models to production."
+        ]
+      },
+      cred: {
+        title: "CRED: Life Matrix",
+        subtitle: "Conceptual Financial Interface & Behavioral Dashboard",
+        eyebrow: "VOLUME 05 · FINTECH PRODUCT",
+        tags: ["CRED Concept", "Kunal Shah", "Behavioral UX", "Fintech Luxury", "Meta-Backed"],
+        metrics: [
+          { label: "Recognition", val: "Leadership Review" },
+          { label: "Studio", val: "Imagine Planet" },
+          { label: "Domain", val: "Fintech Matrix" }
+        ],
+        desc: "Created the 'Life Matrix' concept for CRED, exploring holistic wealth tracking and member behavioral psychology. The conceptual interface was reviewed and appreciated by top leadership at CRED following their high-profile investment round.",
+        bullets: [
+          "Crafted an unconventional financial matrix aligning luxury dark-mode aesthetics with credit score intelligence.",
+          "Appreciated by CRED's top executive management for innovative design thinking and brand resonance.",
+          "Explored high-contrast typography, haptic cues, and modular telemetry for premium consumer finance."
+        ]
+      },
+      fyers: {
+        title: "FYERS: Candle Signals",
+        subtitle: "Evening Supermarket Ad Campaign & Ambient Trading Visuals",
+        eyebrow: "VOLUME 06 · AD CAMPAIGN & UX",
+        tags: ["FYERS Campaign", "Founder Liked", "Candlestick Art", "Out-of-Home", "Ad Concept"],
+        metrics: [
+          { label: "Recognition", val: "Liked by Founder" },
+          { label: "Format", val: "Ambient OOH Ad" },
+          { label: "Theme", val: "Trading Psychology" }
+        ],
+        desc: "Created a real-world evening ad campaign concept for brokerage platform FYERS. Centered around how green and red candles dictate trader emotions, set outside busy evening supermarkets. Liked and praised directly by the founder of FYERS.",
+        bullets: [
+          "Synthesized trader culture into an unforgettable physical ambient advertisement concept.",
+          "Directly appreciated by the founder of FYERS on social media.",
+          "Combined high-impact street-level advertising with authentic market psychology and brand storytelling."
+        ]
+      },
+      imagine: {
+        title: "Imagine Planet Studio",
+        subtitle: "Independent Product & UI/UX Design Studio",
+        eyebrow: "VOLUME 07 · DESIGN STUDIO",
+        tags: ["Design Studio", "Fintech Unicorns", "Mobile Systems", "Brand Writing", "4+ Years"],
+        metrics: [
+          { label: "Studio Age", val: "4y 9m" },
+          { label: "Clients", val: "Fintech & E-Comm" },
+          { label: "Output", val: "Apps & Systems" }
+        ],
+        desc: "Founded Imagine Planet Design, an independent product design studio that builds bespoke software products, mobile interfaces, and backend telemetry dashboards. Work has been appreciated by leaders across Indian fintech unicorns.",
+        bullets: [
+          "Designed comprehensive mobile interfaces, complex data-handling dashboards, and notification systems.",
+          "Delivered end-to-end product strategy, ad copywriting, and brand identity systems for growth-stage companies.",
+          "Pioneered physical-digital product collaborations, including upcoming hardware projects for quick-commerce giants."
+        ]
+      },
+      zomato: {
+        title: "Partner Safety UX",
+        subtitle: "Deep-Dive Teardown of Zomato & Blinkit Logistics UX",
+        eyebrow: "VOLUME 08 · PRODUCT TEARDOWN",
+        tags: ["Logistics UX", "Zomato x Blinkit", "Driver Welfare", "Quick Commerce", "Field Analysis"],
+        metrics: [
+          { label: "Reach", val: "3.8k+ Impressions" },
+          { label: "Category", val: "Logistics Product" },
+          { label: "Platform", val: "Delivery Partner App" }
+        ],
+        desc: "Conducted extensive field and product analysis of Zomato and Blinkit delivery partner applications, highlighting their gold-standard focus on partner safety, healthcare, and financial well-being.",
+        bullets: [
+          "Identified and cataloged world-class in-app safety features built for high-stress last-mile delivery fleets.",
+          "Engaged the product community on quick-commerce interface ergonomics and real-world courier ergonomics.",
+          "Formulated actionable UX proposals for leading real estate and e-commerce platforms."
+        ]
+      },
+      cloud: {
+        title: "Singularity Cloud",
+        subtitle: "Android Multi-Cloud Management & Monitoring Client",
+        eyebrow: "VOLUME 09 · MOBILE ARCHITECTURE",
+        tags: ["Android App", "AWS & GCP", "Mobile Telemetry", "Secure Auth", "Live Feeds"],
+        metrics: [
+          { label: "Platform", val: "Android / Kotlin" },
+          { label: "Cloud Backends", val: "AWS + GCP" },
+          { label: "Data Sync", val: "Encrypted WebSockets" }
+        ],
+        desc: "Architected and coded the official Android companion application for B. Singularity, establishing bi-directional encrypted connectivity with AWS Mumbai and Google Cloud instances.",
+        bullets: [
+          "Provides secure remote visibility into live risk engines and portfolio delta exposures on mobile devices.",
+          "Implements native low-latency socket listeners and push alerts for instant threshold notifications.",
+          "Seamlessly connects AWS execution server telemetry with Google Cloud analytics storage."
+        ]
+      }
+    };
+
+    var currentTrigger = null;
+
+    function openModal(bookId, triggerEl) {
+      var data = BOOK_DATA[bookId];
+      if (!data) return;
+
+      currentTrigger = triggerEl;
+
+      // Populate text
+      document.getElementById("modal-eyebrow").textContent = data.eyebrow;
+      document.getElementById("modal-title").textContent = data.title;
+      document.getElementById("modal-subtitle").textContent = data.subtitle;
+      document.getElementById("modal-desc").textContent = data.desc;
+
+      // Populate badges
+      var badgesContainer = document.getElementById("modal-badges");
+      badgesContainer.innerHTML = "";
+      data.tags.forEach(function (tag) {
+        var span = document.createElement("span");
+        span.className = "modal-badge-pill";
+        span.textContent = tag;
+        badgesContainer.appendChild(span);
+      });
+
+      // Populate metrics
+      var metricsContainer = document.getElementById("modal-metrics");
+      metricsContainer.innerHTML = "";
+      data.metrics.forEach(function (m) {
+        var card = document.createElement("div");
+        card.className = "modal-metric-card";
+        card.innerHTML = '<span class="mm-label">' + m.label + '</span><span class="mm-val">' + m.val + '</span>';
+        metricsContainer.appendChild(card);
+      });
+
+      // Populate highlights
+      var bulletsContainer = document.getElementById("modal-bullets");
+      bulletsContainer.innerHTML = "";
+      data.bullets.forEach(function (b) {
+        var li = document.createElement("li");
+        li.textContent = b;
+        bulletsContainer.appendChild(li);
+      });
+
+      // 3D Book Clone
+      var bookDisplay = document.getElementById("modal-book-3d");
+      bookDisplay.innerHTML = "";
+      if (triggerEl) {
+        var cover = triggerEl.querySelector(".book-cover");
+        if (cover) {
+          var clone = cover.cloneNode(true);
+          clone.className = "modal-book-clone " + (triggerEl.classList.contains("book-card--" + bookId) ? "book-card--" + bookId : "");
+          bookDisplay.appendChild(clone);
+        }
+      }
+
+      // Show modal
+      overlay.classList.add("is-active");
+      overlay.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+
+      // Focus close button for accessibility
+      setTimeout(function () {
+        if (closeBtn) closeBtn.focus();
+      }, 50);
+    }
+
+    function closeModal() {
+      overlay.classList.remove("is-active");
+      overlay.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+      if (currentTrigger) {
+        currentTrigger.focus();
+        currentTrigger = null;
+      }
+    }
+
+    // Attach book click & keyboard listeners
+    bookCards.forEach(function (card) {
+      var bookId = card.getAttribute("data-book-id");
+
+      card.addEventListener("click", function () {
+        openModal(bookId, card);
+      });
+
+      card.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openModal(bookId, card);
+        }
+      });
+    });
+
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    if (closeAction) closeAction.addEventListener("click", closeModal);
+    if (backdrop) backdrop.addEventListener("click", closeModal);
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && overlay.classList.contains("is-active")) {
+        closeModal();
+      }
+    });
+  })();
+
 })();

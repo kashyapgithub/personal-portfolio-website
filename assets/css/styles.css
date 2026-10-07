@@ -1380,3 +1380,758 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
     align-items: flex-start;
   }
 }
+
+/* ============================================================
+   The Systems & Product Bookshelf (2-Level 3D Showcase)
+   ============================================================ */
+.bookshelf-section {
+  position: relative;
+  background: var(--bg);
+  overflow: hidden;
+  padding: clamp(4rem, 7vw, 6rem) 0;
+}
+
+.bookshelf-head {
+  text-align: center;
+  max-width: 760px;
+  margin: 0 auto clamp(2.5rem, 4.5vw, 4rem);
+}
+
+.bookshelf-stage {
+  position: relative;
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  perspective: 1200px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(3.5rem, 6vw, 5.5rem);
+  padding: 1rem 0 3rem;
+}
+
+/* Ambient Wall Spotlights behind shelves */
+.shelf-spotlight {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 85%;
+  height: 280px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.45;
+  filter: blur(55px);
+}
+
+.shelf-spotlight--top {
+  top: 60px;
+  background: radial-gradient(ellipse at center, rgba(0, 212, 200, 0.18) 0%, rgba(0, 113, 227, 0.08) 50%, transparent 75%);
+}
+
+.shelf-spotlight--bottom {
+  bottom: 80px;
+  background: radial-gradient(ellipse at center, rgba(255, 164, 43, 0.14) 0%, rgba(168, 85, 247, 0.08) 50%, transparent 75%);
+}
+
+/* Shelf Level Container */
+.shelf-level {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.shelf-level-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.shelf-level-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.shelf-level-title {
+  color: var(--fg-secondary);
+  font-weight: 500;
+}
+
+.shelf-level-count {
+  color: var(--faint);
+  font-size: 0.7rem;
+}
+
+/* Shelf Books Row */
+.shelf-books-row {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: clamp(14px, 2.4vw, 32px);
+  width: 100%;
+  padding: 0 16px;
+  margin-bottom: -5px; /* Sit right on top plane of shelf */
+}
+
+/* 3D Physical Shelf Plank */
+.shelf-plank {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1100px;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Shelf Top Surface (Perspective Plane) */
+.shelf-surface {
+  width: 100%;
+  height: 18px;
+  background: linear-gradient(180deg, #f7f9fc 0%, #e2e7ef 55%, #c8d0dc 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 
+    inset 0 1px 3px rgba(255, 255, 255, 0.9),
+    inset 0 -2px 4px rgba(15, 23, 42, 0.2);
+  border-radius: 4px 4px 0 0;
+  transform-origin: bottom center;
+}
+
+/* Shelf Bevel (Crisp transition line) */
+.shelf-bevel {
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, #d3dae5 0%, #ffffff 30%, #ffffff 70%, #d3dae5 100%);
+  box-shadow: 0 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+/* Shelf Front Edge (Solid White/Aluminum face) */
+.shelf-front {
+  width: 100%;
+  height: 14px;
+  background: linear-gradient(180deg, #b8c2d1 0%, #909dae 100%);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.45);
+  border-radius: 0 0 3px 3px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
+}
+
+/* Cast Shadow beneath shelf */
+.shelf-cast-shadow {
+  width: 104%;
+  height: 48px;
+  margin-left: -2%;
+  margin-top: -2px;
+  background: radial-gradient(ellipse 65% 100% at 50% 0%, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.4) 35%, rgba(0, 0, 0, 0.12) 65%, transparent 85%);
+  filter: blur(10px);
+}
+
+/* ============================================================
+   The Book Cards (Realistic Standalone Volumes)
+   ============================================================ */
+.book-card {
+  position: relative;
+  width: clamp(146px, 14.5vw, 185px);
+  height: clamp(214px, 21.5vw, 268px);
+  cursor: pointer;
+  outline: none;
+  transform-style: preserve-3d;
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.book-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 6px;
+  border-radius: 8px;
+}
+
+/* Realistic Ground Contact Shadow */
+.book-contact-shadow {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: -6px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  filter: blur(4px);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease, filter 0.32s ease;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Book Cover Hardboard */
+.book-cover {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 5px 9px 9px 5px;
+  background: var(--book-bg, #131722);
+  border: 1px solid var(--book-border, rgba(255, 255, 255, 0.1));
+  box-shadow: 
+    0 4px 14px -3px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.32s ease, border-color 0.32s ease;
+}
+
+/* Spine Crease Line */
+.book-spine-crease {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 22px;
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0.16) 0%, 
+    rgba(0, 0, 0, 0.15) 20%, 
+    rgba(0, 0, 0, 0.45) 48%, 
+    rgba(255, 255, 255, 0.12) 54%, 
+    transparent 100%
+  );
+  border-right: 1px solid rgba(0, 0, 0, 0.2);
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Book Pages Edge Thickness (Right Edge) */
+.book-edges {
+  position: absolute;
+  right: -3px;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  background: repeating-linear-gradient(180deg, #e4e7eb 0px, #cbd3de 1.5px, #b0bccb 3px);
+  border-radius: 0 2px 2px 0;
+  box-shadow: 1px 0 3px rgba(0, 0, 0, 0.4);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Book Content Layout */
+.book-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  padding: 14px 14px 14px 24px; /* extra left padding for spine */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.book-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.book-tag {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--book-accent, var(--accent));
+  background: var(--book-accent-soft, rgba(0, 212, 200, 0.12));
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.book-vol {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 600;
+}
+
+.book-visual {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0;
+  opacity: 0.85;
+}
+
+.book-glyph {
+  width: clamp(52px, 5.5vw, 68px);
+  height: clamp(52px, 5.5vw, 68px);
+  color: var(--book-accent, var(--accent));
+  transition: transform 0.3s ease;
+}
+
+.book-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.book-series {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--book-accent, var(--accent));
+  opacity: 0.9;
+}
+
+.book-name {
+  font-family: var(--font);
+  font-size: clamp(0.95rem, 1.1vw, 1.12rem);
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+}
+
+.book-context {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.3;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Hover & Focus Interactions */
+.book-card:hover,
+.book-card:focus-visible {
+  transform: translateY(-16px) scale(1.03) rotateZ(-0.6deg);
+}
+
+.book-card:hover .book-contact-shadow,
+.book-card:focus-visible .book-contact-shadow {
+  transform: scale(1.2) translateY(8px);
+  opacity: 0.35;
+  filter: blur(8px);
+}
+
+.book-card:hover .book-cover,
+.book-card:focus-visible .book-cover {
+  border-color: var(--book-accent, var(--accent));
+  box-shadow: 
+    0 22px 42px -12px rgba(0, 0, 0, 0.75),
+    0 0 25px var(--book-glow, rgba(0, 212, 200, 0.35)),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+.book-card:hover .book-glyph,
+.book-card:focus-visible .book-glyph {
+  transform: scale(1.08) rotate(4deg);
+}
+
+/* ---------------- Individual Book Themes ---------------- */
+/* 1. Genie 2.0 */
+.book-card--genie {
+  --book-bg: linear-gradient(145deg, #061917 0%, #0c332e 50%, #061715 100%);
+  --book-border: rgba(0, 212, 200, 0.25);
+  --book-accent: #00d4c8;
+  --book-accent-soft: rgba(0, 212, 200, 0.15);
+  --book-glow: rgba(0, 212, 200, 0.32);
+}
+
+/* 2. Manage Risk Pro */
+.book-card--mrp {
+  --book-bg: linear-gradient(145deg, #240b12 0%, #3e121d 50%, #17070b 100%);
+  --book-border: rgba(244, 63, 94, 0.25);
+  --book-accent: #f43f5e;
+  --book-accent-soft: rgba(244, 63, 94, 0.15);
+  --book-glow: rgba(244, 63, 94, 0.32);
+}
+
+/* 3. AWS Live TUI */
+.book-card--tui {
+  --book-bg: linear-gradient(145deg, #211606 0%, #3a270d 50%, #171004 100%);
+  --book-border: rgba(255, 164, 43, 0.25);
+  --book-accent: #ffa42b;
+  --book-accent-soft: rgba(255, 164, 43, 0.15);
+  --book-glow: rgba(255, 164, 43, 0.32);
+}
+
+/* 4. Dry Run Engine */
+.book-card--dryrun {
+  --book-bg: linear-gradient(145deg, #091728 0%, #122b4a 50%, #081422 100%);
+  --book-border: rgba(56, 189, 248, 0.25);
+  --book-accent: #38bdf8;
+  --book-accent-soft: rgba(56, 189, 248, 0.15);
+  --book-glow: rgba(56, 189, 248, 0.32);
+}
+
+/* 5. CRED Life Matrix */
+.book-card--cred {
+  --book-bg: linear-gradient(145deg, #161514 0%, #292622 50%, #100f0e 100%);
+  --book-border: rgba(229, 192, 123, 0.28);
+  --book-accent: #e5c07b;
+  --book-accent-soft: rgba(229, 192, 123, 0.15);
+  --book-glow: rgba(229, 192, 123, 0.32);
+}
+
+/* 6. FYERS Candle Signals */
+.book-card--fyers {
+  --book-bg: linear-gradient(145deg, #091c16 0%, #132f25 50%, #1d0f14 100%);
+  --book-border: rgba(16, 185, 129, 0.25);
+  --book-accent: #10b981;
+  --book-accent-soft: rgba(16, 185, 129, 0.15);
+  --book-glow: rgba(16, 185, 129, 0.32);
+}
+
+/* 7. Imagine Planet */
+.book-card--imagine {
+  --book-bg: linear-gradient(145deg, #1b0e2f 0%, #311854 50%, #120921 100%);
+  --book-border: rgba(168, 85, 247, 0.25);
+  --book-accent: #a855f7;
+  --book-accent-soft: rgba(168, 85, 247, 0.15);
+  --book-glow: rgba(168, 85, 247, 0.32);
+}
+
+/* 8. Zomato x Blinkit */
+.book-card--zomato {
+  --book-bg: linear-gradient(145deg, #260a0f 0%, #3e1218 50%, #271f08 100%);
+  --book-border: rgba(251, 191, 36, 0.25);
+  --book-accent: #fbbf24;
+  --book-accent-soft: rgba(251, 191, 36, 0.15);
+  --book-glow: rgba(251, 191, 36, 0.32);
+}
+
+/* 9. Singularity Cloud */
+.book-card--cloud {
+  --book-bg: linear-gradient(145deg, #091a24 0%, #102e3f 50%, #08161f 100%);
+  --book-border: rgba(45, 212, 191, 0.25);
+  --book-accent: #2dd4bf;
+  --book-accent-soft: rgba(45, 212, 191, 0.15);
+  --book-glow: rgba(45, 212, 191, 0.32);
+}
+
+/* ============================================================
+   Book Inspection Modal Dialog
+   ============================================================ */
+.book-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s var(--ease), visibility 0.25s var(--ease);
+}
+
+.book-modal-overlay.is-active {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.book-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 5, 8, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.book-modal-container {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 860px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  box-shadow: 
+    0 25px 60px -15px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+  padding: clamp(24px, 4vw, 36px);
+  transform: translateY(20px) scale(0.97);
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.book-modal-overlay.is-active .book-modal-container {
+  transform: translateY(0) scale(1);
+}
+
+.book-modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  z-index: 5;
+}
+
+.book-modal-close:hover {
+  background: var(--surface-hover);
+  color: var(--fg);
+  border-color: var(--border-strong);
+}
+
+.book-modal-content {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.modal-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.modal-book-3d {
+  width: 200px;
+  height: 280px;
+  perspective: 900px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-book-clone {
+  width: 100%;
+  height: 100%;
+  border-radius: 6px 12px 12px 6px;
+  transform: rotateY(-14deg) rotateX(3deg);
+  box-shadow: 
+    -12px 18px 32px rgba(0, 0, 0, 0.7),
+    0 0 24px var(--book-glow, rgba(0, 212, 200, 0.25));
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.modal-meta-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  width: 100%;
+}
+
+.modal-badge-pill {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.modal-right {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.modal-title {
+  font-family: var(--font);
+  font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  color: var(--fg);
+  margin-bottom: 4px;
+}
+
+.modal-subtitle {
+  font-size: 0.95rem;
+  color: var(--fg-secondary);
+  line-height: 1.5;
+  margin-bottom: 18px;
+}
+
+.modal-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.modal-metric-card {
+  padding: 10px 12px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+}
+
+.mm-label {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.mm-val {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+.modal-section-title {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.modal-desc {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--fg-secondary);
+  margin-bottom: 14px;
+}
+
+.modal-bullets {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.modal-bullets li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.modal-bullets li::before {
+  content: "•";
+  position: absolute;
+  left: 2px;
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.modal-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* ============================================================
+   Bookshelf Responsive Queries
+   ============================================================ */
+@media (max-width: 980px) {
+  .shelf-books-row {
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+  }
+  .shelf-plank {
+    max-width: 100%;
+  }
+  .book-card {
+    width: 150px;
+    height: 220px;
+  }
+  .book-modal-content {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .modal-left {
+    flex-direction: row;
+    justify-content: center;
+    gap: 20px;
+  }
+  .modal-book-3d {
+    width: 150px;
+    height: 210px;
+  }
+}
+
+@media (max-width: 640px) {
+  .bookshelf-stage {
+    gap: 2.8rem;
+    padding: 0 0 2rem;
+  }
+  .shelf-books-row {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding: 10px 16px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: 14px;
+  }
+  .shelf-books-row::-webkit-scrollbar {
+    height: 4px;
+  }
+  .shelf-books-row::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 4px;
+  }
+  .book-card {
+    flex: 0 0 140px;
+    height: 205px;
+    scroll-snap-align: center;
+  }
+  .shelf-level-header {
+    padding: 0 16px;
+    width: 100%;
+  }
+  .modal-left {
+    flex-direction: column;
+  }
+}
