@@ -2116,111 +2116,7 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   transition: all 0.72s cubic-bezier(0.2, 0.9, 0.25, 1);
 }
 
-/* ============================================================
-   Harry Potter Enchanted Tome Light Beams & Core Glow
-   ============================================================ */
-.spell-core-glow {
-  position: absolute;
-  inset: -4px -3px -4px -3px;
-  border-radius: 4px 10px 10px 4px;
-  background: radial-gradient(circle at 45% 50%, 
-    rgba(255, 255, 255, 1) 0%, 
-    rgba(254, 240, 138, 0.96) 22%, 
-    rgba(245, 158, 11, 0.85) 45%, 
-    rgba(217, 119, 6, 0.4) 68%, 
-    transparent 82%
-  );
-  opacity: 0;
-  transform: scale(0.6);
-  filter: blur(5px);
-  z-index: 28;
-  pointer-events: none;
-  mix-blend-mode: screen;
-  transition: opacity 0.3s ease, transform 0.4s ease;
-}
 
-.spell-light-beams {
-  position: absolute;
-  left: -20px;
-  right: -20px;
-  bottom: 20px;
-  height: 280px;
-  background: 
-    conic-gradient(from 260deg at 50% 100%, 
-      transparent 0deg, 
-      rgba(245, 158, 11, 0.4) 8deg, 
-      rgba(254, 240, 138, 0.8) 16deg, 
-      rgba(255, 255, 255, 0.95) 20deg, 
-      rgba(254, 240, 138, 0.8) 24deg, 
-      rgba(245, 158, 11, 0.4) 32deg, 
-      transparent 40deg
-    ),
-    linear-gradient(to top, 
-      rgba(254, 240, 138, 0.85) 0%, 
-      rgba(245, 158, 11, 0.6) 35%, 
-      rgba(217, 119, 6, 0.25) 70%, 
-      transparent 100%
-    );
-  clip-path: polygon(25% 100%, 0% 0%, 100% 0%, 75% 100%);
-  opacity: 0;
-  transform: translateY(30px) scaleY(0.2) scaleX(0.7);
-  transform-origin: 50% 100%;
-  filter: blur(6px);
-  mix-blend-mode: screen;
-  z-index: 29;
-  pointer-events: none;
-  transition: opacity 0.4s ease 0.08s, transform 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.08s;
-}
-
-.book-card.is-opening .spell-core-glow {
-  opacity: 1;
-  transform: scale(1.18);
-  animation: spellCorePulse 1.1s ease-in-out infinite alternate;
-}
-
-.book-card.is-opening .spell-light-beams {
-  opacity: 1;
-  transform: translateY(0) scaleY(1.3) scaleX(1);
-  animation: spellBeamsOscillate 1.6s ease-in-out infinite alternate;
-}
-
-.book-card.is-closing .spell-core-glow {
-  opacity: 0;
-  transform: scale(0.5);
-  transition: opacity 0.35s ease, transform 0.4s ease;
-}
-
-.book-card.is-closing .spell-light-beams {
-  opacity: 0;
-  transform: translateY(20px) scaleY(0.2);
-  transition: opacity 0.3s ease, transform 0.35s ease;
-}
-
-@keyframes spellCorePulse {
-  0% {
-    filter: blur(5px) brightness(1);
-    transform: scale(1.1);
-  }
-  100% {
-    filter: blur(8px) brightness(1.35);
-    transform: scale(1.26);
-  }
-}
-
-@keyframes spellBeamsOscillate {
-  0% {
-    opacity: 0.85;
-    transform: translateY(0) scaleY(1.2) rotate(-1.5deg);
-  }
-  50% {
-    opacity: 1;
-    transform: translateY(-8px) scaleY(1.4) rotate(1deg);
-  }
-  100% {
-    opacity: 0.9;
-    transform: translateY(0) scaleY(1.25) rotate(-0.5deg);
-  }
-}
 
 /* ============================================================
    3D Real Book Closing State (.is-closing)
@@ -2370,19 +2266,6 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   -webkit-backdrop-filter: blur(14px);
 }
 
-/* ============================================================
-   Harry Potter Spell Canvas
-   ============================================================ */
-.spell-canvas {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  z-index: 9998;
-  opacity: 1;
-}
-
 .chapter-modal-container {
   position: relative;
   z-index: 10;
@@ -2397,163 +2280,15 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
     18px 18px 42px rgba(15, 23, 42, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.9);
   padding: clamp(22px, 3.5vw, 36px);
-  transform: translateY(32px) scale(0.92);
-  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(28px) scale(0.95);
+  opacity: 0;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
   color: #1e293b;
 }
 
 .chapter-modal-overlay.is-active .chapter-modal-container {
-  animation: enchantedParchmentEmerge 0.68s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes enchantedParchmentEmerge {
-  0% {
-    opacity: 0;
-    transform: translateY(48px) scale(0.86) rotateX(10deg);
-    box-shadow: 
-      0 0 0 rgba(245, 158, 11, 0),
-      0 20px 40px rgba(15, 23, 42, 0.4);
-    filter: brightness(1.22) contrast(1.05);
-  }
-  45% {
-    opacity: 1;
-    box-shadow: 
-      0 0 65px rgba(245, 158, 11, 0.7),
-      0 0 115px rgba(217, 119, 6, 0.45),
-      -12px -12px 28px rgba(255, 255, 255, 0.9),
-      16px 16px 36px rgba(15, 23, 42, 0.35);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1) rotateX(0deg);
-    box-shadow: 
-      0 0 45px rgba(245, 158, 11, 0.25),
-      -16px -16px 36px rgba(255, 255, 255, 0.95), 
-      18px 18px 42px rgba(15, 23, 42, 0.35);
-    filter: brightness(1) contrast(1);
-  }
-}
-
-/* Ethereal Golden Aura Backlight */
-.spell-aura-backlight {
-  position: absolute;
-  inset: -28px;
-  border-radius: 44px;
-  background: radial-gradient(ellipse at 50% 45%, 
-    rgba(245, 158, 11, 0.42) 0%, 
-    rgba(251, 191, 36, 0.22) 40%, 
-    rgba(217, 119, 6, 0.08) 65%, 
-    transparent 78%
-  );
-  filter: blur(32px);
-  opacity: 0;
-  pointer-events: none;
-  z-index: -1;
-  transition: opacity 0.5s ease 0.15s;
-}
-
-.chapter-modal-overlay.is-active .spell-aura-backlight {
+  transform: translateY(0) scale(1);
   opacity: 1;
-  animation: spellAuraBreathe 3.2s ease-in-out infinite alternate;
-}
-
-@keyframes spellAuraBreathe {
-  0% {
-    opacity: 0.75;
-    transform: scale(0.97);
-    filter: blur(28px);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1.03);
-    filter: blur(36px);
-  }
-}
-
-/* Antique Filigree Corner Brackets */
-.spell-corner-flourish {
-  position: absolute;
-  width: 38px;
-  height: 38px;
-  color: #b45309;
-  opacity: 0.65;
-  pointer-events: none;
-  z-index: 12;
-  transition: opacity 0.3s ease;
-}
-
-.spell-corner-flourish--tl { top: 14px; left: 14px; }
-.spell-corner-flourish--tr { top: 14px; right: 14px; }
-.spell-corner-flourish--bl { bottom: 14px; left: 14px; }
-.spell-corner-flourish--br { bottom: 14px; right: 14px; }
-
-/* Enchanted Archive Header Badge */
-.spell-seal-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #b45309;
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.32);
-  box-shadow: 0 0 14px rgba(245, 158, 11, 0.18), inset 0 0 8px rgba(254, 240, 138, 0.3);
-  padding: 4px 12px;
-  border-radius: var(--radius-pill);
-  margin-bottom: 10px;
-  width: fit-content;
-}
-
-.spell-seal-sparkle {
-  color: #f59e0b;
-  font-size: 0.74rem;
-  display: inline-block;
-  animation: spellSparkleSpin 3s linear infinite;
-}
-
-@keyframes spellSparkleSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* Tom Riddle / Marauder's Map Enchanted Ink Reveal */
-.chapter-modal-overlay.is-active .chapter-title {
-  animation: inkSpellReveal 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.chapter-modal-overlay.is-active .chapter-category {
-  animation: inkCategoryGlow 0.75s ease forwards;
-}
-
-@keyframes inkSpellReveal {
-  0% {
-    color: #f59e0b;
-    text-shadow: 0 0 18px rgba(245, 158, 11, 0.95), 0 0 32px rgba(251, 191, 36, 0.7);
-    letter-spacing: 0.015em;
-  }
-  40% {
-    color: #d97706;
-    text-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
-  }
-  100% {
-    color: #0f172a;
-    text-shadow: none;
-    letter-spacing: -0.025em;
-  }
-}
-
-@keyframes inkCategoryGlow {
-  0% {
-    color: #f59e0b;
-    text-shadow: 0 0 12px rgba(245, 158, 11, 0.8);
-  }
-  100% {
-    color: #0284c7;
-    text-shadow: none;
-  }
 }
 
 /* Chapter Navigation Header */
