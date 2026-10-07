@@ -667,149 +667,563 @@
     }
 
     /* ------------------------------------------------------------
-       Seamless Single-State Book-to-Modal Expansion Engine
+       macOS Catalina Style Genie Effect Engine (Dual-Phase Harmonic Deformation)
        ------------------------------------------------------------ */
-    var isTransitioning = false;
+    var genieCanvas = document.getElementById("genie-canvas");
+    var GenieFX = (function () {
+      var canvas = genieCanvas;
+      var ctx = canvas ? canvas.getContext("2d") : null;
+      var activeAnimId = null;
+      var isAnimating = false;
+
+      var THEME_COLORS = {
+        genie: { bg1: "#061917", bg2: "#0c332e", accent: "#00d4c8" },
+        mrp: { bg1: "#240b12", bg2: "#3e121d", accent: "#f43f5e" },
+        tui: { bg1: "#211606", bg2: "#3a270d", accent: "#ffa42b" },
+        dryrun: { bg1: "#091728", bg2: "#122b4a", accent: "#38bdf8" },
+        cred: { bg1: "#161514", bg2: "#292622", accent: "#e5c07b" },
+        fyers: { bg1: "#091c16", bg2: "#132f25", accent: "#10b981" },
+        imagine: { bg1: "#1b0e2f", bg2: "#311854", accent: "#a855f7" },
+        zomato: { bg1: "#260a0f", bg2: "#3e1218", accent: "#fbbf24" },
+        cloud: { bg1: "#091a24", bg2: "#102e3f", accent: "#2dd4bf" }
+      };
+
+      function resizeCanvas() {
+        if (!canvas) return;
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var w = window.innerWidth;
+        var h = window.innerHeight;
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+        if (ctx) {
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+      }
+
+      window.addEventListener("resize", resizeCanvas);
+
+      function clearCanvas() {
+        if (!ctx || !canvas) return;
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+      }
+
+      function drawRoundRect(c, x, y, w, h, r) {
+        if (c.roundRect) {
+          c.roundRect(x, y, w, h, r);
+          return;
+        }
+        if (w < 2 * r) r = w / 2;
+        if (h < 2 * r) r = h / 2;
+        c.moveTo(x + r, y);
+        c.arcTo(x + w, y, x + w, y + h, r);
+        c.arcTo(x + w, y + h, x, y + h, r);
+        c.arcTo(x, y + h, x, y, r);
+        c.arcTo(x, y, x + w, y, r);
+        c.closePath();
+      }
+
+      function createSnapshot(data, width, height, bookId) {
+        if (!width || !height) return null;
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var offCanvas = document.createElement("canvas");
+        offCanvas.width = Math.round(width * dpr);
+        offCanvas.height = Math.round(height * dpr);
+        var sctx = offCanvas.getContext("2d");
+        if (!sctx) return null;
+        sctx.scale(dpr, dpr);
+
+        var theme = THEME_COLORS[bookId] || THEME_COLORS.genie;
+
+        // Base Bright Neumorphic Modal Plate (#edf2f8)
+        sctx.save();
+        sctx.beginPath();
+        drawRoundRect(sctx, 0, 0, width, height, 28);
+        sctx.fillStyle = "#edf2f8";
+        sctx.fill();
+        sctx.strokeStyle = "rgba(255, 255, 255, 0.85)";
+        sctx.lineWidth = 1.5;
+        sctx.stroke();
+
+        // Top Navigation Bar
+        var pillX = 28, pillY = 20, pillW = 150, pillH = 28;
+        sctx.beginPath();
+        drawRoundRect(sctx, pillX, pillY, pillW, pillH, 14);
+        sctx.fillStyle = "#edf2f8";
+        sctx.fill();
+        sctx.strokeStyle = "rgba(166, 178, 195, 0.4)";
+        sctx.lineWidth = 1;
+        sctx.stroke();
+        sctx.fillStyle = "#0284c7";
+        sctx.font = "700 11px monospace";
+        sctx.fillText("CHAPTER " + (data.chapterNum || "01") + " OF 09", pillX + 14, pillY + 18);
+
+        // Close Button in Header
+        var closeX = width - 64, closeY = 16;
+        sctx.beginPath();
+        drawRoundRect(sctx, closeX, closeY, 36, 36, 10);
+        sctx.fillStyle = "#edf2f8";
+        sctx.fill();
+        sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+        sctx.lineWidth = 1;
+        sctx.stroke();
+        sctx.strokeStyle = "#64748b";
+        sctx.lineWidth = 2;
+        sctx.beginPath();
+        sctx.moveTo(closeX + 12, closeY + 12);
+        sctx.lineTo(closeX + 24, closeY + 24);
+        sctx.moveTo(closeX + 24, closeY + 12);
+        sctx.lineTo(closeX + 12, closeY + 24);
+        sctx.stroke();
+
+        // Header Divider
+        sctx.beginPath();
+        sctx.moveTo(28, 62);
+        sctx.lineTo(width - 28, 62);
+        sctx.strokeStyle = "rgba(166, 178, 195, 0.35)";
+        sctx.lineWidth = 1;
+        sctx.stroke();
+
+        // Layout Columns
+        var isTwoCol = width >= 700;
+        var artColW = isTwoCol ? 260 : width - 56;
+        var startY = 78;
+
+        // Artwork Card (Left Column)
+        var artCardH = isTwoCol ? 280 : 190;
+        sctx.beginPath();
+        drawRoundRect(sctx, 28, startY, artColW, artCardH, 20);
+        sctx.fillStyle = "#edf2f8";
+        sctx.fill();
+        sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+        sctx.lineWidth = 1;
+        sctx.stroke();
+
+        // Book Cover 3D Clone
+        var bW = isTwoCol ? 140 : 100;
+        var bH = isTwoCol ? 190 : 135;
+        var bX = 28 + (artColW - bW) / 2;
+        var bY = startY + 16;
+
+        var bookGrad = sctx.createLinearGradient(bX, bY, bX + bW, bY + bH);
+        bookGrad.addColorStop(0, theme.bg1);
+        bookGrad.addColorStop(0.5, theme.bg2);
+        bookGrad.addColorStop(1, theme.bg1);
+
+        sctx.beginPath();
+        drawRoundRect(sctx, bX, bY, bW, bH, 8);
+        sctx.fillStyle = bookGrad;
+        sctx.fill();
+        sctx.strokeStyle = theme.accent;
+        sctx.lineWidth = 1;
+        sctx.stroke();
+
+        // Book Spine & Accent line
+        sctx.fillStyle = theme.accent;
+        sctx.fillRect(bX + 8, bY + 12, 2, bH - 24);
+
+        // Book Cover Text
+        sctx.fillStyle = theme.accent;
+        sctx.font = "700 9px monospace";
+        sctx.fillText("CH. " + (data.chapterNum || "01"), bX + 16, bY + 30);
+
+        sctx.fillStyle = "#ffffff";
+        sctx.font = "700 13px sans-serif";
+        var titleWord = (data.title || "").split(":")[0];
+        sctx.fillText(titleWord.slice(0, 16), bX + 16, bY + 50);
+
+        // Era Stamp under Artwork
+        var eraY = startY + artCardH - 32;
+        sctx.beginPath();
+        drawRoundRect(sctx, 42, eraY, artColW - 28, 22, 11);
+        sctx.fillStyle = "#edf2f8";
+        sctx.fill();
+        sctx.strokeStyle = "rgba(166, 178, 195, 0.4)";
+        sctx.lineWidth = 1;
+        sctx.stroke();
+        sctx.fillStyle = "#64748b";
+        sctx.font = "700 9px monospace";
+        sctx.textAlign = "center";
+        sctx.fillText((data.era || "").slice(0, 34), 42 + (artColW - 28) / 2, eraY + 15);
+        sctx.textAlign = "left";
+
+        // Metrics Card
+        var metY = startY + artCardH + 16;
+        var metH = 130;
+        sctx.beginPath();
+        drawRoundRect(sctx, 28, metY, artColW, metH, 16);
+        sctx.fillStyle = "#edf2f8";
+        sctx.fill();
+        sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+        sctx.lineWidth = 1;
+        sctx.stroke();
+        sctx.fillStyle = "#64748b";
+        sctx.font = "700 9px monospace";
+        sctx.fillText("KEY METRICS · PLATFORM", 40, metY + 22);
+
+        if (data.metrics && data.metrics.length) {
+          data.metrics.slice(0, 4).forEach(function (m, idx) {
+            var my = metY + 44 + idx * 22;
+            sctx.fillStyle = "#64748b";
+            sctx.font = "11px monospace";
+            sctx.fillText(m.label, 40, my);
+            sctx.fillStyle = "#0f172a";
+            sctx.font = "700 11px monospace";
+            sctx.textAlign = "right";
+            sctx.fillText(m.val, 28 + artColW - 12, my);
+            sctx.textAlign = "left";
+          });
+        }
+
+        // Right Column (Editorial Story)
+        var storyX = isTwoCol ? 28 + artColW + 28 : 28;
+        var storyW = width - storyX - 28;
+        var sY = isTwoCol ? startY : metY + metH + 18;
+
+        // Eyebrow Category
+        sctx.fillStyle = "#0284c7";
+        sctx.font = "700 11px monospace";
+        sctx.fillText((data.category || "").toUpperCase(), storyX, sY + 12);
+
+        // Main Title
+        sctx.fillStyle = "#0f172a";
+        sctx.font = "800 24px sans-serif";
+        sctx.fillText(data.title || "", storyX, sY + 42);
+
+        // Subtitle / Tagline
+        sctx.fillStyle = "#475569";
+        sctx.font = "500 13px sans-serif";
+        sctx.fillText(data.tagline || "", storyX, sY + 66);
+
+        // Quote Box (Bright Neumorphic with Left Blue Border)
+        var qY = sY + 84;
+        sctx.beginPath();
+        drawRoundRect(sctx, storyX, qY, storyW, 56, 8);
+        sctx.fillStyle = "#edf2f8";
+        sctx.fill();
+        sctx.strokeStyle = "rgba(166, 178, 195, 0.4)";
+        sctx.lineWidth = 1;
+        sctx.stroke();
+        sctx.fillStyle = "#0284c7";
+        sctx.fillRect(storyX, qY, 3.5, 56);
+
+        sctx.fillStyle = "#334155";
+        sctx.font = "italic 12px Georgia, serif";
+        var qClean = (data.quote || "").replace(/[“”"]/g, "");
+        sctx.fillText('"' + qClean.slice(0, 75) + '...', storyX + 16, qY + 24);
+        if (qClean.length > 75) {
+          sctx.fillText(qClean.slice(75, 145) + '"', storyX + 16, qY + 42);
+        }
+
+        // Narrative Section
+        var nY = qY + 74;
+        sctx.fillStyle = "#64748b";
+        sctx.font = "700 10px monospace";
+        sctx.fillText("THE STORY BEHIND THIS CHAPTER", storyX, nY);
+
+        if (data.narrative && data.narrative.length) {
+          sctx.fillStyle = "#334155";
+          sctx.font = "12px sans-serif";
+          var p1 = data.narrative[0] || "";
+          sctx.fillText(p1.slice(0, 70), storyX, nY + 20);
+          sctx.fillText(p1.slice(70, 140), storyX, nY + 36);
+          sctx.fillText(p1.slice(140, 210) + "...", storyX, nY + 52);
+        }
+
+        // Action Buttons at Bottom (Bright Primary Blue Button)
+        var btnY = height - 54;
+        sctx.beginPath();
+        drawRoundRect(sctx, storyX, btnY, 185, 38, 10);
+        sctx.fillStyle = "#0284c7";
+        sctx.fill();
+        sctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+        sctx.lineWidth = 1;
+        sctx.stroke();
+        sctx.fillStyle = "#ffffff";
+        sctx.font = "700 12px sans-serif";
+        sctx.fillText("Read Next Chapter →", storyX + 22, btnY + 24);
+
+        sctx.restore();
+        return offCanvas;
+      }
+
+      function animateGenie(isOpening, cardEl, overlay, containerEl, data, bookId, callback) {
+        if (!canvas || !ctx) {
+          if (callback) callback();
+          return;
+        }
+
+        var prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (prefersReduced) {
+          if (callback) callback();
+          return;
+        }
+
+        if (activeAnimId) {
+          cancelAnimationFrame(activeAnimId);
+          activeAnimId = null;
+        }
+
+        resizeCanvas();
+
+        // Calculate Modal Target Rect (Destination dialog in viewport)
+        var modalRect = containerEl ? containerEl.getBoundingClientRect() : null;
+        var Mw = (modalRect && modalRect.width > 50) ? modalRect.width : Math.min(window.innerWidth * 0.92, 980);
+        var Mh = (modalRect && modalRect.height > 50) ? modalRect.height : Math.min(window.innerHeight * 0.88, 640);
+        var Mtop = (modalRect && modalRect.top) ? modalRect.top : (window.innerHeight - Mh) / 2;
+        var Mleft = (modalRect && modalRect.left) ? modalRect.left : (window.innerWidth - Mw) / 2;
+        var Mcx = Mleft + Mw / 2;
+        var Mbottom = Mtop + Mh;
+
+        // Calculate Book Origin Rect (Anchor point on shelf)
+        var bookRect = cardEl ? cardEl.getBoundingClientRect() : null;
+        var Bw = (bookRect && bookRect.width > 20) ? bookRect.width : 160;
+        var Bh = (bookRect && bookRect.height > 20) ? bookRect.height : 230;
+        var Bcx = (bookRect && bookRect.left) ? (bookRect.left + bookRect.width * 0.45) : (window.innerWidth * 0.25);
+        var Bcy = (bookRect && bookRect.top) ? (bookRect.top + bookRect.height * 0.5) : (window.innerHeight * 0.6);
+        var anchorW = Math.max(24, Bw * 0.75);
+        var anchorH = Math.max(16, Bh * 0.2);
+        var anchorX = Bcx;
+        var anchorY = Bcy;
+
+        // Create snapshot canvas with matching high-fidelity bright neumorphic styling
+        var snapshot = createSnapshot(data, Mw, Mh, bookId);
+        if (!snapshot) {
+          if (callback) callback();
+          return;
+        }
+
+        var snapW = snapshot.width;
+        var snapH = snapshot.height;
+
+        isAnimating = true;
+        var duration = isOpening ? 500 : 440; // Authentic macOS timing (ms)
+        var startTime = null;
+        var N = 80; // High slice density for continuous organic curvature
+
+        function easeInOutCubic(val) {
+          return val < 0.5 ? 4 * val * val * val : 1 - Math.pow(-2 * val + 2, 3) / 2;
+        }
+
+        function step(timestamp) {
+          if (!startTime) startTime = timestamp;
+          var elapsed = timestamp - startTime;
+          var t = Math.min(1, elapsed / duration);
+          var p = easeInOutCubic(t);
+
+          var topY, bottomY, pTop, pBottom;
+
+          if (isOpening) {
+            // Opening (Unminimize): Top shoots up first, bottom releases into place
+            pTop = Math.min(1, p / 0.62);
+            pTop = pTop < 0.5 ? 4 * pTop * pTop * pTop : 1 - Math.pow(-2 * pTop + 2, 3) / 2;
+
+            pBottom = Math.max(0, (p - 0.28) / 0.72);
+            pBottom = pBottom < 0.5 ? 4 * pBottom * pBottom * pBottom : 1 - Math.pow(-2 * pBottom + 2, 3) / 2;
+
+            topY = anchorY + (Mtop - anchorY) * pTop;
+            bottomY = (anchorY + anchorH) + (Mbottom - (anchorY + anchorH)) * pBottom;
+          } else {
+            // Closing (Minimize): Bottom docks into book first, top gets sucked in after
+            pBottom = Math.min(1, p / 0.62);
+            pBottom = pBottom < 0.5 ? 4 * pBottom * pBottom * pBottom : 1 - Math.pow(-2 * pBottom + 2, 3) / 2;
+
+            pTop = Math.max(0, (p - 0.28) / 0.72);
+            pTop = pTop < 0.5 ? 4 * pTop * pTop * pTop : 1 - Math.pow(-2 * pTop + 2, 3) / 2;
+
+            bottomY = Mbottom + ((anchorY + anchorH) - Mbottom) * pBottom;
+            topY = Mtop + (anchorY - Mtop) * pTop;
+          }
+
+          if (bottomY < topY + 4) bottomY = topY + 4;
+          var totalH = bottomY - topY;
+
+          clearCanvas();
+
+          var leftPath = [];
+          var rightPath = [];
+
+          function getSlice(vty) {
+            var screenY = topY + totalH * vty;
+            var u;
+            if (isOpening) {
+              u = pTop * (1 - vty) + pBottom * vty;
+            } else {
+              u = 1 - (pTop * (1 - vty) + pBottom * vty);
+            }
+            u = Math.max(0, Math.min(1, u));
+
+            // Non-linear flared trumpet waist profile (macOS Catalina signature curve)
+            var flare = Math.pow(1 - vty, 1.4);
+            var waist = Math.sin(vty * Math.PI) * 0.22 * (1 - u);
+            var w = anchorW + (Mw - anchorW) * (u + (1 - u) * flare * 0.35) * (1 - waist);
+            w = Math.max(4, Math.min(Mw * 1.04, w));
+
+            // Centerline with Compiz harmonic S-swish
+            var swish = Math.sin(vty * Math.PI) * (anchorX - Mcx) * 0.24 * (1 - u);
+            var centerX = Mcx + (anchorX - Mcx) * (1 - u) + swish;
+
+            return {
+              screenY: screenY,
+              centerX: centerX,
+              w: w,
+              leftX: centerX - w * 0.5,
+              rightX: centerX + w * 0.5
+            };
+          }
+
+          // 80 Slices with continuous anti-aliased trapezoid clipping
+          for (var i = 0; i < N; i++) {
+            var vty0 = i / N;
+            var vty1 = (i + 1) / N;
+
+            var g0 = getSlice(vty0);
+            var g1 = getSlice(vty1);
+
+            var dy = g1.screenY - g0.screenY;
+            if (dy <= 0.05) continue;
+
+            var sy0 = Math.floor(vty0 * snapH);
+            var sy1 = Math.ceil(vty1 * snapH);
+            var sH = Math.max(1, sy1 - sy0);
+
+            var sliceW = Math.max(g0.w, g1.w);
+            var sliceDx = Math.min(g0.leftX, g1.leftX);
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(g0.leftX, g0.screenY);
+            ctx.lineTo(g0.rightX, g0.screenY);
+            ctx.lineTo(g1.rightX, g1.screenY + 0.6);
+            ctx.lineTo(g1.leftX, g1.screenY + 0.6);
+            ctx.closePath();
+            ctx.clip();
+
+            ctx.drawImage(
+              snapshot,
+              0, sy0, snapW, sH,
+              sliceDx - 1, g0.screenY, sliceW + 2, dy + 1
+            );
+            ctx.restore();
+
+            if (i === 0) {
+              leftPath.push({ x: g0.leftX, y: g0.screenY });
+              rightPath.push({ x: g0.rightX, y: g0.screenY });
+            }
+            leftPath.push({ x: g1.leftX, y: g1.screenY });
+            rightPath.push({ x: g1.rightX, y: g1.screenY });
+          }
+
+          // Liquid Surface Sheen Highlight along the expanding boundary
+          if (leftPath.length > 2) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(leftPath[0].x, leftPath[0].y);
+            for (var m = 1; m < leftPath.length; m++) {
+              ctx.lineTo(leftPath[m].x, leftPath[m].y);
+            }
+            for (var n = rightPath.length - 1; n >= 0; n--) {
+              ctx.lineTo(rightPath[n].x, rightPath[n].y);
+            }
+            ctx.closePath();
+
+            var sheenGrad = ctx.createLinearGradient(0, topY, 0, bottomY);
+            var sheenAlpha = isOpening ? (1 - p) * 0.16 : p * 0.16;
+            sheenGrad.addColorStop(0, "rgba(255, 255, 255, " + sheenAlpha.toFixed(3) + ")");
+            sheenGrad.addColorStop(0.5, "rgba(255, 255, 255, " + (sheenAlpha * 0.6).toFixed(3) + ")");
+            sheenGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
+            ctx.fillStyle = sheenGrad;
+            ctx.fill();
+            ctx.restore();
+          }
+
+          if (t < 1) {
+            activeAnimId = requestAnimationFrame(step);
+          } else {
+            isAnimating = false;
+            activeAnimId = null;
+            if (callback) callback();
+            clearCanvas();
+          }
+        }
+
+        activeAnimId = requestAnimationFrame(step);
+      }
+
+      return {
+        open: function (cardEl, overlay, containerEl, data, bookId, callback) {
+          animateGenie(true, cardEl, overlay, containerEl, data, bookId, callback);
+        },
+        close: function (cardEl, overlay, containerEl, data, bookId, callback) {
+          animateGenie(false, cardEl, overlay, containerEl, data, bookId, callback);
+        },
+        isBusy: function () {
+          return isAnimating;
+        }
+      };
+    })();
 
     function openChapter(bookId, cardEl) {
-      if (isTransitioning) return;
+      if (GenieFX.isBusy()) return;
       var idx = CHAPTER_KEYS.indexOf(bookId);
       if (idx === -1) idx = 0;
       currentTriggerCard = cardEl;
 
-      // Close any other open book cards on the shelves
       bookCards.forEach(function (c) {
         if (c !== cardEl) {
           c.classList.remove("is-opening", "is-closing");
         }
       });
 
-      // 1. Play smooth 3D physical book opening on shelf
       if (cardEl) {
         cardEl.classList.remove("is-closing");
         cardEl.classList.add("is-opening");
       }
 
-      // 2. Populate the real modal content immediately so all DOM elements & artwork clone are live
       renderChapter(idx);
 
-      var prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var key = CHAPTER_KEYS[idx];
+      var data = CHAPTERS[key];
 
-      // 3. Make overlay active in DOM
-      overlay.classList.add("is-active");
+      overlay.classList.remove("genie-settled");
+      overlay.classList.add("is-active", "is-genie-active");
       overlay.setAttribute("aria-hidden", "false");
       document.body.style.overflow = "hidden";
 
-      if (prefersReduced || !cardEl || !containerEl) {
+      GenieFX.open(cardEl, overlay, containerEl, data, key, function () {
+        overlay.classList.remove("is-genie-active");
+        overlay.classList.add("genie-settled");
         if (closeBtn) closeBtn.focus();
-        return;
-      }
-
-      isTransitioning = true;
-
-      // 4. Calculate exact FLIP transform from clicked book card to centered modal container
-      var bookRect = cardEl.getBoundingClientRect();
-      var modalRect = containerEl.getBoundingClientRect();
-
-      var bookCx = bookRect.left + bookRect.width / 2;
-      var bookCy = bookRect.top + bookRect.height / 2;
-      var modalCx = modalRect.left + modalRect.width / 2;
-      var modalCy = modalRect.top + modalRect.height / 2;
-
-      var dx = Math.round(bookCx - modalCx);
-      var dy = Math.round(bookCy - modalCy);
-      var sx = Math.min(1, Math.max(0.18, (bookRect.width * 0.95) / modalRect.width));
-      var sy = Math.min(1, Math.max(0.24, (bookRect.height * 0.95) / modalRect.height));
-
-      // 5. Position modal container exactly at the open book origin with matching 3D perspective
-      containerEl.style.transition = "none";
-      containerEl.style.transformOrigin = "center center";
-      containerEl.style.transform = "translate3d(" + dx + "px, " + dy + "px, 0) scale(" + sx.toFixed(4) + ", " + sy.toFixed(4) + ") rotateY(-6deg) rotateX(4deg)";
-      containerEl.style.opacity = "0.2";
-      containerEl.style.borderRadius = "12px";
-
-      // Force layout commit
-      void containerEl.offsetHeight;
-
-      // 6. Fluidly bloom and expand from the book into centered full-screen modal
-      requestAnimationFrame(function () {
-        containerEl.style.transition = "transform 0.48s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.36s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.42s ease";
-        containerEl.style.transform = "translate3d(0, 0, 0) scale(1, 1) rotateY(0deg) rotateX(0deg)";
-        containerEl.style.opacity = "1";
-        containerEl.style.borderRadius = "28px";
-
-        setTimeout(function () {
-          isTransitioning = false;
-          containerEl.style.transition = "";
-          if (closeBtn) closeBtn.focus();
-        }, 500);
       });
     }
 
     function closeChapter() {
-      if (isTransitioning) return;
+      if (GenieFX.isBusy()) return;
       if (!overlay.classList.contains("is-active")) return;
 
       var key = CHAPTER_KEYS[currentChapterIndex];
+      var data = CHAPTERS[key];
       var cardToClose = currentTriggerCard || document.querySelector('.book-card[data-book-id="' + key + '"]');
 
-      var prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (prefersReduced || !cardToClose || !containerEl) {
-        overlay.classList.remove("is-active");
+      overlay.classList.remove("genie-settled");
+      overlay.classList.add("is-genie-active");
+
+      GenieFX.close(cardToClose, overlay, containerEl, data, key, function () {
+        overlay.classList.remove("is-active", "is-genie-active");
         overlay.setAttribute("aria-hidden", "true");
         document.body.style.overflow = "";
+
         if (cardToClose) {
           cardToClose.classList.remove("is-opening");
           cardToClose.classList.add("is-closing");
-          setTimeout(function () { cardToClose.classList.remove("is-closing"); }, 450);
+          setTimeout(function () {
+            cardToClose.classList.remove("is-closing");
+          }, 450);
           cardToClose.focus();
         }
-        return;
-      }
-
-      isTransitioning = true;
-
-      // Calculate return coordinates to the book on shelf
-      var bookRect = cardToClose.getBoundingClientRect();
-      var modalRect = containerEl.getBoundingClientRect();
-
-      var bookCx = bookRect.left + bookRect.width / 2;
-      var bookCy = bookRect.top + bookRect.height / 2;
-      var modalCx = modalRect.left + modalRect.width / 2;
-      var modalCy = modalRect.top + modalRect.height / 2;
-
-      var dx = Math.round(bookCx - modalCx);
-      var dy = Math.round(bookCy - modalCy);
-      var sx = Math.min(1, Math.max(0.18, (bookRect.width * 0.95) / modalRect.width));
-      var sy = Math.min(1, Math.max(0.24, (bookRect.height * 0.95) / modalRect.height));
-
-      // Smoothly fly back down and dock directly into the book on the shelf
-      containerEl.style.transition = "transform 0.40s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.32s ease, border-radius 0.36s ease";
-      containerEl.style.transform = "translate3d(" + dx + "px, " + dy + "px, 0) scale(" + sx.toFixed(4) + ", " + sy.toFixed(4) + ") rotateY(-6deg) rotateX(4deg)";
-      containerEl.style.opacity = "0";
-      containerEl.style.borderRadius = "12px";
-
-      setTimeout(function () {
-        overlay.classList.remove("is-active");
-        overlay.setAttribute("aria-hidden", "true");
-        document.body.style.overflow = "";
-
-        containerEl.style.transition = "";
-        containerEl.style.transform = "";
-        containerEl.style.opacity = "";
-        containerEl.style.borderRadius = "";
-
-        // Fold the book cover smoothly back shut onto the shelf
-        cardToClose.classList.remove("is-opening");
-        cardToClose.classList.add("is-closing");
-
-        setTimeout(function () {
-          cardToClose.classList.remove("is-closing");
-          isTransitioning = false;
-        }, 450);
-
-        cardToClose.focus();
-      }, 390);
+      });
     }
 
     function prevChapter() {
@@ -855,6 +1269,46 @@
         nextChapter();
       }
     });
+  })();
+
+  /* ------------------------------------------------------------
+     10. Smart Sticky Nav Bar Header (Hide on Scroll Down, Reveal on Scroll Up)
+     ------------------------------------------------------------ */
+  (function initSmartHeader() {
+    var header = document.querySelector(".site-header");
+    if (!header) return;
+
+    var lastScrollY = window.pageYOffset || document.documentElement.scrollTop;
+    var ticking = false;
+    var scrollThreshold = 8; // Small threshold for responsive detection
+
+    function updateHeader() {
+      var currentScrollY = window.pageYOffset || document.documentElement.scrollTop;
+      var diff = currentScrollY - lastScrollY;
+
+      // When at or near the very top of the page, always keep header visible
+      if (currentScrollY <= 60) {
+        header.classList.remove("is-hidden");
+      } else if (Math.abs(diff) > scrollThreshold) {
+        if (diff > 0) {
+          // Scrolling DOWN -> smoothly hide out of view
+          header.classList.add("is-hidden");
+        } else {
+          // Scrolling UP -> smoothly slide back into view
+          header.classList.remove("is-hidden");
+        }
+      }
+      lastScrollY = currentScrollY;
+
+      ticking = false;
+    }
+
+    window.addEventListener("scroll", function () {
+      if (!ticking) {
+        requestAnimationFrame(updateHeader);
+        ticking = true;
+      }
+    }, { passive: true });
   })();
 
 })();

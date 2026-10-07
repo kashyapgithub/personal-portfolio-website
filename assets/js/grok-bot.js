@@ -953,23 +953,7 @@
 
     var sm = smileProgress; // 0 (neutral) to 1 (full warm smiling gaze)
 
-    // 1. Soft expressive brow floating above the eye
-    var browY = -curEyeH * 1.35 - (isSpeakingNow ? 1.5 : 0);
-    var browW = baseEyeW * 0.95;
-    var browTilt = (isRightEye ? -1 : 1) * (0.08 + sm * 0.12);
-    ctx.save();
-    ctx.translate(0, browY);
-    ctx.rotate(browTilt);
-    ctx.strokeStyle = "rgba(15, 23, 42, 0.45)";
-    ctx.lineWidth = Math.max(1.4, R * 0.016 * normalForeshorten);
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(-browW * 0.8, (isRightEye ? 1.2 : -1.2));
-    ctx.quadraticCurveTo(0, -1.8, browW * 0.8, (isRightEye ? -1.2 : 1.2));
-    ctx.stroke();
-    ctx.restore();
-
-    // 2. Wide open, glossy, soulful pupil
+    // 1. Wide open, glossy, soulful pupil (pure innocent Pixar/Eve aesthetic - no eyebrows)
     ctx.fillStyle = "#07090e";
     ctx.beginPath();
     if (openFactor > 0.32) {
