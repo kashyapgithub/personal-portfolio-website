@@ -327,8 +327,288 @@
     var tagsEl = document.getElementById("chapter-tags");
     var artDisplayEl = document.getElementById("chapter-book-display");
 
-    var bookCards = document.querySelectorAll(".book-card");
-    if (!overlay || !bookCards.length) return;
+    /* ------------------------------------------------------------
+       Harry Potter Magical Particle Canvas Engine (SpellFX)
+       ------------------------------------------------------------ */
+    var SpellFX = (function () {
+      var canvas = document.getElementById("spell-canvas");
+      if (!canvas) return { erupt: function () {}, disperse: function () {} };
+
+      var ctx = canvas.getContext("2d");
+      if (!ctx) return { erupt: function () {}, disperse: function () {} };
+
+      var dpr = window.devicePixelRatio || 1;
+      var width = 0;
+      var height = 0;
+      var particles = [];
+      var rings = [];
+      var running = false;
+      var animId = null;
+
+      function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        canvas.style.width = width + "px";
+        canvas.style.height = height + "px";
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+      }
+
+      window.addEventListener("resize", resize, { passive: true });
+      resize();
+
+      var PALETTE = [
+        "#ffffff",
+        "#fef08a",
+        "#fde047",
+        "#fbbf24",
+        "#f59e0b",
+        "#d97706",
+        "#b45309"
+      ];
+
+      function drawStar(cx, cy, spikes, outerRadius, innerRadius, rotation, color, alpha) {
+        var rot = (Math.PI / 2) * 3 + rotation;
+        var step = Math.PI / spikes;
+        ctx.save();
+        ctx.beginPath();
+        ctx.translate(cx, cy);
+        ctx.moveTo(0, -outerRadius);
+        for (var i = 0; i < spikes; i++) {
+          var x = Math.cos(rot) * outerRadius;
+          var y = Math.sin(rot) * outerRadius;
+          ctx.lineTo(x, y);
+          rot += step;
+
+          x = Math.cos(rot) * innerRadius;
+          y = Math.sin(rot) * innerRadius;
+          ctx.lineTo(x, y);
+          rot += step;
+        }
+        ctx.lineTo(0, -outerRadius);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "rgba(245, 158, 11, 0.9)";
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function erupt(rect) {
+        var originX = rect ? rect.left + rect.width * 0.45 : width / 2;
+        var originY = rect ? rect.top + rect.height * 0.5 : height / 2;
+
+        // 1. Arcane golden rune wave rings
+        for (var r = 0; r < 3; r++) {
+          rings.push({
+            x: originX,
+            y: originY,
+            radius: 12 + r * 14,
+            maxRadius: Math.min(width, height) * 0.38 + r * 40,
+            growth: 3.5 + r * 1.2,
+            rotation: r * 0.5,
+            rotSpeed: (r % 2 === 0 ? 1 : -1) * 0.015,
+            dashOffset: 0,
+            alpha: 0.9,
+            color: "rgba(251, 191, 36,"
+          });
+        }
+
+        // 2. Swirling golden sparks & embers (spiral vortex)
+        for (var i = 0; i < 70; i++) {
+          var angle = Math.random() * Math.PI * 2;
+          var dist = Math.random() * 24;
+          particles.push({
+            type: "spark",
+            x: originX + Math.cos(angle) * dist,
+            y: originY + Math.sin(angle) * dist,
+            vx: (Math.random() - 0.5) * 4.5,
+            vy: -(Math.random() * 8.5 + 4.2),
+            swirlAngle: angle,
+            swirlRadius: Math.random() * 28 + 14,
+            swirlSpeed: (Math.random() - 0.5) * 0.12,
+            radius: Math.random() * 2.8 + 1.2,
+            color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
+            alpha: 1.0,
+            decay: Math.random() * 0.014 + 0.011,
+            gravity: 0.04
+          });
+        }
+
+        // 3. Twinkling cross-stars (Lumos glints)
+        for (var s = 0; s < 22; s++) {
+          particles.push({
+            type: "star",
+            x: originX + (Math.random() - 0.5) * 60,
+            y: originY + (Math.random() - 0.5) * 50,
+            vx: (Math.random() - 0.5) * 3.2,
+            vy: -(Math.random() * 6.5 + 3.0),
+            size: Math.random() * 7 + 4.5,
+            rotation: Math.random() * Math.PI,
+            rotSpeed: (Math.random() - 0.5) * 0.08,
+            color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
+            alpha: 1.0,
+            decay: Math.random() * 0.015 + 0.012
+          });
+        }
+
+        // 4. Ethereal memory wisps (Pensieve vapors)
+        for (var w = 0; w < 10; w++) {
+          particles.push({
+            type: "wisp",
+            x: originX + (Math.random() - 0.5) * 40,
+            y: originY + (Math.random() - 0.5) * 30,
+            vx: (Math.random() - 0.5) * 1.8,
+            vy: -(Math.random() * 3.8 + 2.0),
+            radius: Math.random() * 22 + 16,
+            growth: Math.random() * 0.4 + 0.2,
+            alpha: 0.35,
+            decay: 0.007,
+            color: "rgba(254, 240, 138,"
+          });
+        }
+
+        startLoop();
+      }
+
+      function disperse(rect) {
+        var originX = rect ? rect.left + rect.width * 0.45 : width / 2;
+        var originY = rect ? rect.top + rect.height * 0.4 : height / 2;
+
+        for (var i = 0; i < 35; i++) {
+          particles.push({
+            type: "spark",
+            x: originX + (Math.random() - 0.5) * 80,
+            y: originY - (Math.random() * 50 + 20),
+            vx: (Math.random() - 0.5) * 2.2,
+            vy: Math.random() * 3.2 + 0.8,
+            swirlAngle: Math.random() * Math.PI * 2,
+            swirlRadius: Math.random() * 12 + 6,
+            swirlSpeed: 0.03,
+            radius: Math.random() * 2.2 + 1,
+            color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
+            alpha: 0.85,
+            decay: Math.random() * 0.022 + 0.018,
+            gravity: 0.08
+          });
+        }
+        startLoop();
+      }
+
+      function startLoop() {
+        if (!running) {
+          running = true;
+          animId = requestAnimationFrame(loop);
+        }
+      }
+
+      function loop() {
+        ctx.clearRect(0, 0, width, height);
+
+        // Render & update arcane rune rings
+        for (var r = rings.length - 1; r >= 0; r--) {
+          var ring = rings[r];
+          ring.radius += ring.growth;
+          ring.rotation += ring.rotSpeed;
+          ring.dashOffset += 1.5;
+          ring.alpha -= 0.016;
+
+          if (ring.alpha <= 0 || ring.radius >= ring.maxRadius) {
+            rings.splice(r, 1);
+            continue;
+          }
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(ring.x, ring.y, ring.radius, 0, Math.PI * 2);
+          ctx.strokeStyle = ring.color + Math.max(0, ring.alpha) + ")";
+          ctx.lineWidth = 1.8;
+          ctx.shadowBlur = 12;
+          ctx.shadowColor = "rgba(245, 158, 11, 0.7)";
+          ctx.setLineDash([8, 12]);
+          ctx.lineDashOffset = ring.dashOffset;
+          ctx.stroke();
+
+          // Inner solid glyph orbit
+          ctx.beginPath();
+          ctx.arc(ring.x, ring.y, Math.max(0, ring.radius * 0.72), 0, Math.PI * 2);
+          ctx.strokeStyle = ring.color + Math.max(0, ring.alpha * 0.5) + ")";
+          ctx.lineWidth = 1;
+          ctx.setLineDash([3, 16]);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Render & update particles
+        for (var i = particles.length - 1; i >= 0; i--) {
+          var p = particles[i];
+          p.alpha -= p.decay;
+
+          if (p.alpha <= 0) {
+            particles.splice(i, 1);
+            continue;
+          }
+
+          if (p.type === "spark") {
+            p.swirlAngle += p.swirlSpeed;
+            p.x += p.vx + Math.cos(p.swirlAngle) * 0.8;
+            p.y += p.vy;
+            p.vy += p.gravity;
+            p.vx *= 0.985;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = Math.max(0, p.alpha);
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = "rgba(245, 158, 11, 0.85)";
+            ctx.fill();
+            ctx.restore();
+          } else if (p.type === "star") {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.rotation += p.rotSpeed;
+            p.vy *= 0.98;
+            p.vx *= 0.98;
+
+            drawStar(p.x, p.y, 4, p.size, p.size * 0.35, p.rotation, p.color, p.alpha);
+          } else if (p.type === "wisp") {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.radius += p.growth;
+            p.vy *= 0.985;
+
+            ctx.save();
+            var grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
+            grad.addColorStop(0, p.color + (p.alpha * 0.8) + ")");
+            grad.addColorStop(0.5, "rgba(245, 158, 11, " + (p.alpha * 0.35) + ")");
+            grad.addColorStop(1, "rgba(217, 119, 6, 0)");
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+
+        if (particles.length > 0 || rings.length > 0) {
+          animId = requestAnimationFrame(loop);
+        } else {
+          running = false;
+          animId = null;
+          ctx.clearRect(0, 0, width, height);
+        }
+      }
+
+      return {
+        erupt: erupt,
+        disperse: disperse
+      };
+    })();
 
     var CHAPTER_KEYS = ["genie", "mrp", "tui", "dryrun", "cred", "fyers", "imagine", "zomato", "cloud"];
 
@@ -586,9 +866,15 @@
       }
       if (categoryEl) {
         categoryEl.textContent = data.category;
+        categoryEl.style.animation = "none";
+        void categoryEl.offsetWidth;
+        categoryEl.style.animation = "";
       }
       if (titleEl) {
         titleEl.textContent = data.title;
+        titleEl.style.animation = "none";
+        void titleEl.offsetWidth;
+        titleEl.style.animation = "";
       }
       if (taglineEl) {
         taglineEl.textContent = data.tagline;
@@ -678,13 +964,17 @@
         }
       });
 
-      // Play smooth 3D physical book opening animation
+      // Play smooth 3D physical book opening animation & Harry Potter spell eruption
       if (cardEl) {
         cardEl.classList.remove("is-closing");
         cardEl.classList.add("is-opening");
+
+        // Erupt swirling golden sparks, Lumos stardust, and arcane rings from the book
+        var bookRect = cardEl.getBoundingClientRect();
+        SpellFX.erupt(bookRect);
       }
 
-      // Allow 600ms for the front cover to swing wide open and the page to flutter
+      // Allow 550ms for the front cover to swing wide open and the magical vortex to rise
       setTimeout(function () {
         renderChapter(idx);
         overlay.classList.add("is-active");
@@ -694,7 +984,7 @@
         if (closeBtn) {
           closeBtn.focus();
         }
-      }, 600);
+      }, 550);
     }
 
     function closeChapter() {
@@ -702,9 +992,12 @@
       overlay.setAttribute("aria-hidden", "true");
       document.body.style.overflow = "";
 
-      // Smoothly fold the book back shut onto the shelf
+      // Smoothly fold the book back shut onto the shelf & shower embers back
       if (currentTriggerCard) {
         var cardToClose = currentTriggerCard;
+        var bookRect = cardToClose.getBoundingClientRect();
+        SpellFX.disperse(bookRect);
+
         cardToClose.classList.remove("is-opening");
         cardToClose.classList.add("is-closing");
 
