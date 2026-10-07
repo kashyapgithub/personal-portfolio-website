@@ -311,7 +311,6 @@
     var overlay = document.getElementById("chapter-modal-overlay");
     var backdrop = document.getElementById("chapter-modal-backdrop");
     var containerEl = overlay ? overlay.querySelector(".chapter-modal-container") : null;
-    var genieCanvas = document.getElementById("genie-canvas");
     var closeBtn = document.getElementById("chapter-close-btn");
     var prevBtn = document.getElementById("chapter-prev-btn");
     var nextBtn = document.getElementById("chapter-next-btn");
@@ -587,15 +586,9 @@
       }
       if (categoryEl) {
         categoryEl.textContent = data.category;
-        categoryEl.style.animation = "none";
-        void categoryEl.offsetWidth;
-        categoryEl.style.animation = "";
       }
       if (titleEl) {
         titleEl.textContent = data.title;
-        titleEl.style.animation = "none";
-        void titleEl.offsetWidth;
-        titleEl.style.animation = "";
       }
       if (taglineEl) {
         taglineEl.textContent = data.tagline;
@@ -674,467 +667,12 @@
     }
 
     /* ------------------------------------------------------------
-       macOS Catalina Dock Genie Animation Engine
+       Seamless Single-State Book-to-Modal Expansion Engine
        ------------------------------------------------------------ */
-    var GenieFX = (function () {
-      var canvas = genieCanvas;
-      var ctx = canvas ? canvas.getContext("2d") : null;
-      var activeAnimId = null;
-      var isAnimating = false;
-
-      var THEME_COLORS = {
-        genie: { bg1: "#061917", bg2: "#0c332e", accent: "#00d4c8" },
-        mrp: { bg1: "#240b12", bg2: "#3e121d", accent: "#f43f5e" },
-        tui: { bg1: "#211606", bg2: "#3a270d", accent: "#ffa42b" },
-        dryrun: { bg1: "#091728", bg2: "#122b4a", accent: "#38bdf8" },
-        cred: { bg1: "#161514", bg2: "#292622", accent: "#e5c07b" },
-        fyers: { bg1: "#091c16", bg2: "#132f25", accent: "#10b981" },
-        imagine: { bg1: "#1b0e2f", bg2: "#311854", accent: "#a855f7" },
-        zomato: { bg1: "#260a0f", bg2: "#3e1218", accent: "#fbbf24" },
-        cloud: { bg1: "#091a24", bg2: "#102e3f", accent: "#2dd4bf" }
-      };
-
-      function resizeCanvas() {
-        if (!canvas) return;
-        var dpr = Math.min(window.devicePixelRatio || 1, 2);
-        var w = window.innerWidth;
-        var h = window.innerHeight;
-        canvas.width = Math.round(w * dpr);
-        canvas.height = Math.round(h * dpr);
-        if (ctx) {
-          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        }
-      }
-
-      window.addEventListener("resize", resizeCanvas);
-
-      function clearCanvas() {
-        if (!ctx || !canvas) return;
-        ctx.save();
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.restore();
-      }
-
-      function drawRoundRect(c, x, y, w, h, r) {
-        if (c.roundRect) {
-          c.roundRect(x, y, w, h, r);
-          return;
-        }
-        if (w < 2 * r) r = w / 2;
-        if (h < 2 * r) r = h / 2;
-        c.moveTo(x + r, y);
-        c.arcTo(x + w, y, x + w, y + h, r);
-        c.arcTo(x + w, y + h, x, y + h, r);
-        c.arcTo(x, y + h, x, y, r);
-        c.arcTo(x, y, x + w, y, r);
-        c.closePath();
-      }
-
-      function createSnapshot(data, width, height, bookId) {
-        if (!width || !height) return null;
-        var dpr = Math.min(window.devicePixelRatio || 1, 2);
-        var offCanvas = document.createElement("canvas");
-        offCanvas.width = Math.round(width * dpr);
-        offCanvas.height = Math.round(height * dpr);
-        var sctx = offCanvas.getContext("2d");
-        if (!sctx) return null;
-        sctx.scale(dpr, dpr);
-
-        var theme = THEME_COLORS[bookId] || THEME_COLORS.genie;
-
-        // Base Neumorphic Modal Plate
-        sctx.save();
-        sctx.beginPath();
-        drawRoundRect(sctx, 0, 0, width, height, 28);
-        sctx.fillStyle = "#edf2f8";
-        sctx.fill();
-        sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-        sctx.lineWidth = 1.5;
-        sctx.stroke();
-
-        // Top Navigation Bar
-        var pillX = 28, pillY = 22, pillW = 145, pillH = 30;
-        sctx.beginPath();
-        drawRoundRect(sctx, pillX, pillY, pillW, pillH, 15);
-        sctx.fillStyle = "#e2e8f0";
-        sctx.fill();
-        sctx.fillStyle = "#0284c7";
-        sctx.font = "700 11px 'Courier New', monospace";
-        sctx.fillText("CHAPTER " + (data.chapterNum || "01") + " OF 09", pillX + 16, pillY + 19);
-
-        // Close Button in Header
-        var closeX = width - 64, closeY = 20;
-        sctx.beginPath();
-        drawRoundRect(sctx, closeX, closeY, 36, 36, 10);
-        sctx.fillStyle = "#e2e8f0";
-        sctx.fill();
-        sctx.strokeStyle = "#64748b";
-        sctx.lineWidth = 2;
-        sctx.beginPath();
-        sctx.moveTo(closeX + 11, closeY + 11);
-        sctx.lineTo(closeX + 25, closeY + 25);
-        sctx.moveTo(closeX + 25, closeY + 11);
-        sctx.lineTo(closeX + 11, closeY + 25);
-        sctx.stroke();
-
-        // Divider
-        sctx.beginPath();
-        sctx.moveTo(28, 68);
-        sctx.lineTo(width - 28, 68);
-        sctx.strokeStyle = "rgba(166, 178, 195, 0.4)";
-        sctx.lineWidth = 1;
-        sctx.stroke();
-
-        // Layout Columns
-        var isTwoCol = width >= 700;
-        var artColW = isTwoCol ? 260 : width - 56;
-        var startY = 86;
-
-        // Artwork Card (Left Column)
-        var artCardH = isTwoCol ? 280 : 190;
-        sctx.beginPath();
-        drawRoundRect(sctx, 28, startY, artColW, artCardH, 18);
-        sctx.fillStyle = "#e8eef6";
-        sctx.fill();
-
-        // Book Cover 3D Clone
-        var bW = isTwoCol ? 150 : 110;
-        var bH = isTwoCol ? 200 : 140;
-        var bX = 28 + (artColW - bW) / 2;
-        var bY = startY + 18;
-
-        var bookGrad = sctx.createLinearGradient(bX, bY, bX + bW, bY + bH);
-        bookGrad.addColorStop(0, theme.bg1);
-        bookGrad.addColorStop(0.5, theme.bg2);
-        bookGrad.addColorStop(1, theme.bg1);
-
-        sctx.beginPath();
-        drawRoundRect(sctx, bX, bY, bW, bH, 8);
-        sctx.fillStyle = bookGrad;
-        sctx.fill();
-        sctx.strokeStyle = theme.accent;
-        sctx.lineWidth = 1;
-        sctx.stroke();
-
-        // Spine Line
-        sctx.fillStyle = theme.accent;
-        sctx.fillRect(bX + 8, bY + 12, 2, bH - 24);
-
-        // Book Cover Text
-        sctx.fillStyle = theme.accent;
-        sctx.font = "700 9px monospace";
-        sctx.fillText("CHAPTER " + (data.chapterNum || "01"), bX + 16, bY + 32);
-
-        sctx.fillStyle = "#ffffff";
-        sctx.font = "700 12px sans-serif";
-        var titleWord = (data.title || "").split(":")[0];
-        sctx.fillText(titleWord.slice(0, 16), bX + 16, bY + 52);
-
-        // Era Stamp under Artwork
-        var eraY = startY + artCardH - 34;
-        sctx.beginPath();
-        drawRoundRect(sctx, 42, eraY, artColW - 28, 22, 11);
-        sctx.fillStyle = "#edf2f8";
-        sctx.fill();
-        sctx.fillStyle = "#64748b";
-        sctx.font = "700 9px monospace";
-        sctx.textAlign = "center";
-        sctx.fillText((data.era || "").slice(0, 34), 42 + (artColW - 28) / 2, eraY + 15);
-        sctx.textAlign = "left";
-
-        // Metrics Card
-        var metY = startY + artCardH + 16;
-        var metH = 130;
-        sctx.beginPath();
-        drawRoundRect(sctx, 28, metY, artColW, metH, 14);
-        sctx.fillStyle = "#e8eef6";
-        sctx.fill();
-        sctx.fillStyle = "#64748b";
-        sctx.font = "700 10px monospace";
-        sctx.fillText("KEY METRICS · PLATFORM", 40, metY + 22);
-
-        if (data.metrics && data.metrics.length) {
-          data.metrics.slice(0, 4).forEach(function (m, idx) {
-            var my = metY + 44 + idx * 22;
-            sctx.fillStyle = "#64748b";
-            sctx.font = "11px monospace";
-            sctx.fillText(m.label, 40, my);
-            sctx.fillStyle = "#0f172a";
-            sctx.font = "700 11px monospace";
-            sctx.textAlign = "right";
-            sctx.fillText(m.val, 28 + artColW - 12, my);
-            sctx.textAlign = "left";
-          });
-        }
-
-        // Right Column (Editorial Story)
-        var storyX = isTwoCol ? 28 + artColW + 28 : 28;
-        var storyW = width - storyX - 28;
-        var sY = isTwoCol ? startY : metY + metH + 18;
-
-        // Eyebrow Category
-        sctx.fillStyle = "#0284c7";
-        sctx.font = "700 11px monospace";
-        sctx.fillText(data.category || "", storyX, sY + 12);
-
-        // Main Title
-        sctx.fillStyle = "#0f172a";
-        sctx.font = "800 22px sans-serif";
-        sctx.fillText(data.title || "", storyX, sY + 40);
-
-        // Subtitle / Tagline
-        sctx.fillStyle = "#475569";
-        sctx.font = "500 13px sans-serif";
-        sctx.fillText(data.tagline || "", storyX, sY + 64);
-
-        // Quote Box
-        var qY = sY + 82;
-        sctx.beginPath();
-        drawRoundRect(sctx, storyX, qY, storyW, 60, 10);
-        sctx.fillStyle = "#f8fafc";
-        sctx.fill();
-        sctx.fillStyle = "#0284c7";
-        sctx.fillRect(storyX, qY, 4, 60);
-
-        sctx.fillStyle = "#334155";
-        sctx.font = "italic 12px Georgia, serif";
-        var qClean = (data.quote || "").replace(/[“”"]/g, "");
-        sctx.fillText('"' + qClean.slice(0, 75) + '...', storyX + 16, qY + 26);
-        if (qClean.length > 75) {
-          sctx.fillText(qClean.slice(75, 145) + '"', storyX + 16, qY + 44);
-        }
-
-        // Narrative Section
-        var nY = qY + 76;
-        sctx.fillStyle = "#64748b";
-        sctx.font = "700 10px monospace";
-        sctx.fillText("THE STORY BEHIND THIS CHAPTER", storyX, nY);
-
-        if (data.narrative && data.narrative.length) {
-          sctx.fillStyle = "#334155";
-          sctx.font = "12px sans-serif";
-          var p1 = data.narrative[0] || "";
-          sctx.fillText(p1.slice(0, 70), storyX, nY + 20);
-          sctx.fillText(p1.slice(70, 140), storyX, nY + 36);
-          sctx.fillText(p1.slice(140, 210) + "...", storyX, nY + 52);
-        }
-
-        // Action Buttons at Bottom
-        var btnY = height - 54;
-        sctx.beginPath();
-        drawRoundRect(sctx, storyX, btnY, 175, 38, 10);
-        sctx.fillStyle = "#0284c7";
-        sctx.fill();
-        sctx.fillStyle = "#ffffff";
-        sctx.font = "700 12px sans-serif";
-        sctx.fillText("Read Next Chapter →", storyX + 20, btnY + 24);
-
-        sctx.restore();
-        return offCanvas;
-      }
-
-      function animateGenie(isOpening, cardEl, overlay, containerEl, data, bookId, callback) {
-        if (!canvas || !ctx) {
-          if (callback) callback();
-          return;
-        }
-
-        var prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        if (prefersReduced) {
-          if (callback) callback();
-          return;
-        }
-
-        if (activeAnimId) {
-          cancelAnimationFrame(activeAnimId);
-          activeAnimId = null;
-        }
-
-        resizeCanvas();
-
-        // Calculate Modal Target Rect (Destination dialog in viewport)
-        var modalRect = containerEl ? containerEl.getBoundingClientRect() : null;
-        var Mw = (modalRect && modalRect.width > 50) ? modalRect.width : Math.min(window.innerWidth * 0.92, 980);
-        var Mh = (modalRect && modalRect.height > 50) ? modalRect.height : Math.min(window.innerHeight * 0.88, 640);
-        var Mtop = (modalRect && modalRect.top) ? modalRect.top : (window.innerHeight - Mh) / 2;
-        var Mleft = (modalRect && modalRect.left) ? modalRect.left : (window.innerWidth - Mw) / 2;
-        var Mcx = Mleft + Mw / 2;
-
-        // Calculate Book Origin Rect (Anchor point on shelf)
-        var bookRect = cardEl ? cardEl.getBoundingClientRect() : null;
-        var Bw = (bookRect && bookRect.width > 20) ? bookRect.width * 0.88 : 140;
-        var Bh = (bookRect && bookRect.height > 20) ? bookRect.height : 210;
-        var Btop = (bookRect && bookRect.top) ? bookRect.top : (window.innerHeight - Bh - 60);
-        var Bcx = (bookRect && bookRect.left) ? (bookRect.left + bookRect.width / 2) : (window.innerWidth / 2);
-
-        // Maximum chimney height connecting modal top down to shelf volume
-        var Hchimney = Math.max(Mh + 40, Btop - Mtop);
-
-        // Create snapshot canvas
-        var snapshot = createSnapshot(data, Mw, Mh, bookId);
-        if (!snapshot) {
-          if (callback) callback();
-          return;
-        }
-
-        var snapW = snapshot.width;
-        var snapH = snapshot.height;
-
-        isAnimating = true;
-        var duration = isOpening ? 520 : 460; // Authentic macOS timing (ms)
-        var startTime = null;
-        var N = 80; // High slice density for continuous organic curvature
-        var split = 0.38; // Dual-phase transition boundary
-
-        function smoothstep(min, max, value) {
-          var x = Math.max(0, Math.min(1, (value - min) / (max - min)));
-          return x * x * (3 - 2 * x);
-        }
-
-        function easeInOutCubic(val) {
-          return val < 0.5 ? 4 * val * val * val : 1 - Math.pow(-2 * val + 2, 3) / 2;
-        }
-
-        function getGeometry(k, j, vty) {
-          var fullHeight = Mh + (Hchimney - Mh) * k;
-          var currentHeight = fullHeight * (1 - j);
-          var topY = Mtop + (Btop - Mtop) * j;
-          var screenY = topY + currentHeight * vty;
-
-          // Non-linear flared trumpet waist profile (macOS Catalina signature curve)
-          var profile = Math.pow(1 - vty, 1.45);
-          var w = Bw + (Mw - Bw) * ((1 - j) * profile + (1 - k) * (1 - profile));
-
-          // Centerline with Compiz harmonic S-swish
-          var centerShift = (Bcx - Mcx) * (vty * k + (1 - vty) * j);
-          var swish = Math.sin(vty * Math.PI) * (Bcx - Mcx) * 0.25 * k * (1 - j);
-          var centerX = Mcx + centerShift + swish;
-
-          return {
-            screenY: screenY,
-            centerX: centerX,
-            w: Math.max(4, w),
-            leftX: centerX - w * 0.5,
-            rightX: centerX + w * 0.5
-          };
-        }
-
-        function step(timestamp) {
-          if (!startTime) startTime = timestamp;
-          var elapsed = timestamp - startTime;
-          var t = Math.min(1, elapsed / duration);
-
-          var p = easeInOutCubic(t);
-          var k, j;
-
-          if (isOpening) {
-            // Opening (Unminimize): Top shoots up first, bottom releases into place
-            j = 1 - smoothstep(0, 1 - split, p);
-            k = 1 - smoothstep(1 - split, 1, p);
-          } else {
-            // Closing (Minimize): Bottom docks into book first, top gets sucked down
-            k = smoothstep(0, split, p);
-            j = smoothstep(split, 1, p);
-          }
-
-          clearCanvas();
-
-          var leftPath = [];
-          var rightPath = [];
-
-          // 80 Slices with continuous exact boundary interpolation
-          for (var i = 0; i < N; i++) {
-            var vty0 = i / N;
-            var vty1 = (i + 1) / N;
-
-            var s0 = getGeometry(k, j, vty0);
-            var s1 = getGeometry(k, j, vty1);
-
-            var y0 = s0.screenY;
-            var y1 = s1.screenY;
-            var dh = (y1 - y0) + 0.35; // subpixel antialiasing guard
-
-            var cx = (s0.centerX + s1.centerX) * 0.5;
-            var w = (s0.w + s1.w) * 0.5;
-            var x = cx - w * 0.5;
-
-            if (i === 0) {
-              leftPath.push({ x: s0.leftX, y: y0 });
-              rightPath.push({ x: s0.rightX, y: y0 });
-            }
-            leftPath.push({ x: s1.leftX, y: y1 });
-            rightPath.push({ x: s1.rightX, y: y1 });
-
-            // Exact continuous source partition
-            var sy = vty0 * snapH;
-            var sh = (vty1 - vty0) * snapH;
-
-            ctx.drawImage(snapshot, 0, sy, snapW, sh, x, y0, w, dh);
-          }
-
-          // Liquid Outer Rails Glass Sheen (Subtle Catalina specular highlight)
-          var edgeAlpha = isOpening ? (1 - p) * 0.35 : (1 - p) * 0.35;
-          if (edgeAlpha > 0.02) {
-            ctx.save();
-            ctx.lineWidth = 1.2;
-            ctx.strokeStyle = "rgba(255, 255, 255, " + edgeAlpha + ")";
-
-            ctx.beginPath();
-            for (var m = 0; m < leftPath.length; m++) {
-              if (m === 0) ctx.moveTo(leftPath[m].x, leftPath[m].y);
-              else ctx.lineTo(leftPath[m].x, leftPath[m].y);
-            }
-            ctx.stroke();
-
-            ctx.beginPath();
-            for (var n = 0; n < rightPath.length; n++) {
-              if (n === 0) ctx.moveTo(rightPath[n].x, rightPath[n].y);
-              else ctx.lineTo(rightPath[n].x, rightPath[n].y);
-            }
-            ctx.stroke();
-            ctx.restore();
-          }
-
-          if (t < 1) {
-            activeAnimId = requestAnimationFrame(step);
-          } else {
-            // Flicker-free handoff: reveal live DOM modal first
-            if (isOpening) {
-              overlay.classList.remove("is-genie-active");
-              overlay.classList.add("genie-settled");
-              if (callback) callback();
-            }
-            // Allow DOM paint to commit before clearing canvas to avoid 1-frame blank gap
-            requestAnimationFrame(function () {
-              clearCanvas();
-              isAnimating = false;
-              activeAnimId = null;
-              if (!isOpening && callback) {
-                callback();
-              }
-            });
-          }
-        }
-
-        activeAnimId = requestAnimationFrame(step);
-      }
-
-      return {
-        open: function (cardEl, overlay, containerEl, data, bookId, cb) {
-          animateGenie(true, cardEl, overlay, containerEl, data, bookId, cb);
-        },
-        close: function (cardEl, overlay, containerEl, data, bookId, cb) {
-          animateGenie(false, cardEl, overlay, containerEl, data, bookId, cb);
-        },
-        isBusy: function () {
-          return isAnimating;
-        }
-      };
-    })();
+    var isTransitioning = false;
 
     function openChapter(bookId, cardEl) {
-      if (GenieFX.isBusy()) return;
+      if (isTransitioning) return;
       var idx = CHAPTER_KEYS.indexOf(bookId);
       if (idx === -1) idx = 0;
       currentTriggerCard = cardEl;
@@ -1146,61 +684,132 @@
         }
       });
 
-      // Play smooth 3D physical book opening animation on the shelf
+      // 1. Play smooth 3D physical book opening on shelf
       if (cardEl) {
         cardEl.classList.remove("is-closing");
         cardEl.classList.add("is-opening");
       }
 
-      // Allow 320ms for the 3D book cover to swing open, then launch macOS Genie
-      setTimeout(function () {
-        renderChapter(idx);
-        var key = CHAPTER_KEYS[idx];
-        var data = CHAPTERS[key];
+      // 2. Populate the real modal content immediately so all DOM elements & artwork clone are live
+      renderChapter(idx);
 
-        overlay.classList.remove("genie-settled");
-        overlay.classList.add("is-active", "is-genie-active");
-        overlay.setAttribute("aria-hidden", "false");
-        document.body.style.overflow = "hidden";
+      var prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-        GenieFX.open(cardEl, overlay, containerEl, data, key, function () {
-          overlay.classList.remove("is-genie-active");
-          overlay.classList.add("genie-settled");
-          if (closeBtn) {
-            closeBtn.focus();
-          }
-        });
-      }, 320);
+      // 3. Make overlay active in DOM
+      overlay.classList.add("is-active");
+      overlay.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+
+      if (prefersReduced || !cardEl || !containerEl) {
+        if (closeBtn) closeBtn.focus();
+        return;
+      }
+
+      isTransitioning = true;
+
+      // 4. Calculate exact FLIP transform from clicked book card to centered modal container
+      var bookRect = cardEl.getBoundingClientRect();
+      var modalRect = containerEl.getBoundingClientRect();
+
+      var bookCx = bookRect.left + bookRect.width / 2;
+      var bookCy = bookRect.top + bookRect.height / 2;
+      var modalCx = modalRect.left + modalRect.width / 2;
+      var modalCy = modalRect.top + modalRect.height / 2;
+
+      var dx = Math.round(bookCx - modalCx);
+      var dy = Math.round(bookCy - modalCy);
+      var sx = Math.min(1, Math.max(0.18, (bookRect.width * 0.95) / modalRect.width));
+      var sy = Math.min(1, Math.max(0.24, (bookRect.height * 0.95) / modalRect.height));
+
+      // 5. Position modal container exactly at the open book origin with matching 3D perspective
+      containerEl.style.transition = "none";
+      containerEl.style.transformOrigin = "center center";
+      containerEl.style.transform = "translate3d(" + dx + "px, " + dy + "px, 0) scale(" + sx.toFixed(4) + ", " + sy.toFixed(4) + ") rotateY(-6deg) rotateX(4deg)";
+      containerEl.style.opacity = "0.2";
+      containerEl.style.borderRadius = "12px";
+
+      // Force layout commit
+      void containerEl.offsetHeight;
+
+      // 6. Fluidly bloom and expand from the book into centered full-screen modal
+      requestAnimationFrame(function () {
+        containerEl.style.transition = "transform 0.48s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.36s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.42s ease";
+        containerEl.style.transform = "translate3d(0, 0, 0) scale(1, 1) rotateY(0deg) rotateX(0deg)";
+        containerEl.style.opacity = "1";
+        containerEl.style.borderRadius = "28px";
+
+        setTimeout(function () {
+          isTransitioning = false;
+          containerEl.style.transition = "";
+          if (closeBtn) closeBtn.focus();
+        }, 500);
+      });
     }
 
     function closeChapter() {
-      if (GenieFX.isBusy()) return;
+      if (isTransitioning) return;
       if (!overlay.classList.contains("is-active")) return;
 
       var key = CHAPTER_KEYS[currentChapterIndex];
-      var data = CHAPTERS[key];
       var cardToClose = currentTriggerCard || document.querySelector('.book-card[data-book-id="' + key + '"]');
 
-      overlay.classList.remove("genie-settled");
-      overlay.classList.add("is-genie-active");
-
-      GenieFX.close(cardToClose, overlay, containerEl, data, key, function () {
-        overlay.classList.remove("is-active", "is-genie-active");
+      var prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (prefersReduced || !cardToClose || !containerEl) {
+        overlay.classList.remove("is-active");
         overlay.setAttribute("aria-hidden", "true");
         document.body.style.overflow = "";
-
-        // Smoothly fold the book back shut onto the shelf
         if (cardToClose) {
           cardToClose.classList.remove("is-opening");
           cardToClose.classList.add("is-closing");
-
-          setTimeout(function () {
-            cardToClose.classList.remove("is-closing");
-          }, 450);
-
+          setTimeout(function () { cardToClose.classList.remove("is-closing"); }, 450);
           cardToClose.focus();
         }
-      });
+        return;
+      }
+
+      isTransitioning = true;
+
+      // Calculate return coordinates to the book on shelf
+      var bookRect = cardToClose.getBoundingClientRect();
+      var modalRect = containerEl.getBoundingClientRect();
+
+      var bookCx = bookRect.left + bookRect.width / 2;
+      var bookCy = bookRect.top + bookRect.height / 2;
+      var modalCx = modalRect.left + modalRect.width / 2;
+      var modalCy = modalRect.top + modalRect.height / 2;
+
+      var dx = Math.round(bookCx - modalCx);
+      var dy = Math.round(bookCy - modalCy);
+      var sx = Math.min(1, Math.max(0.18, (bookRect.width * 0.95) / modalRect.width));
+      var sy = Math.min(1, Math.max(0.24, (bookRect.height * 0.95) / modalRect.height));
+
+      // Smoothly fly back down and dock directly into the book on the shelf
+      containerEl.style.transition = "transform 0.40s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.32s ease, border-radius 0.36s ease";
+      containerEl.style.transform = "translate3d(" + dx + "px, " + dy + "px, 0) scale(" + sx.toFixed(4) + ", " + sy.toFixed(4) + ") rotateY(-6deg) rotateX(4deg)";
+      containerEl.style.opacity = "0";
+      containerEl.style.borderRadius = "12px";
+
+      setTimeout(function () {
+        overlay.classList.remove("is-active");
+        overlay.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+
+        containerEl.style.transition = "";
+        containerEl.style.transform = "";
+        containerEl.style.opacity = "";
+        containerEl.style.borderRadius = "";
+
+        // Fold the book cover smoothly back shut onto the shelf
+        cardToClose.classList.remove("is-opening");
+        cardToClose.classList.add("is-closing");
+
+        setTimeout(function () {
+          cardToClose.classList.remove("is-closing");
+          isTransitioning = false;
+        }, 450);
+
+        cardToClose.focus();
+      }, 390);
     }
 
     function prevChapter() {

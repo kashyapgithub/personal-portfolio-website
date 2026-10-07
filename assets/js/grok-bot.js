@@ -21,7 +21,6 @@
   var bubbleInner = document.getElementById("bubble-inner");
   var soundBtn = document.getElementById("bot-sound-btn");
   var soundLabel = document.getElementById("sound-label");
-  var scrollCta = document.getElementById("bot-explore-cta");
 
   var ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -117,6 +116,7 @@
   var speechFlowState = "idle"; // 'idle' | 'speaking' | 'holding' | 'closed'
   var holdTimer = null;
   var isMuted = true; // By default kept in mute per user instructions
+  var botAudio = null;
   var speechUtterance = null;
   var availableVoice = null;
   var speechTriggered = false;
@@ -203,21 +203,52 @@
   }
 
   function speakGreeting() {
-    if (isMuted || !("speechSynthesis" in window)) return;
+    if (isMuted) return;
     try {
-      window.speechSynthesis.cancel();
       playCuteChirp();
 
+      if (botAudio) {
+        botAudio.pause();
+        botAudio = null;
+      }
+
+      var audio = new Audio("assets/audio/bot-greeting.mp3");
+      audio.volume = 1.0;
+      botAudio = audio;
+
+      audio.onended = function () {
+        botAudio = null;
+        markFinishedSaying();
+      };
+      audio.onerror = function () {
+        fallbackSpeechSynthesis();
+      };
+
+      var p = audio.play();
+      if (p !== undefined) {
+        p.catch(function () {
+          fallbackSpeechSynthesis();
+        });
+      }
+    } catch (e) {
+      fallbackSpeechSynthesis();
+    }
+  }
+
+  function fallbackSpeechSynthesis() {
+    if (isMuted || !("speechSynthesis" in window)) {
+      markFinishedSaying();
+      return;
+    }
+    try {
+      window.speechSynthesis.cancel();
       var text = "In a world that never stops rushing, thank you for taking a moment to pause here.";
       speechUtterance = new SpeechSynthesisUtterance(text);
       if (!availableVoice) availableVoice = pickCuteMaleVoice();
       if (availableVoice) speechUtterance.voice = availableVoice;
 
-      // Cute male AI companion tuning:
-      // Pitch: 1.22 gives an energetic, friendly, adorable young AI character tone
-      // Rate: 1.04 keeps it lively, articulate, and crisp
-      speechUtterance.pitch = 1.22;
-      speechUtterance.rate = 1.04;
+      speechUtterance.pitch = 1.12;
+      speechUtterance.rate = 1.0;
       speechUtterance.volume = 1.0;
 
       speechUtterance.onend = function () {
@@ -250,6 +281,11 @@
         if (iconMuted) iconMuted.style.display = "block";
         if (iconOn) iconOn.style.display = "none";
         if (soundLabel) soundLabel.textContent = "Unmute Voice";
+        if (botAudio) {
+          botAudio.pause();
+          botAudio.currentTime = 0;
+          botAudio = null;
+        }
         if ("speechSynthesis" in window) window.speechSynthesis.cancel();
       } else {
         soundBtn.classList.add("is-active");
@@ -454,18 +490,6 @@
 
   // Expose globally for testing and manual triggers
   window.forceScrollToBookshelf = triggerForcedBookshelfScroll;
-
-  // Explore Archive button handler
-  var exploreCta = document.getElementById("bot-explore-cta");
-  if (exploreCta) {
-    exploreCta.addEventListener("click", function (e) {
-      e.preventDefault();
-      if (holdTimer) clearTimeout(holdTimer);
-      speechFlowState = "closed";
-      retractSpeechBubble();
-      triggerForcedBookshelfScroll();
-    });
-  }
 
   // Mouse / Pointer Eye Contact Tracking
   function onPointerMove(clientX, clientY) {
@@ -773,29 +797,85 @@
     }
 
     // -------------------------------------------------------------
-    // 4. DYNAMIC GROUND SHADOW
     // -------------------------------------------------------------
-    var shadowFloorY = targetCy + R + 38;
+    // 4. PIXAR MOVIE 3D STUDIO STAGE & DYNAMIC MULTI-LAYER SHADOW
+    // -------------------------------------------------------------
+    var shadowFloorY = targetCy + R + 36;
     var altitude = Math.max(0, shadowFloorY - (currentCy + R));
-    var altitudeFactor = Math.max(0.05, Math.min(1.0, 1.0 - altitude / 320));
+    var altitudeFactor = Math.max(0.05, Math.min(1.0, 1.0 - altitude / 340));
+    var invAlt = altitudeFactor * altitudeFactor;
 
-    var shadowRx = R * 0.85 * altitudeFactor * (scaleX || 1);
-    var shadowRy = R * 0.18 * altitudeFactor * (scaleY || 1);
-    var shadowAlpha = Math.max(0.04, Math.min(0.55, 0.45 * (altitudeFactor * altitudeFactor)));
+    ctx.save();
 
-    if (shadowRx > 3) {
-      var shadowGrad = ctx.createRadialGradient(cx, shadowFloorY, 0, cx, shadowFloorY, shadowRx);
-      shadowGrad.addColorStop(0, "rgba(0, 0, 0, " + shadowAlpha.toFixed(3) + ")");
-      shadowGrad.addColorStop(0.48, "rgba(0, 0, 0, " + (shadowAlpha * 0.42).toFixed(3) + ")");
-      shadowGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+    // A. Studio Stage Floor Dais / Luminous Stage Ring
+    // Creates a soft illuminated ground plane catching overhead spotlight so the shadow has rich Pixar contrast
+    var daisRx = R * 2.35 * (scaleX || 1);
+    var daisRy = R * 0.58 * (scaleY || 1);
+    var daisGrad = ctx.createRadialGradient(cx, shadowFloorY, 0, cx, shadowFloorY, daisRx);
+    daisGrad.addColorStop(0.00, "rgba(203, 213, 225, 0.18)"); // soft studio keylight pool
+    daisGrad.addColorStop(0.38, "rgba(148, 163, 184, 0.09)");
+    daisGrad.addColorStop(0.72, "rgba(99, 102, 241, 0.035)"); // subtle cinematic rim sheen
+    daisGrad.addColorStop(1.00, "rgba(15, 23, 42, 0)");
+    ctx.beginPath();
+    ctx.ellipse(cx, shadowFloorY, daisRx, daisRy, 0, 0, Math.PI * 2);
+    ctx.fillStyle = daisGrad;
+    ctx.fill();
 
-      ctx.save();
-      ctx.beginPath();
-      ctx.ellipse(cx, shadowFloorY, shadowRx, shadowRy, 0, 0, Math.PI * 2);
-      ctx.fillStyle = shadowGrad;
-      ctx.fill();
-      ctx.restore();
-    }
+    // B. Floor Porcelain Bounce Light (Global Illumination)
+    // The white sphere reflects subtle bounce light directly onto the floor beneath it
+    var bounceRx = R * 0.95 * (scaleX || 1);
+    var bounceRy = R * 0.24 * (scaleY || 1);
+    var bounceAlpha = Math.min(0.16, 0.14 * altitudeFactor);
+    var bounceGrad = ctx.createRadialGradient(cx, shadowFloorY - 2, 0, cx, shadowFloorY - 2, bounceRx);
+    bounceGrad.addColorStop(0.0, "rgba(255, 255, 255, " + bounceAlpha.toFixed(3) + ")");
+    bounceGrad.addColorStop(0.5, "rgba(224, 231, 255, " + (bounceAlpha * 0.45).toFixed(3) + ")");
+    bounceGrad.addColorStop(1.0, "rgba(255, 255, 255, 0)");
+    ctx.beginPath();
+    ctx.ellipse(cx, shadowFloorY - 2, bounceRx, bounceRy, 0, 0, Math.PI * 2);
+    ctx.fillStyle = bounceGrad;
+    ctx.fill();
+
+    // C. Layer 3: Soft Umbra / Diffuse Ambient Shadow Falloff
+    var umbraRx = R * 1.48 * (0.75 + 0.25 * altitudeFactor) * (scaleX || 1);
+    var umbraRy = R * 0.36 * (0.75 + 0.25 * altitudeFactor) * (scaleY || 1);
+    var umbraAlpha = Math.min(0.42, 0.36 * altitudeFactor);
+    var umbraGrad = ctx.createRadialGradient(cx, shadowFloorY, 0, cx, shadowFloorY, umbraRx);
+    umbraGrad.addColorStop(0.00, "rgba(5, 7, 14, " + umbraAlpha.toFixed(3) + ")");
+    umbraGrad.addColorStop(0.55, "rgba(15, 23, 42, " + (umbraAlpha * 0.38).toFixed(3) + ")");
+    umbraGrad.addColorStop(1.00, "rgba(0, 0, 0, 0)");
+    ctx.beginPath();
+    ctx.ellipse(cx, shadowFloorY, umbraRx, umbraRy, 0, 0, Math.PI * 2);
+    ctx.fillStyle = umbraGrad;
+    ctx.fill();
+
+    // D. Layer 2: Penumbra Mid-Tone Shadow
+    var penRx = R * 0.90 * altitudeFactor * (scaleX || 1);
+    var penRy = R * 0.22 * altitudeFactor * (scaleY || 1);
+    var penAlpha = Math.min(0.78, 0.68 * invAlt);
+    var penGrad = ctx.createRadialGradient(cx, shadowFloorY, 0, cx, shadowFloorY, penRx);
+    penGrad.addColorStop(0.00, "rgba(3, 4, 9, " + penAlpha.toFixed(3) + ")");
+    penGrad.addColorStop(0.52, "rgba(6, 9, 18, " + (penAlpha * 0.50).toFixed(3) + ")");
+    penGrad.addColorStop(1.00, "rgba(0, 0, 0, 0)");
+    ctx.beginPath();
+    ctx.ellipse(cx, shadowFloorY, penRx, penRy, 0, 0, Math.PI * 2);
+    ctx.fillStyle = penGrad;
+    ctx.fill();
+
+    // E. Layer 1: Razor-Sharp Core Contact Shadow (Ambient Occlusion)
+    // Darkest, richest right where sphere is closest to the ground plane
+    var coreRx = R * 0.46 * altitudeFactor * (scaleX || 1);
+    var coreRy = R * 0.11 * altitudeFactor * (scaleY || 1);
+    var coreAlpha = Math.min(0.96, 0.90 * (invAlt * altitudeFactor));
+    var coreGrad = ctx.createRadialGradient(cx, shadowFloorY, 0, cx, shadowFloorY, coreRx);
+    coreGrad.addColorStop(0.00, "rgba(1, 2, 5, " + coreAlpha.toFixed(3) + ")");
+    coreGrad.addColorStop(0.65, "rgba(2, 4, 8, " + (coreAlpha * 0.75).toFixed(3) + ")");
+    coreGrad.addColorStop(1.00, "rgba(0, 0, 0, 0)");
+    ctx.beginPath();
+    ctx.ellipse(cx, shadowFloorY, coreRx, coreRy, 0, 0, Math.PI * 2);
+    ctx.fillStyle = coreGrad;
+    ctx.fill();
+
+    ctx.restore();
 
     // -------------------------------------------------------------
     // 5. WHITE PORCELAIN MATTE 3D SPHERE
@@ -835,17 +915,21 @@
     // -------------------------------------------------------------
     // 6. 3D PROJECTED EYES & REAL-TIME LIP-SYNC MOUTH
     // -------------------------------------------------------------
-    renderEye(EYE_LEFT, currentCy, false);
-    renderEye(EYE_RIGHT, currentCy, true);
-    renderSmile(currentCy, elapsedSec);
+    var isSpeakingNow = (botAudio && !botAudio.paused && !botAudio.ended) ||
+      (speechFlowState === "speaking" && elapsedSec >= 3.88 && elapsedSec < 9.0) ||
+      ("speechSynthesis" in window && window.speechSynthesis.speaking);
+
+    renderEye(EYE_LEFT, currentCy, false, isSpeakingNow);
+    renderEye(EYE_RIGHT, currentCy, true, isSpeakingNow);
+    renderSmile(currentCy, elapsedSec, isSpeakingNow);
 
     requestAnimationFrame(render);
   }
 
   // =============================================================
-  // 3D EYE PROJECTION & RENDERING
+  // 3D EYE PROJECTION & RENDERING (EXPRESSIVE, SOULFUL, SPARKLING)
   // =============================================================
-  function renderEye(eyeCoord, sphereY, isRightEye) {
+  function renderEye(eyeCoord, sphereY, isRightEye, isSpeakingNow) {
     var p0 = sphericalTo3D(eyeCoord.phi, eyeCoord.theta);
     var pRot = rotate3D(p0, yaw, pitch, roll);
 
@@ -855,55 +939,75 @@
     var screenY = sphereY + R * pRot.y;
 
     var normalForeshorten = Math.max(0.18, pRot.z);
-    var baseEyeW = R * 0.090 * normalForeshorten;
-    var baseEyeH = R * 0.115 * eyeWiden;
+    var baseEyeW = R * 0.096 * normalForeshorten;
+    // Keep eye comfortably wide and open, with subtle speech breathing pulse
+    var speechPulse = isSpeakingNow ? (1.0 + Math.sin(Date.now() * 0.012) * 0.04) : 1.0;
+    var baseEyeH = R * 0.128 * eyeWiden * speechPulse;
 
-    var openFactor = Math.max(0.06, 1.0 - blink);
+    var openFactor = Math.max(0.08, 1.0 - blink);
     var curEyeH = baseEyeH * openFactor;
 
     ctx.save();
     ctx.translate(screenX, screenY);
-    ctx.rotate(pRot.x * 0.32 + roll);
+    ctx.rotate(pRot.x * 0.28 + roll);
 
-    var sm = smileProgress;
+    var sm = smileProgress; // 0 (neutral) to 1 (full warm smiling gaze)
 
-    if (sm < 0.55) {
-      // Curious inquisitive eye (●)
-      var morphW = baseEyeW * (1.0 + sm * 0.25);
-      var morphH = curEyeH * (1.0 - sm * 0.45);
+    // 1. Soft expressive brow floating above the eye
+    var browY = -curEyeH * 1.35 - (isSpeakingNow ? 1.5 : 0);
+    var browW = baseEyeW * 0.95;
+    var browTilt = (isRightEye ? -1 : 1) * (0.08 + sm * 0.12);
+    ctx.save();
+    ctx.translate(0, browY);
+    ctx.rotate(browTilt);
+    ctx.strokeStyle = "rgba(15, 23, 42, 0.45)";
+    ctx.lineWidth = Math.max(1.4, R * 0.016 * normalForeshorten);
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-browW * 0.8, (isRightEye ? 1.2 : -1.2));
+    ctx.quadraticCurveTo(0, -1.8, browW * 0.8, (isRightEye ? -1.2 : 1.2));
+    ctx.stroke();
+    ctx.restore();
 
-      ctx.fillStyle = "#090a0f";
-      ctx.beginPath();
-      ctx.ellipse(0, 0, Math.max(1.8, morphW), Math.max(1.5, morphH), 0, 0, Math.PI * 2);
+    // 2. Wide open, glossy, soulful pupil
+    ctx.fillStyle = "#07090e";
+    ctx.beginPath();
+    if (openFactor > 0.32) {
+      // Draw almond/round eye with smiling lower contour (Disney/Pixar warm cheek lift)
+      var topH = curEyeH;
+      var botH = curEyeH * (1.0 - sm * 0.32);
+      ctx.moveTo(-baseEyeW, 0);
+      ctx.bezierCurveTo(-baseEyeW, -topH * 1.25, baseEyeW, -topH * 1.25, baseEyeW, 0);
+      ctx.bezierCurveTo(baseEyeW, botH * 0.95, -baseEyeW, botH * 0.95, -baseEyeW, 0);
       ctx.fill();
 
-      if (openFactor > 0.45) {
-        ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
-        ctx.beginPath();
-        ctx.arc(baseEyeW * 0.28, -curEyeH * 0.30, Math.max(1.2, baseEyeW * 0.30), 0, Math.PI * 2);
-        ctx.fill();
-      }
-    } else {
-      // Joyful smiling crescent (⌒)
-      var strokeW = Math.max(2.5, R * 0.038 * normalForeshorten);
-      ctx.strokeStyle = "#090a0f";
-      ctx.lineWidth = strokeW;
-      ctx.lineCap = "round";
-
-      var archRadius = baseEyeW * 1.15;
-      var archHeight = curEyeH * 0.88;
-
+      // 3. Dual glossy Pixar catchlights (living liquid eye reflection)
+      // Primary specular catchlight (top-right highlight)
+      var spark1X = baseEyeW * 0.32;
+      var spark1Y = -curEyeH * 0.38;
+      var spark1R = Math.max(1.8, baseEyeW * 0.38);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.98)";
       ctx.beginPath();
-      ctx.moveTo(-archRadius, archHeight * 0.35);
-      ctx.quadraticCurveTo(0, -archHeight * 0.95 * sm, archRadius, archHeight * 0.35);
-      ctx.stroke();
+      ctx.arc(spark1X, spark1Y, spark1R, 0, Math.PI * 2);
+      ctx.fill();
 
-      if (openFactor > 0.5 && sm < 0.9) {
-        ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-        ctx.beginPath();
-        ctx.arc(archRadius * 0.3, -archHeight * 0.4, strokeW * 0.4, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      // Secondary micro-sparkle (lower-left glossy reflection)
+      var spark2X = -baseEyeW * 0.30;
+      var spark2Y = curEyeH * 0.22;
+      var spark2R = Math.max(1.1, baseEyeW * 0.18);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
+      ctx.beginPath();
+      ctx.arc(spark2X, spark2Y, spark2R, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Fast natural blink line
+      ctx.strokeStyle = "#07090e";
+      ctx.lineWidth = Math.max(2.5, R * 0.034 * normalForeshorten);
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(-baseEyeW, 0);
+      ctx.lineTo(baseEyeW, 0);
+      ctx.stroke();
     }
 
     ctx.restore();
@@ -912,7 +1016,7 @@
   // =============================================================
   // REAL-TIME LIP-SYNC SMILE MOUTH RENDERING
   // =============================================================
-  function renderSmile(sphereY, elapsedSec) {
+  function renderSmile(sphereY, elapsedSec, isSpeakingNowArg) {
     var p0 = sphericalTo3D(MOUTH_CENTER.phi, MOUTH_CENTER.theta);
     var pRot = rotate3D(p0, yaw, pitch, roll);
 
@@ -924,7 +1028,10 @@
     var normalForeshorten = Math.max(0.15, pRot.z);
 
     // Dynamic lip-sync speech oscillation
-    var isSpeakingNow = (speechFlowState === "speaking" && elapsedSec >= 3.88 && elapsedSec < 8.1) || ("speechSynthesis" in window && window.speechSynthesis.speaking);
+    var isSpeakingNow = (isSpeakingNowArg !== undefined) ? isSpeakingNowArg :
+      ((botAudio && !botAudio.paused && !botAudio.ended) ||
+       (speechFlowState === "speaking" && elapsedSec >= 3.88 && elapsedSec < 9.0) ||
+       ("speechSynthesis" in window && window.speechSynthesis.speaking));
     var talkVibe = isSpeakingNow ? Math.sin(elapsedSec * 22) * 0.38 : 0;
     var mouthTalkDepth = isSpeakingNow ? (Math.sin(elapsedSec * 20) * 0.5 + 0.5) * R * 0.022 : 0;
 
@@ -948,20 +1055,6 @@
     ctx.restore();
   }
 
-  // =============================================================
-  // CTA SCROLL ACTION HOOK
-  // =============================================================
-  if (scrollCta) {
-    scrollCta.addEventListener("click", function (e) {
-      e.preventDefault();
-      var target = document.getElementById("work");
-      if (target) {
-        var headerH = 70;
-        var topPos = target.getBoundingClientRect().top + window.pageYOffset - headerH;
-        window.scrollTo({ top: topPos, behavior: "smooth" });
-      }
-    });
-  }
 
   // Initialize
   resize();

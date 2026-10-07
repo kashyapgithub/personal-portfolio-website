@@ -326,7 +326,10 @@ body {
   min-height: calc(100svh - var(--header-h));
   padding: 0 1.25rem clamp(1.5rem, 3.5vh, 2.75rem);
   border-bottom: 1px solid var(--border);
-  background: radial-gradient(circle at 50% 36%, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.012) 40%, transparent 70%), #07080c;
+  background: 
+    radial-gradient(ellipse 70% 50% at 50% 28%, rgba(224, 231, 255, 0.08) 0%, rgba(148, 163, 184, 0.025) 50%, transparent 75%),
+    radial-gradient(ellipse 65% 26% at 50% 74%, rgba(148, 163, 184, 0.15) 0%, rgba(71, 85, 105, 0.06) 45%, transparent 75%),
+    linear-gradient(180deg, #080a10 0%, #0d111b 45%, #121827 75%, #090c13 100%);
 }
 
 #grok-bot-canvas {
@@ -536,30 +539,6 @@ body {
   justify-content: center;
 }
 
-.bot-explore-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 100px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 0.78rem;
-  font-weight: 500;
-  text-decoration: none;
-  transition: all 0.2s var(--ease);
-}
-
-.bot-explore-cta:hover {
-  background: rgba(255, 255, 255, 0.09);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px);
-}
 
 .hero-grid {
   position: relative;
@@ -2503,35 +2482,6 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   -webkit-backdrop-filter: blur(14px);
 }
 
-/* ============================================================
-   macOS Catalina Genie Effect Canvas & Window Warp
-   ============================================================ */
-.genie-canvas {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  z-index: 10000;
-  opacity: 1;
-  filter: drop-shadow(0 20px 36px rgba(15, 23, 42, 0.32));
-  transform: translateZ(0);
-  will-change: transform;
-}
-
-.chapter-modal-overlay.is-genie-active .chapter-modal-container {
-  opacity: 0 !important;
-  pointer-events: none !important;
-  transform: none !important;
-  transition: none !important;
-}
-
-.chapter-modal-overlay.genie-settled .chapter-modal-container {
-  opacity: 1 !important;
-  transform: none !important;
-  transition: none !important;
-}
-
 .chapter-modal-container {
   position: relative;
   z-index: 10;
@@ -2546,15 +2496,16 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
     18px 18px 42px rgba(15, 23, 42, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.9);
   padding: clamp(22px, 3.5vw, 36px);
-  transform: translateY(28px) scale(0.95);
-  opacity: 0;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
   color: #1e293b;
+  will-change: transform, opacity;
+  transform-origin: center center;
 }
 
-.chapter-modal-overlay.is-active .chapter-modal-container {
-  transform: translateY(0) scale(1);
-  opacity: 1;
+@media (prefers-reduced-motion: reduce) {
+  .chapter-modal-container {
+    transition: opacity 0.2s ease !important;
+    transform: none !important;
+  }
 }
 
 /* Chapter Navigation Header */
