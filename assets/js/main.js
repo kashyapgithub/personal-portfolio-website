@@ -953,21 +953,23 @@
 
         resizeCanvas();
 
-        // Calculate Modal Target Rect (Fixed destination in viewport)
+        // Calculate Modal Target Rect (Destination dialog in viewport)
         var modalRect = containerEl ? containerEl.getBoundingClientRect() : null;
         var Mw = (modalRect && modalRect.width > 50) ? modalRect.width : Math.min(window.innerWidth * 0.92, 980);
         var Mh = (modalRect && modalRect.height > 50) ? modalRect.height : Math.min(window.innerHeight * 0.88, 640);
         var Mtop = (modalRect && modalRect.top) ? modalRect.top : (window.innerHeight - Mh) / 2;
-        var Mbot = Mtop + Mh;
-        var Mcx = (modalRect && modalRect.left) ? (modalRect.left + Mw / 2) : (window.innerWidth / 2);
+        var Mleft = (modalRect && modalRect.left) ? modalRect.left : (window.innerWidth - Mw) / 2;
+        var Mcx = Mleft + Mw / 2;
 
-        // Calculate Book Origin Rect (Stable anchor on shelf)
+        // Calculate Book Origin Rect (Anchor point on shelf)
         var bookRect = cardEl ? cardEl.getBoundingClientRect() : null;
-        var Bw = (bookRect && bookRect.width > 20) ? bookRect.width * 0.9 : 140;
+        var Bw = (bookRect && bookRect.width > 20) ? bookRect.width * 0.88 : 140;
         var Bh = (bookRect && bookRect.height > 20) ? bookRect.height : 210;
         var Btop = (bookRect && bookRect.top) ? bookRect.top : (window.innerHeight - Bh - 60);
-        var Bbot = Btop + Bh;
         var Bcx = (bookRect && bookRect.left) ? (bookRect.left + bookRect.width / 2) : (window.innerWidth / 2);
+
+        // Maximum chimney height connecting modal top down to shelf volume
+        var Hchimney = Math.max(Mh + 40, Btop - Mtop);
 
         // Create snapshot canvas
         var snapshot = createSnapshot(data, Mw, Mh, bookId);
@@ -980,78 +982,99 @@
         var snapH = snapshot.height;
 
         isAnimating = true;
-        var duration = isOpening ? 480 : 420; // Silky macOS timing (ms)
+        var duration = isOpening ? 520 : 460; // Authentic macOS timing (ms)
         var startTime = null;
-        var N = 64; // High slice density for mathematically smooth curvature
+        var N = 80; // High slice density for continuous organic curvature
+        var split = 0.38; // Dual-phase transition boundary
+
+        function smoothstep(min, max, value) {
+          var x = Math.max(0, Math.min(1, (value - min) / (max - min)));
+          return x * x * (3 - 2 * x);
+        }
+
+        function easeInOutCubic(val) {
+          return val < 0.5 ? 4 * val * val * val : 1 - Math.pow(-2 * val + 2, 3) / 2;
+        }
+
+        function getGeometry(k, j, vty) {
+          var fullHeight = Mh + (Hchimney - Mh) * k;
+          var currentHeight = fullHeight * (1 - j);
+          var topY = Mtop + (Btop - Mtop) * j;
+          var screenY = topY + currentHeight * vty;
+
+          // Non-linear flared trumpet waist profile (macOS Catalina signature curve)
+          var profile = Math.pow(1 - vty, 1.45);
+          var w = Bw + (Mw - Bw) * ((1 - j) * profile + (1 - k) * (1 - profile));
+
+          // Centerline with Compiz harmonic S-swish
+          var centerShift = (Bcx - Mcx) * (vty * k + (1 - vty) * j);
+          var swish = Math.sin(vty * Math.PI) * (Bcx - Mcx) * 0.25 * k * (1 - j);
+          var centerX = Mcx + centerShift + swish;
+
+          return {
+            screenY: screenY,
+            centerX: centerX,
+            w: Math.max(4, w),
+            leftX: centerX - w * 0.5,
+            rightX: centerX + w * 0.5
+          };
+        }
 
         function step(timestamp) {
           if (!startTime) startTime = timestamp;
           var elapsed = timestamp - startTime;
           var t = Math.min(1, elapsed / duration);
 
-          var pTop, pBot;
+          var p = easeInOutCubic(t);
+          var k, j;
+
           if (isOpening) {
-            // Opening: Smooth C^2 velocity profile (zero initial jerk, natural acceleration)
-            pTop = 1 - Math.pow(1 - t, 2.8);
-            pBot = Math.pow(t, 2.6);
+            // Opening (Unminimize): Top shoots up first, bottom releases into place
+            j = 1 - smoothstep(0, 1 - split, p);
+            k = 1 - smoothstep(1 - split, 1, p);
           } else {
-            // Closing: Bottom accelerates into book first, top follows smoothly
-            pBot = 1 - (1 - Math.pow(1 - t, 2.6));
-            pTop = 1 - Math.pow(t, 2.8);
+            // Closing (Minimize): Bottom docks into book first, top gets sucked down
+            k = smoothstep(0, split, p);
+            j = smoothstep(split, 1, p);
           }
-
-          var Ytop = Btop + (Mtop - Btop) * pTop;
-          var Ybot = Bbot + (Mbot - Bbot) * pBot;
-          var totalH = Math.max(1, Ybot - Ytop);
-
-          var Xbot = Bcx + (Mcx - Bcx) * pBot;
-          var Xtop = Bcx + (Mcx - Bcx) * pTop;
-
-          var Wbot = Bw + (Mw - Bw) * pBot;
-          var Wtop = Bw + (Mw - Bw) * pTop;
 
           clearCanvas();
 
-          // Collect outer contour rails for glass sheen
           var leftPath = [];
           var rightPath = [];
 
-          // Sliced Window Texture Warp with continuous exact boundaries (Zero jitter/drift)
+          // 80 Slices with continuous exact boundary interpolation
           for (var i = 0; i < N; i++) {
-            var v0 = i / N;
-            var v1 = (i + 1) / N;
+            var vty0 = i / N;
+            var vty1 = (i + 1) / N;
 
-            var y0 = Ytop + totalH * v0;
-            var y1 = Ytop + totalH * v1;
-            var dh = (y1 - y0) + 0.35; // 0.35px subpixel seam guard
+            var s0 = getGeometry(k, j, vty0);
+            var s1 = getGeometry(k, j, vty1);
 
-            var uMid = 1 - (v0 + v1) * 0.5;
+            var y0 = s0.screenY;
+            var y1 = s1.screenY;
+            var dh = (y1 - y0) + 0.35; // subpixel antialiasing guard
 
-            // Hermite cubic S-curve center
-            var s = uMid * uMid * (3 - 2 * uMid);
-            var cx = Xbot + (Xtop - Xbot) * s;
-
-            // Flared trumpet waist profile (macOS Catalina signature curve)
-            var profile = Math.pow(uMid, 1.55);
-            var w = Wbot + (Wtop - Wbot) * profile;
+            var cx = (s0.centerX + s1.centerX) * 0.5;
+            var w = (s0.w + s1.w) * 0.5;
             var x = cx - w * 0.5;
 
             if (i === 0) {
-              leftPath.push({ x: cx - w * 0.5, y: y0 });
-              rightPath.push({ x: cx + w * 0.5, y: y0 });
+              leftPath.push({ x: s0.leftX, y: y0 });
+              rightPath.push({ x: s0.rightX, y: y0 });
             }
-            leftPath.push({ x: x, y: y1 });
-            rightPath.push({ x: x + w, y: y1 });
+            leftPath.push({ x: s1.leftX, y: y1 });
+            rightPath.push({ x: s1.rightX, y: y1 });
 
-            // Continuous source partition (no rounding artifacts)
-            var sy = v0 * snapH;
-            var sh = (v1 - v0) * snapH;
+            // Exact continuous source partition
+            var sy = vty0 * snapH;
+            var sh = (vty1 - vty0) * snapH;
 
             ctx.drawImage(snapshot, 0, sy, snapW, sh, x, y0, w, dh);
           }
 
           // Liquid Outer Rails Glass Sheen (Subtle Catalina specular highlight)
-          var edgeAlpha = isOpening ? (1 - t) * 0.35 : t * 0.35;
+          var edgeAlpha = isOpening ? (1 - p) * 0.35 : (1 - p) * 0.35;
           if (edgeAlpha > 0.02) {
             ctx.save();
             ctx.lineWidth = 1.2;
