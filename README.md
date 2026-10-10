@@ -66,5 +66,5 @@ If the book-opening morph ever stutters, open devtools console on the
 page, click a book, and paste the stall report:
 
 ```js
-copy(JSON.stringify({log:window.__genieOpenLog,perf:window.__geniePerf},null,1))
+JSON.stringify({log:window.__genieOpenLog,perf:window.__geniePerf},null,1)
 ```
