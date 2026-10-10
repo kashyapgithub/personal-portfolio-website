@@ -2594,7 +2594,10 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s ease;
+  /* NOTE: deliberately NO fade-in transition. A post-load opacity ramp
+     makes text look like it enlarges and shadows deepen within a second
+     of the popup. The panel must land final: the genie canvas dissolve
+     is the only transition, and it holds the identical final frame. */
 }
 
 .chapter-modal-overlay.is-active {
@@ -2663,14 +2666,13 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   border: 1px solid rgba(255, 255, 255, 0.7);
   padding: clamp(22px, 3.5vw, 36px);
   color: #1e293b;
-  will-change: opacity;
   transform-origin: center center;
-  transition: opacity 0.12s ease-out;
+  /* NOTE: no opacity transition — see overlay rule above. Instant swap
+     under the dissolving canvas; zero post-load growth. */
 }
 
 @media (prefers-reduced-motion: reduce) {
   .chapter-modal-container {
-    transition: opacity 0.2s ease !important;
     transform: none !important;
   }
 }
