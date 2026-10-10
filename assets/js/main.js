@@ -1140,6 +1140,59 @@
           try { ctx.imageSmoothingQuality = "low"; } catch (e) { /* ignore */ }
         }
 
+        // Pre-rendered RESTING shadow: the exact shadow the live DOM modal
+        // wears at rest (.chapter-modal-container box-shadow: white lobe
+        // top-left, dark lobe bottom-right, wide ambient drop). Drawn at the
+        // destination while the panel is still flying in, so the final
+        // shadow is already in place BEFORE the pop — it never ramps up
+        // afterwards. Built once per animation (filter blur is a one-time
+        // cost; per-frame is a single blit).
+        var restShadow = null;
+        var restPad = 64; // CSS px of blur spread around the panel
+        (function buildRestShadow() {
+          try {
+            var RS = 0.5; // half-scale backing: shadow is soft, needs no res
+            restShadow = document.createElement("canvas");
+            restShadow.width = Math.max(2, Math.round((Mw + restPad * 2) * RS));
+            restShadow.height = Math.max(2, Math.round((Mh + restPad * 2) * RS));
+            var rctx = restShadow.getContext("2d");
+            if (!rctx) { restShadow = null; return; }
+            rctx.scale(RS, RS);
+            var px = restPad, py = restPad;
+            var supportsBlur = (typeof rctx.filter === "string");
+            function shadowBlob(dx, dy, blurPx, color) {
+              if (supportsBlur) {
+                rctx.save();
+                rctx.filter = "blur(" + blurPx + "px)";
+                rctx.fillStyle = color;
+                rctx.beginPath();
+                drawRoundRect(rctx, px + dx, py + dy, Mw, Mh, 28);
+                rctx.fill();
+                rctx.restore();
+              } else {
+                // Fallback fake-blur: stacked expanding plates, fading out.
+                rctx.save();
+                rctx.fillStyle = color;
+                for (var s = 4; s >= 1; s--) {
+                  rctx.globalAlpha = 0.22 / s;
+                  var grow = blurPx * (s / 4);
+                  rctx.beginPath();
+                  drawRoundRect(rctx, px + dx - grow, py + dy - grow,
+                    Mw + grow * 2, Mh + grow * 2, 28 + grow);
+                  rctx.fill();
+                }
+                rctx.restore();
+              }
+            }
+            // Dark neumorphic lobe (matches 8px 8px 22px rgba slate)
+            shadowBlob(8, 8, 15, "rgba(120,132,160,0.55)");
+            // Wide ambient drop (matches 0 24px 48px rgba ink)
+            shadowBlob(0, 24, 26, "rgba(15,23,42,0.30)");
+            // Top-left specular lobe (matches -6px -6px 16px white)
+            shadowBlob(-6, -6, 10, "rgba(255,255,255,0.42)");
+          } catch (e) { restShadow = null; }
+        })();
+
         function smoothstep(min, max, value) {
           var x = Math.max(0, Math.min(1, (value - min) / (max - min)));
           return x * x * (3 - 2 * x);
@@ -1235,10 +1288,13 @@
           }
 
           // Single-pass flight shadow: one pre-blurred sprite blit scaled
-          // to the morphing bounds. Matches the modal's resting shadow at
-          // landing (elevation -> 1) and costs ~0.2ms vs ~6ms for the old
+          // to the morphing bounds. Envelope peaks mid-flight and fades to
+          // ZERO at landing so the preloaded DOM modal's real neumorphism
+          // takes over 1:1 — the very same panel pops up, never a double
+          // (canvas + DOM) shadow. Costs ~0.2ms vs ~6ms for the old
           // triple shadowBlur contour fills.
-          if (flightShadow && !isLowEnd && elevation > 0.05 && currentHeight > 12) {
+          var flightEnv = Math.sin(Math.PI * Math.min(1, Math.max(0, elevation)));
+          if (flightShadow && !isLowEnd && flightEnv > 0.03 && currentHeight > 12) {
             try {
               var minLX = leftPath[0].x, maxRX = rightPath[0].x;
               for (var q = 1; q < leftPath.length; q++) {
@@ -1246,13 +1302,29 @@
                 if (rightPath[q].x > maxRX) maxRX = rightPath[q].x;
               }
               var shW = Math.max(8, maxRX - minLX);
-              var shH = Math.min(90, 18 + 64 * elevation);
+              var shH = Math.min(90, 18 + 64 * flightEnv);
               var botY = leftPath[leftPath.length - 1].y;
               ctx.save();
-              ctx.globalAlpha = Math.min(0.85, 0.75 * elevation);
+              ctx.globalAlpha = Math.min(0.8, 0.7 * flightEnv);
               ctx.drawImage(flightShadow, minLX - shW * 0.06, botY - shH * 0.35, shW * 1.12, shH);
               ctx.restore();
             } catch (e) { /* ignore shadow errors */ }
+          }
+
+          // Destination resting shadow (opening only): fades in over the
+          // final stretch of flight so the panel lands INTO its final
+          // shadow. At t=1 the canvas shadow == the preloaded modal's real
+          // shadow, and the CSS cross-fade below swaps them with no jump.
+          if (isOpening && restShadow) {
+            var restAlpha = smoothstep(0.55, 1, p);
+            if (restAlpha > 0.01 && currentHeight > 12) {
+              ctx.save();
+              ctx.globalAlpha = Math.min(1, restAlpha);
+              ctx.drawImage(restShadow,
+                Mleft - restPad, Mtop - restPad,
+                Mw + restPad * 2, Mh + restPad * 2);
+              ctx.restore();
+            }
           }
 
           // Draw the high-density horizontal slices (integer source rows
@@ -1289,17 +1361,25 @@
             activeAnimId = requestAnimationFrame(step);
           } else {
             if (isOpening) {
-              // Seamless handoff: reveal live DOM modal with smooth opacity cross-fade
+              // Seamless handoff: the live DOM modal was preloaded (rendered
+              // + painted) before the transition started, the canvas already
+              // wears the identical resting shadow — so cross-fade the two
+              // (canvas out, modal in) instead of a hard clear. Shadow and
+              // panel stay constant through the swap.
               overlay.classList.remove("is-genie-active");
               overlay.classList.add("genie-settled");
+              if (canvas) canvas.classList.add("is-fading");
               isAnimating = false;
               if (callback) callback();
 
-              // Smoothly clear canvas after live modal is revealed
+              // Clear only after both 0.12–0.14s fades land, then reset the
+              // canvas opacity for the next run (cleared canvas is invisible
+              // anyway, so the reset cannot flash).
               setTimeout(function () {
                 clearCanvas();
+                if (canvas) canvas.classList.remove("is-fading");
                 activeAnimId = null;
-              }, 140);
+              }, 170);
             } else {
               // Closing finished: clear canvas immediately and execute close callback
               clearCanvas();
@@ -1338,24 +1418,33 @@
         }
       });
 
-      // Play smooth 3D physical book opening animation on the shelf
+      // 1. PRELOAD the destination before anything moves: render the chapter
+      // and mount the overlay hidden (is-genie-active holds the container at
+      // opacity 0), then force a sync layout. The browser paints the real
+      // neumorphic modal during the cover swing below, so when the Genie
+      // morph lands, the very same panel is already there — no first-paint
+      // pop, no extra neumorphism layer.
+      renderChapter(idx);
+      overlay.classList.remove("genie-settled");
+      overlay.classList.add("is-active", "is-genie-active");
+      overlay.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+      if (containerEl) { void containerEl.offsetWidth; }
+
+      // 2. Swing the physical cover on the shelf (GPU-composited, untouched).
       if (cardEl) {
         cardEl.classList.remove("is-closing");
+        void cardEl.offsetWidth; // restart the transition on rapid re-clicks
         cardEl.classList.add("is-opening");
       }
 
-      // Cover swings on a 0.55s GPU curve; launch Genie at 180ms so the
-      // two motions fuse into one fluid gesture (was 300ms staged gap).
+      // 3. Let the cover lead and give the browser a frame to pre-paint the
+      // hidden modal, then morph from the book's live position to it.
       setTimeout(function () {
-        renderChapter(idx);
         var key = CHAPTER_KEYS[idx];
         var data = CHAPTERS[key];
 
-        overlay.classList.remove("genie-settled");
-        overlay.classList.add("is-active", "is-genie-active");
-        overlay.setAttribute("aria-hidden", "false");
-        document.body.style.overflow = "hidden";
-
+        if (genieCanvas) genieCanvas.classList.remove("is-fading");
         GenieFX.open(cardEl, overlay, containerEl, data, key, function () {
           if (closeBtn) closeBtn.focus();
         });

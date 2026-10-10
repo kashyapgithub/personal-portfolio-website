@@ -21,6 +21,10 @@
   var bubbleInner = document.getElementById("bubble-inner");
   var soundBtn = document.getElementById("bot-sound-btn");
   var soundLabel = document.getElementById("sound-label");
+  var scrollTimerBtn = document.getElementById("hero-scroll-timer");
+  var scrollTimerCount = document.getElementById("scroll-timer-count");
+  var scrollTimerArc = document.getElementById("scroll-timer-arc");
+  var scrollTimerTitle = document.getElementById("scroll-timer-title");
 
   var ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -508,6 +512,8 @@
 
         if (holdTimer) clearTimeout(holdTimer);
         speechFlowState = "speaking";
+        scrollDeadline = -2; // audio length unknown until it ends
+        lastShownSec = -1;
         openSpeechBubble();
         speakGreeting();
       }
@@ -561,6 +567,10 @@
     if (speechFlowState !== "speaking") return;
     speechFlowState = "holding";
 
+    // Pin the timer to the exact moment the forced scroll will fire
+    // (2000ms hold + 240ms bubble-retract).
+    scrollDeadline = performance.now() + 2240;
+
     // "after it is finished saying it stays there for 2 seconds then the auto scroll"
     if (holdTimer) clearTimeout(holdTimer);
     holdTimer = setTimeout(function () {
@@ -574,6 +584,113 @@
       }
     }, 2000);
   }
+
+  // =============================================================
+  // HERO AUTO-SCROLL COUNTDOWN CHIP (bottom corner, hero-pinned)
+  // Driven by the REAL scroll schedule, not a fake timer:
+  //  - muted path: speech opens ~3.88s, fallback resolves at 8.1s,
+  //    scroll fires ~10.34s after load (estimate until corrected)
+  //  - corrected to exact fire time inside markFinishedSaying()
+  //  - unmuted audio: indeterminate ("playing") until audio ends
+  // Updates are throttled (text ~4Hz, ring ~10Hz) so the chip adds
+  // zero measurable cost to the 60fps bot loop.
+  // =============================================================
+  var SCROLL_TOTAL_MS = 10340;
+  var RING_CIRC = 72.26;
+  var scrollDeadline = -1; // performance.now() ms of scroll fire; -2 = indeterminate
+  var lastShownSec = -1;
+  var lastRingUpdate = 0;
+  var timerHidden = false;
+
+  function setTimerHidden(hidden) {
+    if (timerHidden === hidden) return;
+    timerHidden = hidden;
+    if (scrollTimerBtn) {
+      scrollTimerBtn.classList.toggle("is-hidden", hidden);
+    }
+  }
+
+  function updateScrollTimer(nowMs) {
+    if (!scrollTimerBtn) return;
+    // Frozen-time test mode: the choreography never advances, so hide.
+    if (debugTime !== null) { setTimerHidden(true); return; }
+    if (hasTriggeredBookshelfScroll || isForcedScrolling) { setTimerHidden(true); return; }
+    if (scrollDeadline === -2) {
+      // Unmuted audio playing, length unknown: show breathing state.
+      if (lastShownSec !== -2) {
+        lastShownSec = -2;
+        if (scrollTimerCount) scrollTimerCount.textContent = "♪";
+        if (scrollTimerTitle) scrollTimerTitle.textContent = "Playing…";
+        if (scrollTimerArc) scrollTimerArc.style.strokeDashoffset = "0";
+        scrollTimerBtn.setAttribute("aria-label", "Greeting is playing. Activate to scroll to the library now.");
+      }
+      setTimerHidden(false);
+      return;
+    }
+    if (scrollDeadline < 0) {
+      // Initial estimate anchored to the render-loop clock.
+      scrollDeadline = (typeof startTime === "number" ? startTime : performance.now()) + SCROLL_TOTAL_MS;
+    }
+    var remaining = Math.max(0, scrollDeadline - nowMs);
+    var secs = Math.ceil(remaining / 1000);
+    if (secs !== lastShownSec) {
+      lastShownSec = secs;
+      if (scrollTimerCount) scrollTimerCount.textContent = String(secs);
+      if (scrollTimerTitle) scrollTimerTitle.textContent = secs <= 3 ? "Scrolling…" : "Auto-scroll";
+      scrollTimerBtn.setAttribute("aria-label", "Auto-scrolling to the library in " + secs + " seconds. Activate to scroll now.");
+    }
+    if (nowMs - lastRingUpdate > 100) {
+      lastRingUpdate = nowMs;
+      if (scrollTimerArc) {
+        var frac = Math.min(1, Math.max(0, remaining / SCROLL_TOTAL_MS));
+        scrollTimerArc.style.strokeDashoffset = (RING_CIRC * (1 - frac)).toFixed(2);
+      }
+    }
+    setTimerHidden(false);
+  }
+
+  function scrollNowFromTimer() {
+    if (hasTriggeredBookshelfScroll || isForcedScrolling) return;
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+    if (speechFlowState === "speaking" || speechFlowState === "holding") {
+      speechFlowState = "closed";
+      retractSpeechBubble();
+      setTimerHidden(true);
+      setTimeout(triggerForcedBookshelfScroll, 240);
+    } else {
+      setTimerHidden(true);
+      triggerForcedBookshelfScroll();
+    }
+  }
+
+  if (scrollTimerBtn) {
+    scrollTimerBtn.addEventListener("click", scrollNowFromTimer);
+  }
+
+  // Keep the chip strictly a hero resident: fade it once the hero
+  // scrolls out of view, restore it if the user returns to the top
+  // (unless the one-time auto-scroll already fired).
+  function syncTimerWithHeroVisibility() {
+    if (hasTriggeredBookshelfScroll || (debugTime !== null)) { setTimerHidden(true); return; }
+    var heroH = hero ? hero.clientHeight : window.innerHeight;
+    var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+    setTimerHidden(y > heroH * 0.55);
+  }
+  if (hero && ("IntersectionObserver" in window)) {
+    new IntersectionObserver(function (entries) {
+      for (var oi = 0; oi < entries.length; oi++) {
+        var r = entries[oi].boundingClientRect;
+        var yNow = window.pageYOffset || document.documentElement.scrollTop || 0;
+        var heroHNow = hero ? hero.clientHeight : window.innerHeight;
+        if (entries[oi].isIntersecting && entries[oi].intersectionRatio >= 0.35) {
+          if (!hasTriggeredBookshelfScroll && yNow <= heroHNow * 0.55) setTimerHidden(false);
+        } else if (r.top < 0) {
+          setTimerHidden(true);
+        }
+      }
+    }, { threshold: [0, 0.35, 1] }).observe(hero);
+  }
+  window.addEventListener("scroll", syncTimerWithHeroVisibility, { passive: true });
 
   /* ============================================================
      Forced Smooth Scroll to The Systems & Product Bookshelf
@@ -967,6 +1084,9 @@
       bubbleEl.style.setProperty("--mouth-y", screenMouthY.toFixed(1) + "px");
       bubbleEl.style.setProperty("--bubble-y", bubbleTop.toFixed(1) + "px");
     }
+
+    // Hero auto-scroll countdown chip (throttled internally, ~zero cost).
+    updateScrollTimer(now);
 
     // -------------------------------------------------------------
     // 2. CLEAR CANVAS & BACKGROUND STARDUST
