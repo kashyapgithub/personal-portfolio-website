@@ -622,7 +622,7 @@
         if (scrollTimerCount) scrollTimerCount.textContent = "♪";
         if (scrollTimerTitle) scrollTimerTitle.textContent = "Playing…";
         if (scrollTimerArc) scrollTimerArc.style.strokeDashoffset = "0";
-        scrollTimerBtn.setAttribute("aria-label", "Greeting is playing. Activate to scroll to the library now.");
+        scrollTimerBtn.setAttribute("aria-label", "Greeting is playing. Activate to scroll to works now.");
       }
       setTimerHidden(false);
       return;
@@ -637,7 +637,7 @@
       lastShownSec = secs;
       if (scrollTimerCount) scrollTimerCount.textContent = String(secs);
       if (scrollTimerTitle) scrollTimerTitle.textContent = secs <= 3 ? "Scrolling…" : "Auto-scroll";
-      scrollTimerBtn.setAttribute("aria-label", "Auto-scrolling to the library in " + secs + " seconds. Activate to scroll now.");
+      scrollTimerBtn.setAttribute("aria-label", "Auto-scrolling to works in " + secs + " seconds. Activate to scroll now.");
     }
     if (nowMs - lastRingUpdate > 100) {
       lastRingUpdate = nowMs;

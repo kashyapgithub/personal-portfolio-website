@@ -1913,7 +1913,9 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
      CPU repaint every frame and is the #1 bookshelf jank source. */
   transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
-  contain: layout paint;
+  /* NOTE: no `contain: paint` here — paint containment clips to the card's
+     padding box, which amputates the cover when it swings outside the card
+     on open (and flickers mid-swing). */
 }
 
 .book-card:focus-visible {
