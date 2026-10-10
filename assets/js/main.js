@@ -571,6 +571,12 @@
 
     var currentChapterIndex = 0;
     var currentTriggerCard = null;
+    // A close requested mid-morph is queued instead of dropped, so an
+    // impatient click/Escape never leaves the modal stranded open.
+    var pendingClose = false;
+    // An open whose raster/morph hasn't started yet (async wait). Guards
+    // double-opens and lets a close abort the pending launch cleanly.
+    var openPending = false;
 
     function renderChapter(index) {
       if (index < 0) index = CHAPTER_KEYS.length - 1;
@@ -740,6 +746,67 @@
 
         var theme = THEME_COLORS[bookId] || THEME_COLORS.genie;
 
+        // --- Baked neumorphic shadows (one-time blurred paints at snapshot
+        // build; the per-frame morph only blits, so flight stays free).
+        // Without these, the morphed panel is flat while the live DOM wears
+        // real box-shadows — the crossfade then visibly "applies" shadows
+        // as a second step after load. Values mirror the DOM box-shadows.
+        var shadowOK = false;
+        try { shadowOK = (typeof sctx.filter === "string"); } catch (e) { shadowOK = false; }
+
+        // Outset plate: dark lobe bottom-right + light lobe top-left behind
+        // the fill. dx/blur/darkA mirror the DOM `dx dx blur` pair.
+        function outsetPlate(x, y, w, h, r, dx, blur, darkA) {
+          if (shadowOK && blur > 0) {
+            sctx.save();
+            sctx.filter = "blur(" + blur + "px)";
+            sctx.fillStyle = "rgba(148,160,182," + darkA + ")";
+            sctx.beginPath();
+            drawRoundRect(sctx, x + dx, y + dx, w, h, r);
+            sctx.fill();
+            sctx.fillStyle = "rgba(255,255,255,0.85)";
+            sctx.beginPath();
+            drawRoundRect(sctx, x - dx, y - dx, w, h, r);
+            sctx.fill();
+            sctx.restore();
+          }
+          sctx.beginPath();
+          drawRoundRect(sctx, x, y, w, h, r);
+          sctx.fillStyle = "#edf2f8";
+          sctx.fill();
+          sctx.strokeStyle = "rgba(255,255,255,0.9)";
+          sctx.lineWidth = 1;
+          sctx.stroke();
+        }
+
+        // Inset plate: fill, then clipped feathered bands for directional
+        // inner shading — mirrors `inset dx dx blur` box-shadow pairs.
+        function insetPlate(x, y, w, h, r, d, blur) {
+          sctx.beginPath();
+          drawRoundRect(sctx, x, y, w, h, r);
+          sctx.fillStyle = "#edf2f8";
+          sctx.fill();
+          if (shadowOK && blur > 0) {
+            sctx.save();
+            sctx.beginPath();
+            drawRoundRect(sctx, x, y, w, h, r);
+            sctx.clip();
+            sctx.filter = "blur(" + blur + "px)";
+            sctx.fillStyle = "rgba(148,160,182,0.45)";
+            sctx.fillRect(x, y, w, d + blur);
+            sctx.fillRect(x, y, d + blur, h);
+            sctx.fillStyle = "rgba(255,255,255,0.75)";
+            sctx.fillRect(x, y + h - d - blur, w, d + blur);
+            sctx.fillRect(x + w - d - blur, y, d + blur, h);
+            sctx.restore();
+          }
+          sctx.strokeStyle = "rgba(166, 178, 195, 0.4)";
+          sctx.lineWidth = 1;
+          sctx.beginPath();
+          drawRoundRect(sctx, x, y, w, h, r);
+          sctx.stroke();
+        }
+
         // Base Bright Neumorphic Modal Plate (#edf2f8)
         sctx.save();
         sctx.beginPath();
@@ -752,13 +819,7 @@
 
         // Top Navigation Bar
         var pillX = 36, pillY = 22, pillW = 150, pillH = 28;
-        sctx.beginPath();
-        drawRoundRect(sctx, pillX, pillY, pillW, pillH, 14);
-        sctx.fillStyle = "#edf2f8";
-        sctx.fill();
-        sctx.strokeStyle = "rgba(166, 178, 195, 0.45)";
-        sctx.lineWidth = 1;
-        sctx.stroke();
+        insetPlate(pillX, pillY, pillW, pillH, 14, 2.5, 4);
         sctx.fillStyle = "#0284c7";
         sctx.font = "700 11px monospace";
         sctx.fillText("CHAPTER " + (data.chapterNum || "01") + " OF 09", pillX + 14, pillY + 18);
@@ -770,37 +831,19 @@
         var closeX = width - 52, closeSize = 34;
 
         // Prev Chapter Button
-        sctx.beginPath();
-        drawRoundRect(sctx, prevX, btnY, btnW, btnH, 10);
-        sctx.fillStyle = "#edf2f8";
-        sctx.fill();
-        sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-        sctx.lineWidth = 1;
-        sctx.stroke();
+        outsetPlate(prevX, btnY, btnW, btnH, 10, 4, 9, 0.4);
         sctx.fillStyle = "#334155";
         sctx.font = "600 11px monospace";
         sctx.fillText("‹ Prev Chapter", prevX + 12, btnY + 20);
 
         // Next Chapter Button
-        sctx.beginPath();
-        drawRoundRect(sctx, nextX, btnY, btnW, btnH, 10);
-        sctx.fillStyle = "#edf2f8";
-        sctx.fill();
-        sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-        sctx.lineWidth = 1;
-        sctx.stroke();
+        outsetPlate(nextX, btnY, btnW, btnH, 10, 4, 9, 0.4);
         sctx.fillStyle = "#334155";
         sctx.font = "600 11px monospace";
         sctx.fillText("Next Chapter ›", nextX + 12, btnY + 20);
 
         // Close Button (Square Pill)
-        sctx.beginPath();
-        drawRoundRect(sctx, closeX, btnY - 1, closeSize, closeSize, 10);
-        sctx.fillStyle = "#edf2f8";
-        sctx.fill();
-        sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-        sctx.lineWidth = 1;
-        sctx.stroke();
+        outsetPlate(closeX, btnY - 1, closeSize, closeSize, 10, 4, 9, 0.4);
         sctx.strokeStyle = "#64748b";
         sctx.lineWidth = 2;
         sctx.beginPath();
@@ -825,13 +868,7 @@
 
         // Artwork Card (Left Column)
         var artCardH = 340;
-        sctx.beginPath();
-        drawRoundRect(sctx, 36, startY, artColW, artCardH, 20);
-        sctx.fillStyle = "#edf2f8";
-        sctx.fill();
-        sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-        sctx.lineWidth = 1;
-        sctx.stroke();
+        outsetPlate(36, startY, artColW, artCardH, 20, 6, 14, 0.32);
 
         // 3D Book Cover inside Artwork Card
         var bW = 190;
@@ -843,6 +880,23 @@
         bookGrad.addColorStop(0, theme.bg1);
         bookGrad.addColorStop(0.5, theme.bg2);
         bookGrad.addColorStop(1, theme.bg1);
+
+        // Book drop shadow + accent glow (mirrors .modal-book-clone shadow)
+        if (shadowOK) {
+          sctx.save();
+          sctx.filter = "blur(16px)";
+          sctx.fillStyle = "rgba(100,116,139,0.42)";
+          sctx.beginPath();
+          drawRoundRect(sctx, bX - 6, bY + 10, bW + 4, bH, 10);
+          sctx.fill();
+          sctx.filter = "blur(20px)";
+          sctx.globalAlpha = 0.3;
+          sctx.fillStyle = theme.accent;
+          sctx.beginPath();
+          drawRoundRect(sctx, bX, bY, bW, bH, 10);
+          sctx.fill();
+          sctx.restore();
+        }
 
         sctx.beginPath();
         drawRoundRect(sctx, bX, bY, bW, bH, 10);
@@ -893,13 +947,7 @@
 
         // Era Stamp under Artwork
         var eraY = startY + artCardH - 32;
-        sctx.beginPath();
-        drawRoundRect(sctx, 52, eraY, artColW - 32, 22, 11);
-        sctx.fillStyle = "#edf2f8";
-        sctx.fill();
-        sctx.strokeStyle = "rgba(166, 178, 195, 0.4)";
-        sctx.lineWidth = 1;
-        sctx.stroke();
+        insetPlate(52, eraY, artColW - 32, 22, 11, 2.5, 4);
         sctx.fillStyle = "#64748b";
         sctx.font = "700 9px monospace";
         sctx.textAlign = "center";
@@ -909,13 +957,7 @@
         // Key Metrics Card
         var metY = startY + artCardH + 18;
         var metH = 135;
-        sctx.beginPath();
-        drawRoundRect(sctx, 36, metY, artColW, metH, 16);
-        sctx.fillStyle = "#edf2f8";
-        sctx.fill();
-        sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-        sctx.lineWidth = 1;
-        sctx.stroke();
+        outsetPlate(36, metY, artColW, metH, 16, 5, 12, 0.3);
         sctx.fillStyle = "#64748b";
         sctx.font = "700 9px monospace";
         sctx.fillText("KEY METRICS · PLATFORM", 48, metY + 22);
@@ -937,13 +979,7 @@
         // Domain Tags Card
         var tagsY = metY + metH + 18;
         var tagsH = 80;
-        sctx.beginPath();
-        drawRoundRect(sctx, 36, tagsY, artColW, tagsH, 16);
-        sctx.fillStyle = "#edf2f8";
-        sctx.fill();
-        sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-        sctx.lineWidth = 1;
-        sctx.stroke();
+        outsetPlate(36, tagsY, artColW, tagsH, 16, 5, 12, 0.3);
         sctx.fillStyle = "#64748b";
         sctx.font = "700 9px monospace";
         sctx.fillText("DOMAIN · ARTIFACTS", 48, tagsY + 22);
@@ -952,13 +988,7 @@
           var tx = 48, ty = tagsY + 36;
           data.tags.slice(0, 4).forEach(function (tag) {
             var tagW = Math.min(100, tag.length * 7 + 14);
-            sctx.beginPath();
-            drawRoundRect(sctx, tx, ty, tagW, 20, 6);
-            sctx.fillStyle = "#edf2f8";
-            sctx.fill();
-            sctx.strokeStyle = "rgba(166, 178, 195, 0.4)";
-            sctx.lineWidth = 1;
-            sctx.stroke();
+            outsetPlate(tx, ty, tagW, 20, 6, 2, 5, 0.35);
             sctx.fillStyle = "#475569";
             sctx.font = "600 9px monospace";
             sctx.fillText(tag.slice(0, 14), tx + 6, ty + 14);
@@ -988,13 +1018,7 @@
 
         // Quote Box (Bright Neumorphic with Left Blue Border)
         var qY = sY + 84;
-        sctx.beginPath();
-        drawRoundRect(sctx, storyX, qY, storyW, 58, 8);
-        sctx.fillStyle = "#edf2f8";
-        sctx.fill();
-        sctx.strokeStyle = "rgba(166, 178, 195, 0.4)";
-        sctx.lineWidth = 1;
-        sctx.stroke();
+        insetPlate(storyX, qY, storyW, 58, 8, 2.5, 5);
         sctx.fillStyle = "#0284c7";
         sctx.fillRect(storyX, qY, 3.5, 58);
 
@@ -1031,13 +1055,7 @@
         // Architectural Footprint & Lessons Box
         var footY = nY + 92;
         var footH = 110;
-        sctx.beginPath();
-        drawRoundRect(sctx, storyX, footY, storyW, footH, 14);
-        sctx.fillStyle = "#edf2f8";
-        sctx.fill();
-        sctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-        sctx.lineWidth = 1;
-        sctx.stroke();
+        outsetPlate(storyX, footY, storyW, footH, 16, 5, 12, 0.3);
         sctx.fillStyle = "#64748b";
         sctx.font = "700 10px monospace";
         sctx.fillText("ARCHITECTURAL FOOTPRINT · LESSONS", storyX + 16, footY + 22);
@@ -1058,7 +1076,7 @@
         return offCanvas;
       }
 
-      function animateGenie(isOpening, cardEl, overlay, containerEl, data, bookId, callback) {
+      function animateGenie(isOpening, cardEl, overlay, containerEl, data, bookId, callback, prebuilt) {
         if (!canvas || !ctx) {
           if (callback) callback();
           return;
@@ -1074,6 +1092,11 @@
           cancelAnimationFrame(activeAnimId);
           activeAnimId = null;
         }
+
+        // Claim the busy flag BEFORE the (possibly blocking) measure +
+        // snapshot build below. Otherwise a close/open landing mid-build
+        // sees a false idle and double-launches a second morph.
+        isAnimating = true;
 
         resizeCanvas();
 
@@ -1095,9 +1118,13 @@
         // Maximum chimney height connecting modal top down to shelf volume
         var Hchimney = Math.max(Mh + 40, Btop - Mtop);
 
-        // Create snapshot canvas with matching high-fidelity bright neumorphic styling
-        var snapshot = createSnapshot(data, Mw, Mh, bookId);
+        // Morph texture: pixel-true DOM raster when available, painted
+        // approximation as fallback (also used for closing from a scrolled
+        // modal, where live scroll offset can't be serialized).
+        var snapshot = prebuilt || createSnapshot(data, Mw, Mh, bookId);
+        try { window.__lastSnapshotKind = prebuilt ? "raster" : "painted"; } catch (e) { /* ignore */ }
         if (!snapshot) {
+          isAnimating = false;
           if (callback) callback();
           return;
         }
@@ -1105,7 +1132,6 @@
         var snapW = snapshot.width;
         var snapH = snapshot.height;
 
-        isAnimating = true;
         var duration = isOpening ? 480 : 380; // snappy macOS timing (ms)
         var startTime = null;
         // Adaptive slice density: 56 is visually identical to 80 for this
@@ -1184,12 +1210,28 @@
                 rctx.restore();
               }
             }
-            // Dark neumorphic lobe (matches 8px 8px 22px rgba slate)
-            shadowBlob(8, 8, 15, "rgba(120,132,160,0.55)");
-            // Wide ambient drop (matches 0 24px 48px rgba ink)
-            shadowBlob(0, 24, 26, "rgba(15,23,42,0.30)");
+            // Dark neumorphic lobe (matches 8px 8px 22px rgba slate).
+            // Kept deliberately lighter than spec: during the crossfade this
+            // sits over the DOM's identical real shadow, so erring light
+            // reads as a gentle settle while erring dark pops.
+            shadowBlob(8, 8, 22, "rgba(150,162,184,0.32)");
+            // Wide ambient drop (matches 0 24px 48px -12px rgba ink:
+            // negative spread contracts the shape, so inset the rect).
+            (function ambientBlob() {
+              if (supportsBlur) {
+                rctx.save();
+                rctx.filter = "blur(40px)";
+                rctx.fillStyle = "rgba(15,23,42,0.16)";
+                rctx.beginPath();
+                drawRoundRect(rctx, px + 12, py + 24, Mw - 24, Mh - 24, 22);
+                rctx.fill();
+                rctx.restore();
+              } else {
+                shadowBlob(0, 24, 26, "rgba(15,23,42,0.30)");
+              }
+            })();
             // Top-left specular lobe (matches -6px -6px 16px white)
-            shadowBlob(-6, -6, 10, "rgba(255,255,255,0.42)");
+            shadowBlob(-6, -6, 16, "rgba(255,255,255,0.5)");
           } catch (e) { restShadow = null; }
         })();
 
@@ -1394,11 +1436,11 @@
       }
 
       return {
-        open: function (cardEl, overlay, containerEl, data, bookId, callback) {
-          animateGenie(true, cardEl, overlay, containerEl, data, bookId, callback);
+        open: function (cardEl, overlay, containerEl, data, bookId, callback, prebuilt) {
+          animateGenie(true, cardEl, overlay, containerEl, data, bookId, callback, prebuilt || null);
         },
-        close: function (cardEl, overlay, containerEl, data, bookId, callback) {
-          animateGenie(false, cardEl, overlay, containerEl, data, bookId, callback);
+        close: function (cardEl, overlay, containerEl, data, bookId, callback, prebuilt) {
+          animateGenie(false, cardEl, overlay, containerEl, data, bookId, callback, prebuilt || null);
         },
         isBusy: function () {
           return isAnimating;
@@ -1406,8 +1448,82 @@
       };
     })();
 
+    // ---------------------------------------------------------------
+    // TRUE-SNAPSHOT RASTERIZER: serialize the live, preloaded DOM modal
+    // (SVG foreignObject, same-origin CSS inlined) and rasterize it into
+    // the morph texture. The flight panel is then pixel-true to the modal
+    // that pops up — text, book art, neumorphic shadows and all — so the
+    // handoff crossfade is invisible. Falls back to the painted snapshot
+    // (null) on any failure. One-time cost per open (~tens of ms, hidden
+    // inside the cover-swing lead time); per-frame morph cost unchanged.
+    // ---------------------------------------------------------------
+    function rasterizeModal(modalW, modalH, done) {
+      var finished = false;
+      function finish(canvasOrNull) {
+        if (!finished) { finished = true; done(canvasOrNull); }
+      }
+      setTimeout(function () { finish(null); }, 800); // cap: painted fallback
+      try {
+        if (!containerEl || !modalW || !modalH) { finish(null); return; }
+
+        var cssText = "";
+        for (var i = 0; i < document.styleSheets.length; i++) {
+          try {
+            var rules = document.styleSheets[i].cssRules;
+            for (var r = 0; r < rules.length; r++) cssText += rules[r].cssText + "\n";
+          } catch (e) { /* cross-origin sheet: skip */ }
+        }
+        if (!cssText) { finish(null); return; }
+
+        var clone = containerEl.cloneNode(true);
+        clone.removeAttribute("id");
+        var styleEl = document.createElement("style");
+        styleEl.textContent = cssText;
+        clone.insertBefore(styleEl, clone.firstChild);
+        clone.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+        // Explicit geometry = laid-out geometry; overflow hidden clips
+        // exactly like the (unscrolled, scrollTop forced 0 by caller) DOM.
+        clone.style.cssText = "width:" + modalW + "px;height:" + modalH +
+          "px;max-height:none;margin:0;transform:none;opacity:1;overflow:hidden;";
+
+        // SVG viewport = window size so vw/vh units inside resolve exactly
+        // as on the page; the modal sits in a same-size foreignObject.
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var svgStr = '<svg xmlns="http://www.w3.org/2000/svg" width="' + vw + '" height="' + vh + '">'
+          + '<foreignObject x="0" y="0" width="' + modalW + '" height="' + modalH + '">'
+          + new XMLSerializer().serializeToString(clone)
+          + "</foreignObject></svg>";
+
+        var url = URL.createObjectURL(new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" }));
+        var img = new Image();
+        img.onload = function () {
+          try {
+            var dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+            var c = document.createElement("canvas");
+            c.width = Math.max(2, Math.round(modalW * dpr));
+            c.height = Math.max(2, Math.round(modalH * dpr));
+            var x = c.getContext("2d");
+            if (!x) { URL.revokeObjectURL(url); finish(null); return; }
+            x.scale(dpr, dpr);
+            x.drawImage(img, 0, 0, modalW, modalH);
+            URL.revokeObjectURL(url);
+            // NOTE: no readback/taint check — some builds flag SVG draws
+            // origin-dirty, but these pixels are only ever blitted forward
+            // (never read), so it changes nothing visually. Screenshot
+            // tests, which ignore taint, verify the match instead.
+            finish(c);
+          } catch (e) { try { URL.revokeObjectURL(url); } catch (_) {} finish(null); }
+        };
+        img.onerror = function () { try { URL.revokeObjectURL(url); } catch (e) {} finish(null); };
+        img.src = url;
+      } catch (e) { finish(null); }
+    }
+
+
     function openChapter(bookId, cardEl) {
-      if (GenieFX.isBusy()) return;
+      if (GenieFX.isBusy() || openPending) return;
+      pendingClose = false;
+      openPending = true;
       var idx = CHAPTER_KEYS.indexOf(bookId);
       if (idx === -1) idx = 0;
       currentTriggerCard = cardEl;
@@ -1438,44 +1554,92 @@
         cardEl.classList.add("is-opening");
       }
 
-      // 3. Let the cover lead and give the browser a frame to pre-paint the
-      // hidden modal, then morph from the book's live position to it.
+      // 3. Let the cover lead and rasterize the preloaded modal in parallel:
+      // the morph starts once BOTH are ready, so the flight panel is the
+      // true modal pixels (raster ~tens of ms, usually beats the 180ms lead;
+      // on failure raster yields null and the painted fallback is used).
+      var launchArmed = false;
+      var rasterCanvas = null;
+      var rasterSettled = false;
+      function tryLaunch() {
+        if (launchArmed && rasterSettled) {
+          // A close may have consumed the overlay while the raster was
+          // pending: abort instead of morphing over a closed state.
+          if (!overlay.classList.contains("is-active")) {
+            openPending = false;
+            return;
+          }
+          openPending = false;
+          var key = CHAPTER_KEYS[idx];
+          var data = CHAPTERS[key];
+          if (genieCanvas) genieCanvas.classList.remove("is-fading");
+          GenieFX.open(cardEl, overlay, containerEl, data, key, function () {
+            if (pendingClose) {
+              pendingClose = false;
+              closeChapter();
+            } else if (closeBtn) {
+              closeBtn.focus();
+            }
+          }, rasterCanvas);
+        }
+      }
       setTimeout(function () {
-        var key = CHAPTER_KEYS[idx];
-        var data = CHAPTERS[key];
-
-        if (genieCanvas) genieCanvas.classList.remove("is-fading");
-        GenieFX.open(cardEl, overlay, containerEl, data, key, function () {
-          if (closeBtn) closeBtn.focus();
-        });
+        launchArmed = true;
+        tryLaunch();
       }, 180);
+      (function measureAndRasterize() {
+        var r = containerEl ? containerEl.getBoundingClientRect() : null;
+        var w = (r && r.width > 50) ? Math.round(r.width) : Math.min(window.innerWidth * 0.92, 980);
+        var h = (r && r.height > 50) ? Math.round(r.height) : Math.min(window.innerHeight * 0.88, 640);
+        try { containerEl.scrollTop = 0; } catch (e) { /* ignore */ }
+        rasterizeModal(w, h, function (cv) {
+          rasterCanvas = cv;
+          rasterSettled = true;
+          tryLaunch();
+        });
+      })();
     }
 
     function closeChapter() {
-      if (GenieFX.isBusy()) return;
+      if (GenieFX.isBusy()) { pendingClose = true; return; }
       if (!overlay.classList.contains("is-active")) return;
+      pendingClose = false;
 
       var key = CHAPTER_KEYS[currentChapterIndex];
       var data = CHAPTERS[key];
       var cardToClose = currentTriggerCard || document.querySelector('.book-card[data-book-id="' + key + '"]');
 
-      overlay.classList.remove("genie-settled");
-      overlay.classList.add("is-genie-active");
+      function doClose(rasterCanvas) {
+        openPending = false;
+        overlay.classList.remove("genie-settled");
+        overlay.classList.add("is-genie-active");
 
-      GenieFX.close(cardToClose, overlay, containerEl, data, key, function () {
-        overlay.classList.remove("is-active", "is-genie-active");
-        overlay.setAttribute("aria-hidden", "true");
-        document.body.style.overflow = "";
+        GenieFX.close(cardToClose, overlay, containerEl, data, key, function () {
+          overlay.classList.remove("is-active", "is-genie-active");
+          overlay.setAttribute("aria-hidden", "true");
+          document.body.style.overflow = "";
 
-        if (cardToClose) {
-          cardToClose.classList.remove("is-opening");
-          cardToClose.classList.add("is-closing");
-          setTimeout(function () {
-            cardToClose.classList.remove("is-closing");
-          }, 380);
-          cardToClose.focus();
-        }
-      });
+          if (cardToClose) {
+            cardToClose.classList.remove("is-opening");
+            cardToClose.classList.add("is-closing");
+            setTimeout(function () {
+              cardToClose.classList.remove("is-closing");
+            }, 380);
+            cardToClose.focus();
+          }
+        }, rasterCanvas);
+      }
+
+      // Same true-pixel treatment when the modal is unscrolled (its markup
+      // state then equals the live view); otherwise painted fallback.
+      var scrolled = false;
+      try { scrolled = containerEl && containerEl.scrollTop > 4; } catch (e) { scrolled = true; }
+      if (!scrolled && containerEl) {
+        var r = containerEl.getBoundingClientRect();
+        rasterizeModal(Math.round(r.width), Math.round(r.height), doClose);
+      } else {
+        doClose(null);
+      }
     }
 
     function prevChapter() {
