@@ -2672,6 +2672,10 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   transform-origin: center center;
   /* NOTE: no opacity transition — see overlay rule above. Instant swap
      under the dissolving canvas; zero post-load growth. */
+  /* will-change keeps a dedicated composited layer from click time, so the
+     handoff flip doesn't pay first-raster cost between the last morph
+     frame and the settled panel (that gap reads as a stall). */
+  will-change: opacity;
 }
 
 @media (prefers-reduced-motion: reduce) {

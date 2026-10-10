@@ -1834,8 +1834,17 @@
             if (pendingClose) {
               pendingClose = false;
               closeChapter();
-            } else if (closeBtn) {
-              closeBtn.focus();
+            } else {
+              // Focus AFTER the swap has presented: focus() forces sync
+              // layout, and doing it in the handoff task wedges that work
+              // between the last morph frame and the settled panel — the
+              // exact n-1 -> n gap. Deferred past the canvas dissolve.
+              setTimeout(function () {
+                if (closeBtn) {
+                  try { closeBtn.focus({ preventScroll: true }); }
+                  catch (e) { closeBtn.focus(); }
+                }
+              }, 170);
             }
           }, rasterCanvas);
         }
@@ -1890,7 +1899,8 @@
             setTimeout(function () {
               cardToClose.classList.remove("is-closing");
             }, 380);
-            cardToClose.focus();
+            try { cardToClose.focus({ preventScroll: true }); }
+            catch (e) { cardToClose.focus(); }
           }
         }, rasterCanvas);
       }
