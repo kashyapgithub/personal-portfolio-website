@@ -976,100 +976,213 @@
           });
         }
 
-        // Domain Tags Card
+        // Domain Tags Card (height flows with wrapped rows, like the DOM)
         var tagsY = metY + metH + 18;
-        var tagsH = 80;
+        var tagRows = [];
+        if (data.tags && data.tags.length) {
+          var tagRight = 36 + artColW - 14;
+          var cur = [];
+          var curW = 0;
+          for (var tgi = 0; tgi < data.tags.length; tgi++) {
+            var tagn = data.tags[tgi];
+            var tagW = Math.min(120, tagn.length * 7 + 14);
+            if (curW + tagW > tagRight - 48 && cur.length) {
+              tagRows.push(cur);
+              cur = [];
+              curW = 0;
+            }
+            cur.push({ text: tagn.slice(0, 16), w: tagW });
+            curW += tagW + 6;
+          }
+          if (cur.length) tagRows.push(cur);
+        }
+        if (!tagRows.length) tagRows.push([]);
+        var tagsH = 36 + tagRows.length * 26 + 8;
         outsetPlate(36, tagsY, artColW, tagsH, 16, 5, 12, 0.3);
         sctx.fillStyle = "#64748b";
         sctx.font = "700 9px monospace";
         sctx.fillText("DOMAIN · ARTIFACTS", 48, tagsY + 22);
-
-        if (data.tags && data.tags.length) {
-          var tx = 48, ty = tagsY + 36;
-          data.tags.slice(0, 4).forEach(function (tag) {
-            var tagW = Math.min(100, tag.length * 7 + 14);
-            outsetPlate(tx, ty, tagW, 20, 6, 2, 5, 0.35);
+        for (var tri = 0; tri < tagRows.length; tri++) {
+          var tx = 48, ty = tagsY + 36 + tri * 26;
+          for (var tc = 0; tc < tagRows[tri].length; tc++) {
+            var pill = tagRows[tri][tc];
+            outsetPlate(tx, ty, pill.w, 20, 6, 2, 5, 0.35);
             sctx.fillStyle = "#475569";
             sctx.font = "600 9px monospace";
-            sctx.fillText(tag.slice(0, 14), tx + 6, ty + 14);
-            tx += tagW + 6;
-          });
+            sctx.fillText(pill.text, tx + 6, ty + 14);
+            tx += pill.w + 6;
+          }
         }
 
-        // Right Column (Editorial Story)
+        // ---- Right Column (Editorial Story) ----
+        // Mirrors the DOM flow (category / title / tagline / quote /
+        // narrative / takeaways) with greedy wrapping at DOM sizes, so the
+        // painted panel fills exactly like the live modal (which shows the
+        // same top portion through its scroll viewport). Fixed offsets left
+        // content clustered at the top and read as a size jump on handoff.
         var storyX = isTwoCol ? 36 + artColW + 36 : 36;
         var storyW = width - storyX - 36;
         var sY = isTwoCol ? startY : tagsY + tagsH + 18;
 
-        // Eyebrow Category
-        sctx.fillStyle = "#0284c7";
-        sctx.font = "700 11px monospace";
-        sctx.fillText((data.category || "").toUpperCase(), storyX, sY + 12);
+        function wrapLines(text, maxW) {
+          var words = String(text).split(/\s+/);
+          var lines = [];
+          var line = "";
+          for (var wi = 0; wi < words.length; wi++) {
+            var trial = line ? line + " " + words[wi] : words[wi];
+            if (sctx.measureText(trial).width > maxW && line) {
+              lines.push(line);
+              line = words[wi];
+            } else {
+              line = trial;
+            }
+          }
+          if (line) lines.push(line);
+          return lines;
+        }
 
-        // Main Title
+        // Eyebrow Category (DOM: 0.76rem mono 700)
+        sctx.fillStyle = "#0284c7";
+        sctx.font = "700 12px monospace";
+        sctx.fillText((data.category || "").toUpperCase().slice(0, 48), storyX, sY + 12);
+
+        // Main Title (DOM: clamp fluid 700; read the live size so lines match)
+        var titlePx = 32;
+        try {
+          var liveTitle = document.getElementById("chapter-title");
+          if (liveTitle) {
+            var tcs = window.getComputedStyle(liveTitle);
+            var tfs = parseFloat(tcs.fontSize);
+            if (tfs >= 20 && tfs <= 60) titlePx = tfs;
+          }
+        } catch (e) { /* keep default */ }
         sctx.fillStyle = "#0f172a";
-        sctx.font = "800 24px sans-serif";
-        sctx.fillText(data.title || "", storyX, sY + 42);
+        sctx.font = "700 " + titlePx + "px -apple-system, 'Segoe UI', Roboto, sans-serif";
+        var titleLH = Math.round(titlePx * 1.15);
+        var titleLines = wrapLines(data.title || "", storyW);
+        var tyy = sY + 14 + titlePx;
+        for (var ti = 0; ti < titleLines.length; ti++) {
+          sctx.fillText(titleLines[ti], storyX, tyy + ti * titleLH);
+        }
+        var afterTitle = tyy + (titleLines.length - 1) * titleLH + 8;
 
-        // Subtitle / Tagline
+        // Subtitle / Tagline (DOM: 1rem, lh 1.5, wrapped)
         sctx.fillStyle = "#475569";
-        sctx.font = "500 13px sans-serif";
-        sctx.fillText(data.tagline || "", storyX, sY + 66);
+        sctx.font = "500 16px -apple-system, 'Segoe UI', Roboto, sans-serif";
+        var tagLines = wrapLines(data.tagline || "", storyW);
+        var tagLH = 24;
+        var gyy = afterTitle + 18;
+        for (var gi = 0; gi < tagLines.length; gi++) {
+          sctx.fillText(tagLines[gi], storyX, gyy + gi * tagLH);
+        }
+        var afterTag = gyy + (tagLines.length - 1) * tagLH;
 
-        // Quote Box (Bright Neumorphic with Left Blue Border)
-        var qY = sY + 84;
-        insetPlate(storyX, qY, storyW, 58, 8, 2.5, 5);
+        // Quote Box (DOM: italic 0.95rem Georgia lh 1.6, pad 14, inset shadow)
+        sctx.font = "italic 15px Georgia, serif";
+        var qClean = (data.quote || "").replace(/[“”"]/g, "");
+        var qLines = wrapLines('"' + qClean + '"', storyW - 32);
+        var qLH = 24;
+        var qH = qLines.length * qLH + 28;
+        var qY = afterTag + 18;
+        insetPlate(storyX, qY, storyW, qH, 8, 2.5, 5);
         sctx.fillStyle = "#0284c7";
-        sctx.fillRect(storyX, qY, 3.5, 58);
+        sctx.fillRect(storyX, qY, 3.5, qH);
 
         sctx.fillStyle = "#334155";
-        sctx.font = "italic 12px Georgia, serif";
-        var qClean = (data.quote || "").replace(/[“”"]/g, "");
-        sctx.fillText('"' + qClean.slice(0, 80) + '...', storyX + 16, qY + 24);
-        if (qClean.length > 80) {
-          sctx.fillText(qClean.slice(80, 160) + '"', storyX + 16, qY + 44);
+        sctx.font = "italic 15px Georgia, serif";
+        for (var qi = 0; qi < qLines.length; qi++) {
+          sctx.fillText(qLines[qi], storyX + 16, qY + 26 + qi * qLH);
         }
 
-        // Narrative Section
-        var nY = qY + 76;
+        // Narrative Section (DOM: 0.96rem lh 1.72, 12px para gaps, drop cap)
+        var nY = qY + qH + 22;
         sctx.fillStyle = "#64748b";
-        sctx.font = "700 10px monospace";
+        sctx.font = "700 12px monospace";
         sctx.fillText("THE STORY BEHIND THIS CHAPTER", storyX, nY);
+        var nyy = nY + 26;
 
+        sctx.font = "15px -apple-system, 'Segoe UI', Roboto, sans-serif";
+        var nLead = 26;
+        var nGap = 12;
         if (data.narrative && data.narrative.length) {
-          // Drop cap
-          var firstChar = data.narrative[0].charAt(0);
-          sctx.fillStyle = "#0284c7";
-          sctx.font = "800 36px Georgia, serif";
-          sctx.fillText(firstChar, storyX, nY + 36);
-
-          sctx.fillStyle = "#334155";
-          sctx.font = "12px sans-serif";
-          var restP1 = data.narrative[0].slice(1);
-          sctx.fillText(restP1.slice(0, 72), storyX + 32, nY + 18);
-          sctx.fillText(restP1.slice(72, 150), storyX + 32, nY + 34);
-          sctx.fillText(restP1.slice(150, 230), storyX, nY + 52);
-          sctx.fillText(restP1.slice(230, 310) + "...", storyX, nY + 68);
+          for (var pi = 0; pi < data.narrative.length; pi++) {
+            var para = data.narrative[pi];
+            if (pi === 0) {
+              // Drop cap (DOM: 3.2rem serif float)
+              var firstChar = para.charAt(0);
+              sctx.fillStyle = "#0284c7";
+              sctx.font = "800 48px Georgia, serif";
+              sctx.fillText(firstChar, storyX, nyy + 40);
+              sctx.fillStyle = "#334155";
+              sctx.font = "15px -apple-system, 'Segoe UI', Roboto, sans-serif";
+              var words0 = para.slice(1).split(/\s+/);
+              // Local line breaker with word-index accounting.
+              function takeLine(words, from, maxW) {
+                var ln = "";
+                var i = from;
+                for (; i < words.length; i++) {
+                  var tr = ln ? ln + " " + words[i] : words[i];
+                  if (sctx.measureText(tr).width > maxW && ln) break;
+                  ln = tr;
+                }
+                if (!ln && from < words.length) { ln = words[from]; i = from + 1; }
+                return { line: ln, next: i };
+              }
+              // First two lines indent around the cap, then full width.
+              var painted = 0;
+              var l1 = takeLine(words0, 0, storyW - 48);
+              sctx.fillText(l1.line, storyX + 48, nyy + painted * nLead);
+              painted++;
+              var l2 = takeLine(words0, l1.next, storyW - 48);
+              if (l2.line) {
+                sctx.fillText(l2.line, storyX + 48, nyy + painted * nLead);
+                painted++;
+              }
+              var liR = l2.next;
+              while (liR < words0.length) {
+                var lr = takeLine(words0, liR, storyW);
+                if (!lr.line) break;
+                sctx.fillText(lr.line, storyX, nyy + painted * nLead);
+                painted++;
+                liR = lr.next;
+              }
+              nyy += painted * nLead + nGap;
+            } else {
+              var wl = wrapLines(para, storyW);
+              sctx.fillStyle = "#334155";
+              for (var li = 0; li < wl.length; li++) {
+                sctx.fillText(wl[li], storyX, nyy + li * nLead);
+              }
+              nyy += wl.length * nLead + nGap;
+            }
+          }
         }
 
-        // Architectural Footprint & Lessons Box
-        var footY = nY + 92;
-        var footH = 110;
+        // Architectural Footprint & Lessons Box (DOM: outset card, flows
+        // after the narrative; clipped by the plate edge exactly like the
+        // modal's scroll viewport when it runs long).
+        var footY = nyy + 6;
+        var hLines = [];
+        if (data.highlights && data.highlights.length) {
+          sctx.font = "14px -apple-system, 'Segoe UI', Roboto, sans-serif";
+          for (var hi = 0; hi < data.highlights.length; hi++) {
+            var parts = wrapLines(data.highlights[hi], storyW - 60);
+            for (var hp = 0; hp < parts.length; hp++) hLines.push(parts[hp]);
+          }
+        }
+        var footH = 40 + hLines.length * 22 + 14;
         outsetPlate(storyX, footY, storyW, footH, 16, 5, 12, 0.3);
         sctx.fillStyle = "#64748b";
-        sctx.font = "700 10px monospace";
-        sctx.fillText("ARCHITECTURAL FOOTPRINT · LESSONS", storyX + 16, footY + 22);
+        sctx.font = "700 12px monospace";
+        sctx.fillText("ARCHITECTURAL FOOTPRINT · LESSONS", storyX + 16, footY + 24);
 
-        if (data.highlights && data.highlights.length) {
-          data.highlights.slice(0, 3).forEach(function (h, idx) {
-            var hy = footY + 44 + idx * 20;
-            sctx.fillStyle = "#0284c7";
-            sctx.font = "700 11px sans-serif";
-            sctx.fillText("•", storyX + 16, hy);
-            sctx.fillStyle = "#334155";
-            sctx.font = "11px sans-serif";
-            sctx.fillText(h.slice(0, 85), storyX + 28, hy);
-          });
+        sctx.font = "14px -apple-system, 'Segoe UI', Roboto, sans-serif";
+        for (var fy = 0; fy < hLines.length; fy++) {
+          var hyy = footY + 48 + fy * 22;
+          sctx.fillStyle = "#0284c7";
+          sctx.fillText("✦", storyX + 16, hyy);
+          sctx.fillStyle = "#334155";
+          sctx.fillText(hLines[fy], storyX + 32, hyy);
         }
 
         sctx.restore();
@@ -1214,14 +1327,14 @@
             // Kept deliberately lighter than spec: during the crossfade this
             // sits over the DOM's identical real shadow, so erring light
             // reads as a gentle settle while erring dark pops.
-            shadowBlob(8, 8, 22, "rgba(150,162,184,0.32)");
+            shadowBlob(8, 8, 22, "rgba(150,162,184,0.22)");
             // Wide ambient drop (matches 0 24px 48px -12px rgba ink:
             // negative spread contracts the shape, so inset the rect).
             (function ambientBlob() {
               if (supportsBlur) {
                 rctx.save();
-                rctx.filter = "blur(40px)";
-                rctx.fillStyle = "rgba(15,23,42,0.16)";
+                rctx.filter = "blur(48px)";
+                rctx.fillStyle = "rgba(15,23,42,0.12)";
                 rctx.beginPath();
                 drawRoundRect(rctx, px + 12, py + 24, Mw - 24, Mh - 24, 22);
                 rctx.fill();
@@ -1231,7 +1344,7 @@
               }
             })();
             // Top-left specular lobe (matches -6px -6px 16px white)
-            shadowBlob(-6, -6, 16, "rgba(255,255,255,0.5)");
+            shadowBlob(-6, -6, 16, "rgba(255,255,255,0.4)");
           } catch (e) { restShadow = null; }
         })();
 
