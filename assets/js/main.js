@@ -1653,7 +1653,15 @@
         var img = new Image();
         img.onload = function () {
           try {
-            var dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+            // Flight texture renders at 1x: it is seen only while moving
+            // and deforming for ~480ms, where retina detail is invisible —
+            // but a full-res SVG raster of this shadow-heavy panel costs
+            // hundreds of ms cold (measured 387ms click-to-morph on real
+            // hardware), stalling the morph start past the cover swing and
+            // leaving the open book sitting static. Quarter pixels ≈
+            // quarter raster time; the handoff crossfade lands on the
+            // sharp live DOM anyway.
+            var dpr = 1;
             var c = document.createElement("canvas");
             c.width = Math.max(2, Math.round(modalW * dpr));
             c.height = Math.max(2, Math.round(modalH * dpr));
@@ -1679,7 +1687,7 @@
     // its chapter in the background, so the click-time morph starts with
     // a hot texture instead of stalling the flight on a build. Entries
     // keyed by chapter + dims (+dpr bucket); LRU-capped at 3 (each is a
-    // ~10MB backing at retina) and invalidated on viewport resize.
+    // ~2.5MB backing at 1x flight resolution) and invalidated on resize.
     // ---------------------------------------------------------------
     var snapshotCache = {};
     var snapshotCacheOrder = [];
