@@ -1419,6 +1419,11 @@
             var ldt = timestamp - (perf._last || timestamp);
             perf._last = timestamp;
             if (perf.frames.length < 240) perf.frames.push(Math.round(ldt * 10) / 10);
+            // Auto-flag stalls so they can be reported straight from console.
+            if (ldt > 250 && perf.frames.length > 2 && !perf.stallWarned) {
+              perf.stallWarned = true;
+              try { console.warn("[genie] frame gap " + Math.round(ldt) + "ms during " + perf.kind + " (" + perf.book + "). See window.__geniePerf."); } catch (e) { /* ignore */ }
+            }
           }
 
           var p = easeInOutCubic(t);
