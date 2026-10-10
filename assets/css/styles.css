@@ -2644,7 +2644,13 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 }
 
 .chapter-modal-overlay.is-genie-active .chapter-modal-container {
-  opacity: 0;
+  /* 0.001, not 0: an opacity-0 subtree can skip paint/raster entirely, so
+     the handoff reveal would pay the modal's first full style+paint+commit
+     inline between the last morph frame and the settled panel — exactly
+     the n-1 -> n gap. At 0.001 the layer is painted + rasterized during
+     the cover swing (invisible: 1/1000 alpha over the dark backdrop), and
+     the reveal becomes a pure composite swap. */
+  opacity: 0.001;
   pointer-events: none;
 }
 

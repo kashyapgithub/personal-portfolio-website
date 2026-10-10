@@ -1562,20 +1562,41 @@
               // (canvas out, modal in) instead of a hard clear. Shadow and
               // panel stay constant through the swap.
               endPerf("open-done");
+              if (perf) perf.marks.flipT = Math.round(performance.now());
               overlay.classList.remove("is-genie-active");
               overlay.classList.add("genie-settled");
-              if (canvas) canvas.classList.add("is-fading");
               isAnimating = false;
               if (callback) callback();
 
-              // Clear only after both 0.12–0.14s fades land, then reset the
-              // canvas opacity for the next run (cleared canvas is invisible
-              // anyway, so the reset cannot flash).
-              setTimeout(function () {
-                clearCanvas();
-                if (canvas) canvas.classList.remove("is-fading");
-                activeAnimId = null;
-              }, 170);
+              // GATED CROSSFADE: hold the final canvas frame — pixel-
+              // identical to the settled modal — until the reveal's style +
+              // paint + commit has actually gone through two frames, and only
+              // then dissolve. If the reveal costs main-thread time, that
+              // cost is spent on a frame that already looks final, so it can
+              // never read as a gap between the last morph frame and the
+              // settled panel (the whole n-1 -> n problem).
+              var fadeRafs = 0;
+              function armFade() {
+                // A close consumed the overlay during the gate: abort, leave
+                // the canvas opaque for the closing morph. activeAnimId now
+                // belongs to that close — don't touch it.
+                if (!overlay.classList.contains("genie-settled")) {
+                  if (canvas) canvas.classList.remove("is-fading");
+                  return;
+                }
+                if (++fadeRafs < 2) { requestAnimationFrame(armFade); return; }
+                try { if (perf) perf.marks.fadeStartT = Math.round(performance.now()); } catch (e) { /* ignore */ }
+                if (canvas) canvas.classList.add("is-fading");
+                setTimeout(function () {
+                  // Never wipe a close that started inside the fade window.
+                  if (isAnimating) return;
+                  try { if (perf) perf.marks.fadeEndT = Math.round(performance.now()); } catch (e) { /* ignore */ }
+                  clearCanvas();
+                  if (canvas) canvas.classList.remove("is-fading");
+                  activeAnimId = null;
+                }, 220);
+              }
+              requestAnimationFrame(armFade);
             } else {
               // Closing finished: clear canvas immediately and execute close callback
               endPerf("close-done");
@@ -1692,7 +1713,9 @@
     var snapshotCache = {};
     var snapshotCacheOrder = [];
     var prebuilding = false;
+    var prebuildingBook = null;
     var prebuildQueued = null;
+    var prebuildWaiters = [];
 
     function cacheDimsMatch(entry, w, h) {
       return entry && entry.canvas && entry.w === w && entry.h === h;
@@ -1735,11 +1758,17 @@
       var hit = snapshotCache[bookId];
       if (cacheDimsMatch(hit, m.w, m.h)) return; // already hot
       prebuilding = true;
+      prebuildingBook = bookId;
       try { containerEl.scrollTop = 0; } catch (e) { /* ignore */ }
       renderChapter(idx);
       rasterizeModal(m.w, m.h, function (cv) {
         storeSnapshot(bookId, cv, m.w, m.h);
         prebuilding = false;
+        prebuildingBook = null;
+        var waiters = prebuildWaiters.splice(0);
+        for (var wi = 0; wi < waiters.length; wi++) {
+          try { waiters[wi](); } catch (e) { /* ignore */ }
+        }
         if (prebuildQueued && prebuildQueued !== bookId) {
           var q = prebuildQueued;
           prebuildQueued = null;
@@ -1748,6 +1777,17 @@
           prebuildQueued = null;
         }
       });
+    }
+
+    // Run cb now unless a prebuild for this exact book is mid-flight —
+    // then run it the moment that prebuild lands, so a click piggybacks
+    // on the hover build instead of racing it with a duplicate raster.
+    function whenPrebuildSettles(bookId, cb) {
+      if (prebuilding && prebuildingBook === bookId) {
+        prebuildWaiters.push(cb);
+      } else {
+        cb();
+      }
     }
 
 
@@ -1853,7 +1893,9 @@
         launchArmed = true;
         tryLaunch();
       }, 180);
-      (function measureAndRasterize() {
+      // Piggyback: if hover already triggered this book's prebuild, wait for
+      // it (single raster) instead of racing a duplicate build.
+      whenPrebuildSettles(bookId, function measureAndRasterize() {
         var m = measureModal();
         var w = m.w, h = m.h;
         try { containerEl.scrollTop = 0; } catch (e) { /* ignore */ }
@@ -1871,7 +1913,7 @@
           storeSnapshot(bookId, cv, w, h);
           tryLaunch();
         });
-      })();
+      });
     }
 
     function closeChapter() {
