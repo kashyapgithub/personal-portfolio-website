@@ -1245,6 +1245,35 @@
         var snapW = snapshot.width;
         var snapH = snapshot.height;
 
+        // Flight telemetry (read via window.__geniePerf): per-frame deltas
+        // expose stalls as gaps; longtasks name the blocker. Zero-cost idle.
+        var perf = null;
+        var ltObs = null;
+        try {
+          perf = { kind: isOpening ? "open" : "close", book: bookId, slices: N,
+            t0: Math.round(performance.now()), frames: [], tasks: [], marks: {} };
+          window.__geniePerf = perf;
+          if ("PerformanceObserver" in window) {
+            ltObs = new PerformanceObserver(function (list) {
+              var es = list.getEntries();
+              for (var li = 0; li < es.length && perf.tasks.length < 20; li++) {
+                perf.tasks.push({ s: Math.round(es[li].startTime), d: Math.round(es[li].duration) });
+              }
+            });
+            ltObs.observe({ entryTypes: ["longtask"] });
+          }
+        } catch (e) { perf = null; ltObs = null; }
+
+        function endPerf(total) {
+          try {
+            if (perf) {
+              perf.marks.morphMs = Math.round(performance.now() - perf.t0);
+              perf.total = total;
+            }
+            if (ltObs) ltObs.disconnect();
+          } catch (e) { /* ignore */ }
+        }
+
         var duration = isOpening ? 480 : 380; // snappy macOS timing (ms)
         var startTime = null;
         // Adaptive slice density: 56 is visually identical to 80 for this
@@ -1386,6 +1415,12 @@
           var elapsed = timestamp - startTime;
           var t = Math.min(1, elapsed / duration);
 
+          if (perf) {
+            var ldt = timestamp - (perf._last || timestamp);
+            perf._last = timestamp;
+            if (perf.frames.length < 240) perf.frames.push(Math.round(ldt * 10) / 10);
+          }
+
           var p = easeInOutCubic(t);
           var k, j;
 
@@ -1521,6 +1556,7 @@
               // wears the identical resting shadow — so cross-fade the two
               // (canvas out, modal in) instead of a hard clear. Shadow and
               // panel stay constant through the swap.
+              endPerf("open-done");
               overlay.classList.remove("is-genie-active");
               overlay.classList.add("genie-settled");
               if (canvas) canvas.classList.add("is-fading");
@@ -1537,6 +1573,7 @@
               }, 170);
             } else {
               // Closing finished: clear canvas immediately and execute close callback
+              endPerf("close-done");
               clearCanvas();
               isAnimating = false;
               activeAnimId = null;
@@ -1632,6 +1669,74 @@
       } catch (e) { finish(null); }
     }
 
+    // ---------------------------------------------------------------
+    // INTENT-PREBUILD CACHE: hover/focus on a book renders + rasterizes
+    // its chapter in the background, so the click-time morph starts with
+    // a hot texture instead of stalling the flight on a build. Entries
+    // keyed by chapter + dims (+dpr bucket); LRU-capped at 3 (each is a
+    // ~10MB backing at retina) and invalidated on viewport resize.
+    // ---------------------------------------------------------------
+    var snapshotCache = {};
+    var snapshotCacheOrder = [];
+    var prebuilding = false;
+    var prebuildQueued = null;
+
+    function cacheDimsMatch(entry, w, h) {
+      return entry && entry.canvas && entry.w === w && entry.h === h;
+    }
+
+    function storeSnapshot(bookId, cv, w, h) {
+      if (!cv) return;
+      cv._rw = w;
+      cv._rh = h;
+      delete snapshotCache[bookId];
+      snapshotCache[bookId] = { canvas: cv, w: w, h: h };
+      snapshotCacheOrder.push(bookId);
+      while (snapshotCacheOrder.length > 3) {
+        var drop = snapshotCacheOrder.shift();
+        if (drop !== bookId) delete snapshotCache[drop];
+      }
+    }
+
+    function clearSnapshotCache() {
+      snapshotCache = {};
+      snapshotCacheOrder = [];
+    }
+
+    function measureModal() {
+      var r = containerEl ? containerEl.getBoundingClientRect() : null;
+      return {
+        w: (r && r.width > 50) ? Math.round(r.width) : Math.min(window.innerWidth * 0.92, 980),
+        h: (r && r.height > 50) ? Math.round(r.height) : Math.min(window.innerHeight * 0.88, 640)
+      };
+    }
+
+    function prebuildFor(bookId) {
+      if (!containerEl) return;
+      if (overlay.classList.contains("is-active")) return;
+      if (GenieFX.isBusy() || openPending) return;
+      if (prebuilding) { prebuildQueued = bookId; return; }
+      var idx = CHAPTER_KEYS.indexOf(bookId);
+      if (idx === -1) return;
+      var m = measureModal();
+      var hit = snapshotCache[bookId];
+      if (cacheDimsMatch(hit, m.w, m.h)) return; // already hot
+      prebuilding = true;
+      try { containerEl.scrollTop = 0; } catch (e) { /* ignore */ }
+      renderChapter(idx);
+      rasterizeModal(m.w, m.h, function (cv) {
+        storeSnapshot(bookId, cv, m.w, m.h);
+        prebuilding = false;
+        if (prebuildQueued && prebuildQueued !== bookId) {
+          var q = prebuildQueued;
+          prebuildQueued = null;
+          prebuildFor(q);
+        } else {
+          prebuildQueued = null;
+        }
+      });
+    }
+
 
     function openChapter(bookId, cardEl) {
       if (GenieFX.isBusy() || openPending) return;
@@ -1671,9 +1776,12 @@
       // the morph starts once BOTH are ready, so the flight panel is the
       // true modal pixels (raster ~tens of ms, usually beats the 180ms lead;
       // on failure raster yields null and the painted fallback is used).
+      // A hover-prebuilt hot texture skips the wait entirely.
       var launchArmed = false;
       var rasterCanvas = null;
       var rasterSettled = false;
+      var freshRebuilds = 0;
+      try { window.__genieOpenLog = { clickT: Math.round(performance.now()) }; } catch (e) { /* ignore */ }
       function tryLaunch() {
         if (launchArmed && rasterSettled) {
           // A close may have consumed the overlay while the raster was
@@ -1682,7 +1790,30 @@
             openPending = false;
             return;
           }
+          // The modal can settle geometrically between click and launch
+          // (fonts/scrollbars/first-paint): if the live rect moved, rebuild
+          // the texture for it instead of stretching a stale raster.
+          // Capped: a restless layout still launches after 2 refreshes.
+          var fresh = measureModal();
+          var stale = rasterCanvas && (Math.abs(fresh.w - (rasterCanvas._rw || 0)) > 2 ||
+            Math.abs(fresh.h - (rasterCanvas._rh || 0)) > 2);
+          // Tag raster dims at store time (see storeSnapshot/prebuild).
+          if (stale && freshRebuilds < 2) {
+            freshRebuilds++;
+            rasterSettled = false;
+            try { containerEl.scrollTop = 0; } catch (e) { /* ignore */ }
+            rasterizeModal(fresh.w, fresh.h, function (cv) {
+              rasterCanvas = cv;
+              rasterSettled = true;
+              storeSnapshot(CHAPTER_KEYS[idx], cv, fresh.w, fresh.h);
+              tryLaunch();
+            });
+            return;
+          }
           openPending = false;
+          try {
+            if (window.__genieOpenLog) window.__genieOpenLog.morphStartT = Math.round(performance.now());
+          } catch (e) { /* ignore */ }
           var key = CHAPTER_KEYS[idx];
           var data = CHAPTERS[key];
           if (genieCanvas) genieCanvas.classList.remove("is-fading");
@@ -1701,13 +1832,21 @@
         tryLaunch();
       }, 180);
       (function measureAndRasterize() {
-        var r = containerEl ? containerEl.getBoundingClientRect() : null;
-        var w = (r && r.width > 50) ? Math.round(r.width) : Math.min(window.innerWidth * 0.92, 980);
-        var h = (r && r.height > 50) ? Math.round(r.height) : Math.min(window.innerHeight * 0.88, 640);
+        var m = measureModal();
+        var w = m.w, h = m.h;
         try { containerEl.scrollTop = 0; } catch (e) { /* ignore */ }
+        // Hot path: hover-prebuilt texture for these exact dims.
+        var hot = snapshotCache[bookId];
+        if (cacheDimsMatch(hot, w, h)) {
+          rasterCanvas = hot.canvas;
+          rasterSettled = true;
+          tryLaunch();
+          return;
+        }
         rasterizeModal(w, h, function (cv) {
           rasterCanvas = cv;
           rasterSettled = true;
+          storeSnapshot(bookId, cv, w, h);
           tryLaunch();
         });
       })();
@@ -1745,11 +1884,20 @@
 
       // Same true-pixel treatment when the modal is unscrolled (its markup
       // state then equals the live view); otherwise painted fallback.
+      // A hot cache entry skips the rebuild entirely.
       var scrolled = false;
       try { scrolled = containerEl && containerEl.scrollTop > 4; } catch (e) { scrolled = true; }
       if (!scrolled && containerEl) {
-        var r = containerEl.getBoundingClientRect();
-        rasterizeModal(Math.round(r.width), Math.round(r.height), doClose);
+        var m = measureModal();
+        var hot = snapshotCache[key];
+        if (cacheDimsMatch(hot, m.w, m.h)) {
+          doClose(hot.canvas);
+        } else {
+          rasterizeModal(m.w, m.h, function (cv) {
+            storeSnapshot(key, cv, m.w, m.h);
+            doClose(cv);
+          });
+        }
       } else {
         doClose(null);
       }
@@ -1777,7 +1925,19 @@
           openChapter(bookId, card);
         }
       });
+
+      // Intent prebuild: hover/focus rasterizes the chapter in the
+      // background so the click-time morph starts with a hot texture.
+      card.addEventListener("pointerenter", function () {
+        prebuildFor(bookId);
+      }, { passive: true });
+      card.addEventListener("focus", function () {
+        prebuildFor(bookId);
+      });
     });
+
+    // Viewport geometry feeds cached textures: drop them on resize.
+    window.addEventListener("resize", clearSnapshotCache);
 
     // Control buttons
     if (closeBtn) closeBtn.addEventListener("click", closeChapter);
