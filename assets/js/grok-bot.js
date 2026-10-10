@@ -34,6 +34,212 @@
   var stars = [];
   var STAR_COUNT = 42;
 
+  // ---------------------------------------------------------------
+  // PIXAR-LEVEL PRE-RENDERED SPRITES (baked once per resize, zero
+  // per-frame gradient allocation — this is the core anti-lag fix:
+  // previously 7x createRadialGradient + 5x ellipse fills ran every
+  // frame at 60fps, churning GC and CPU raster time)
+  // ---------------------------------------------------------------
+  var sphereSprite = null;   // porcelain bot body, supersampled 2x
+  var poolSprite = null;     // faint studio floor light pool
+  var contactSprite = null;  // layered AO contact shadow (the Pixar look)
+  var bounceSprite = null;   // warm bounce glow under sphere
+  var smoothContact = 1.0;   // temporally smoothed grounding (no popping)
+  var lastFrameNow = -1;
+
+  function makeCanvas(w, h) {
+    var c = document.createElement("canvas");
+    c.width = Math.max(2, Math.round(w));
+    c.height = Math.max(2, Math.round(h));
+    return c;
+  }
+
+  // True elliptical radial falloff: scale context so a circular gradient
+  // maps to an ellipse — avoids the stretched-gradient banding you get
+  // from filling ctx.ellipse() with a circular gradient.
+  function paintEllipticalGlow(target, cxp, cyp, radius, aspect, stops) {
+    var tctx = target.getContext("2d");
+    tctx.save();
+    tctx.translate(cxp, cyp);
+    tctx.scale(1, aspect);
+    var g = tctx.createRadialGradient(0, 0, 0, 0, 0, radius);
+    for (var i = 0; i < stops.length; i++) {
+      g.addColorStop(stops[i][0], stops[i][1]);
+    }
+    tctx.fillStyle = g;
+    tctx.beginPath();
+    tctx.arc(0, 0, radius, 0, Math.PI * 2);
+    tctx.fill();
+    tctx.restore();
+  }
+
+  function ditherSprite(target, count, maxAlpha) {
+    try {
+      var tctx = target.getContext("2d");
+      for (var i = 0; i < count; i++) {
+        var x = Math.random() * target.width;
+        var y = Math.random() * target.height;
+        var a = (Math.random() * maxAlpha).toFixed(3);
+        tctx.fillStyle = Math.random() > 0.5
+          ? "rgba(255,255,255," + a + ")"
+          : "rgba(0,0,0," + a + ")";
+        tctx.fillRect(x, y, 1, 1);
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  function buildShadowSprites() {
+    // ---- Floor light pool: very faint, cool, feathered to zero well
+    // before the sprite edge so NO visible saucer rim (the old bug) ----
+    poolSprite = makeCanvas(512, 128);
+    paintEllipticalGlow(poolSprite, 256, 64, 250, 0.25, [
+      [0.00, "rgba(158,173,198,0.10)"],
+      [0.25, "rgba(148,163,184,0.075)"],
+      [0.50, "rgba(120,135,165,0.045)"],
+      [0.72, "rgba(99,102,241,0.022)"],
+      [0.88, "rgba(80,95,130,0.006)"],
+      [1.00, "rgba(80,95,130,0)"]
+    ]);
+
+    // ---- Contact shadow: 4 baked layers, cool blue-black (never pure
+    // black, so it reads as a shadow, not a hole), smoothstep falloffs --
+    contactSprite = makeCanvas(512, 160);
+    // Layer 1: ultra-wide ambient wash
+    paintEllipticalGlow(contactSprite, 256, 80, 250, 0.3125, [
+      [0.00, "rgba(10,15,30,0.30)"],
+      [0.35, "rgba(10,15,30,0.20)"],
+      [0.60, "rgba(10,15,30,0.10)"],
+      [0.82, "rgba(10,15,30,0.028)"],
+      [1.00, "rgba(10,15,30,0)"]
+    ]);
+    // Layer 2: directional penumbra (offset +x: key light is top-left)
+    paintEllipticalGlow(contactSprite, 268, 80, 172, 0.3125, [
+      [0.00, "rgba(7,11,24,0.58)"],
+      [0.40, "rgba(7,11,24,0.42)"],
+      [0.65, "rgba(7,11,24,0.22)"],
+      [0.85, "rgba(7,11,24,0.06)"],
+      [1.00, "rgba(7,11,24,0)"]
+    ]);
+    // Layer 3: tight contact mass
+    paintEllipticalGlow(contactSprite, 264, 80, 108, 0.30, [
+      [0.00, "rgba(4,7,18,0.85)"],
+      [0.45, "rgba(4,7,18,0.68)"],
+      [0.70, "rgba(4,7,18,0.38)"],
+      [0.88, "rgba(4,7,18,0.10)"],
+      [1.00, "rgba(4,7,18,0)"]
+    ]);
+    // Layer 4: razor AO core (sharp power-curve falloff)
+    paintEllipticalGlow(contactSprite, 262, 80, 62, 0.29, [
+      [0.00, "rgba(2,4,10,0.96)"],
+      [0.55, "rgba(2,4,10,0.82)"],
+      [0.78, "rgba(2,4,10,0.42)"],
+      [0.92, "rgba(2,4,10,0.10)"],
+      [1.00, "rgba(2,4,10,0)"]
+    ]);
+    // Layer 5: life — faint cool bounce leaked into the very center so
+    // the core never crushes to a dead black disc
+    paintEllipticalGlow(contactSprite, 262, 80, 30, 0.28, [
+      [0.00, "rgba(203,213,235,0.10)"],
+      [0.60, "rgba(203,213,235,0.045)"],
+      [1.00, "rgba(203,213,235,0)"]
+    ]);
+    ditherSprite(contactSprite, 1400, 0.020);
+
+    // ---- Bounce glow: porcelain light spilling onto the floor ----
+    bounceSprite = makeCanvas(256, 64);
+    paintEllipticalGlow(bounceSprite, 128, 32, 124, 0.25, [
+      [0.00, "rgba(240,244,255,0.16)"],
+      [0.50, "rgba(224,231,255,0.07)"],
+      [0.80, "rgba(224,231,255,0.02)"],
+      [1.00, "rgba(224,231,255,0)"]
+    ]);
+  }
+
+  function buildSphereSprite() {
+    var SS = 2; // supersample for crisp limb edge
+    var S = Math.ceil(R * 2 * SS);
+    sphereSprite = makeCanvas(S, S);
+    var sctx = sphereSprite.getContext("2d");
+    var r = S / 2;
+    var kkx = r * (1 - 0.32), kky = r * (1 - 0.36); // key light top-left
+
+    // Base porcelain body — 9 stops for band-free limb falloff
+    var base = sctx.createRadialGradient(kkx, kky, r * 0.02, r, r, r * 1.02);
+    base.addColorStop(0.00, "#ffffff");
+    base.addColorStop(0.14, "#fbfcfe");
+    base.addColorStop(0.30, "#f1f5f9");
+    base.addColorStop(0.46, "#e2e8f0");
+    base.addColorStop(0.60, "#cbd5e1");
+    base.addColorStop(0.72, "#a9b6c9");
+    base.addColorStop(0.83, "#8494ab");
+    base.addColorStop(0.93, "#64748b");
+    base.addColorStop(1.00, "#4c5c75");
+    sctx.fillStyle = base;
+    sctx.beginPath();
+    sctx.arc(r, r, r - 0.5, 0, Math.PI * 2);
+    sctx.fill();
+
+    // Clip everything else to the disc
+    sctx.save();
+    sctx.beginPath();
+    sctx.arc(r, r, r - 0.5, 0, Math.PI * 2);
+    sctx.clip();
+
+    // Soft key specular (controlled, not blown out)
+    var spec = sctx.createRadialGradient(r * 0.66, r * 0.60, 0, r * 0.66, r * 0.60, r * 0.30);
+    spec.addColorStop(0.00, "rgba(255,255,255,0.85)");
+    spec.addColorStop(0.45, "rgba(255,255,255,0.28)");
+    spec.addColorStop(1.00, "rgba(255,255,255,0)");
+    sctx.fillStyle = spec;
+    sctx.fillRect(0, 0, S, S);
+
+    // Cool fill from lower-right (cancels the old flat gray limb)
+    var fill = sctx.createRadialGradient(r * 1.45, r * 1.30, 0, r * 1.45, r * 1.30, r * 1.10);
+    fill.addColorStop(0.00, "rgba(165,180,252,0.20)");
+    fill.addColorStop(1.00, "rgba(165,180,252,0)");
+    sctx.fillStyle = fill;
+    sctx.fillRect(0, 0, S, S);
+
+    // Grounded bottom AO crescent (sells contact with the floor)
+    var ao = sctx.createLinearGradient(0, r * 1.15, 0, r * 2.0);
+    ao.addColorStop(0.00, "rgba(30,41,59,0)");
+    ao.addColorStop(0.55, "rgba(30,41,59,0.16)");
+    ao.addColorStop(1.00, "rgba(30,41,59,0.38)");
+    sctx.fillStyle = ao;
+    sctx.fillRect(0, 0, S, S);
+
+    // Faint warm floor bounce kissing the bottom edge
+    var wb = sctx.createRadialGradient(r, r * 2.02, 0, r, r * 2.02, r * 0.85);
+    wb.addColorStop(0.00, "rgba(226,232,240,0.20)");
+    wb.addColorStop(1.00, "rgba(226,232,240,0)");
+    sctx.fillStyle = wb;
+    sctx.fillRect(0, 0, S, S);
+    sctx.restore();
+
+    // Fresnel limb: soft inner sheen, seamless full-circle base plus a
+    // brighter top-left key catchlight. Arcs deliberately overlap so no
+    // seam step shows at the joints (the old 1px sticker outline bug).
+    sctx.save();
+    sctx.beginPath();
+    sctx.arc(r, r, r - 1.5, 0, Math.PI * 2);
+    sctx.strokeStyle = "rgba(226,232,240,0.16)";
+    sctx.lineWidth = Math.max(1.5, r * 0.014);
+    sctx.stroke();
+    sctx.beginPath();
+    sctx.arc(r, r, r - 1.5, -Math.PI * 1.02, Math.PI * 0.52);
+    sctx.strokeStyle = "rgba(255,255,255,0.38)";
+    sctx.lineWidth = Math.max(1, r * 0.009);
+    sctx.lineCap = "round";
+    sctx.stroke();
+    sctx.beginPath();
+    sctx.arc(r, r, r - 1.5, Math.PI * 0.42, Math.PI * 0.92);
+    sctx.strokeStyle = "rgba(148,163,184,0.22)";
+    sctx.lineWidth = Math.max(1, r * 0.008);
+    sctx.lineCap = "round";
+    sctx.stroke();
+    sctx.restore();
+  }
+
   function initStars() {
     stars = [];
     for (var i = 0; i < STAR_COUNT; i++) {
@@ -77,6 +283,11 @@
     targetCy = Math.round(headerH + availableH * 0.38);
 
     if (stars.length === 0) initStars();
+    // Re-bake supersampled sprites for the new radius (one-time cost)
+    buildShadowSprites();
+    buildSphereSprite();
+    smoothContact = 1.0;
+    lastFrameNow = -1;
   }
 
   // Check for test/debug timestamp override
@@ -797,120 +1008,67 @@
     }
 
     // -------------------------------------------------------------
-    // -------------------------------------------------------------
-    // 4. PIXAR MOVIE 3D STUDIO STAGE & DYNAMIC MULTI-LAYER SHADOW
+    // 4. PIXAR STUDIO FLOOR — pre-rendered sprites, zero per-frame
+    // gradients. Physical model: contact hardening (small/dark/sharp
+    // when grounded, wide/faint/soft when airborne) + key-light
+    // direction offset + critically-damped temporal smoothing so the
+    // shadow never pops or jitters between frames.
     // -------------------------------------------------------------
     var shadowFloorY = targetCy + R + 36;
     var altitude = Math.max(0, shadowFloorY - (currentCy + R));
     var altitudeFactor = Math.max(0.05, Math.min(1.0, 1.0 - altitude / 340));
-    var invAlt = altitudeFactor * altitudeFactor;
+    // Frame-rate independent smoothing (~90ms time constant)
+    if (now !== undefined && lastFrameNow >= 0) {
+      var dtS = Math.min(0.10, Math.max(0.001, (now - lastFrameNow) / 1000));
+      var blend = Math.min(1, dtS * 11);
+      smoothContact += (altitudeFactor - smoothContact) * blend;
+    } else {
+      smoothContact += (altitudeFactor - smoothContact) * 0.18;
+    }
+    lastFrameNow = (now !== undefined) ? now : lastFrameNow;
+    var contact = smoothContact; // 1 = grounded, 0 = high airborne
 
-    ctx.save();
+    // Directional offset: key light sits top-left, so the shadow falls
+    // slightly right; yaw lean drags it a touch for physicality.
+    var shadowX = cx + R * 0.075 + yaw * R * 0.10;
+    var cScale = 1.26 - 0.34 * contact;          // wider when high
+    var cAlpha = 0.38 + 0.62 * contact;          // fainter when high
+    var squashX = (scaleX || 1), squashY = (scaleY || 1);
 
-    // A. Studio Stage Floor Dais / Luminous Stage Ring
-    // Creates a soft illuminated ground plane catching overhead spotlight so the shadow has rich Pixar contrast
-    var daisRx = R * 2.35 * (scaleX || 1);
-    var daisRy = R * 0.58 * (scaleY || 1);
-    var daisGrad = ctx.createRadialGradient(cx, shadowFloorY, 0, cx, shadowFloorY, daisRx);
-    daisGrad.addColorStop(0.00, "rgba(203, 213, 225, 0.18)"); // soft studio keylight pool
-    daisGrad.addColorStop(0.38, "rgba(148, 163, 184, 0.09)");
-    daisGrad.addColorStop(0.72, "rgba(99, 102, 241, 0.035)"); // subtle cinematic rim sheen
-    daisGrad.addColorStop(1.00, "rgba(15, 23, 42, 0)");
-    ctx.beginPath();
-    ctx.ellipse(cx, shadowFloorY, daisRx, daisRy, 0, 0, Math.PI * 2);
-    ctx.fillStyle = daisGrad;
-    ctx.fill();
-
-    // B. Floor Porcelain Bounce Light (Global Illumination)
-    // The white sphere reflects subtle bounce light directly onto the floor beneath it
-    var bounceRx = R * 0.95 * (scaleX || 1);
-    var bounceRy = R * 0.24 * (scaleY || 1);
-    var bounceAlpha = Math.min(0.16, 0.14 * altitudeFactor);
-    var bounceGrad = ctx.createRadialGradient(cx, shadowFloorY - 2, 0, cx, shadowFloorY - 2, bounceRx);
-    bounceGrad.addColorStop(0.0, "rgba(255, 255, 255, " + bounceAlpha.toFixed(3) + ")");
-    bounceGrad.addColorStop(0.5, "rgba(224, 231, 255, " + (bounceAlpha * 0.45).toFixed(3) + ")");
-    bounceGrad.addColorStop(1.0, "rgba(255, 255, 255, 0)");
-    ctx.beginPath();
-    ctx.ellipse(cx, shadowFloorY - 2, bounceRx, bounceRy, 0, 0, Math.PI * 2);
-    ctx.fillStyle = bounceGrad;
-    ctx.fill();
-
-    // C. Layer 3: Soft Umbra / Diffuse Ambient Shadow Falloff
-    var umbraRx = R * 1.48 * (0.75 + 0.25 * altitudeFactor) * (scaleX || 1);
-    var umbraRy = R * 0.36 * (0.75 + 0.25 * altitudeFactor) * (scaleY || 1);
-    var umbraAlpha = Math.min(0.42, 0.36 * altitudeFactor);
-    var umbraGrad = ctx.createRadialGradient(cx, shadowFloorY, 0, cx, shadowFloorY, umbraRx);
-    umbraGrad.addColorStop(0.00, "rgba(5, 7, 14, " + umbraAlpha.toFixed(3) + ")");
-    umbraGrad.addColorStop(0.55, "rgba(15, 23, 42, " + (umbraAlpha * 0.38).toFixed(3) + ")");
-    umbraGrad.addColorStop(1.00, "rgba(0, 0, 0, 0)");
-    ctx.beginPath();
-    ctx.ellipse(cx, shadowFloorY, umbraRx, umbraRy, 0, 0, Math.PI * 2);
-    ctx.fillStyle = umbraGrad;
-    ctx.fill();
-
-    // D. Layer 2: Penumbra Mid-Tone Shadow
-    var penRx = R * 0.90 * altitudeFactor * (scaleX || 1);
-    var penRy = R * 0.22 * altitudeFactor * (scaleY || 1);
-    var penAlpha = Math.min(0.78, 0.68 * invAlt);
-    var penGrad = ctx.createRadialGradient(cx, shadowFloorY, 0, cx, shadowFloorY, penRx);
-    penGrad.addColorStop(0.00, "rgba(3, 4, 9, " + penAlpha.toFixed(3) + ")");
-    penGrad.addColorStop(0.52, "rgba(6, 9, 18, " + (penAlpha * 0.50).toFixed(3) + ")");
-    penGrad.addColorStop(1.00, "rgba(0, 0, 0, 0)");
-    ctx.beginPath();
-    ctx.ellipse(cx, shadowFloorY, penRx, penRy, 0, 0, Math.PI * 2);
-    ctx.fillStyle = penGrad;
-    ctx.fill();
-
-    // E. Layer 1: Razor-Sharp Core Contact Shadow (Ambient Occlusion)
-    // Darkest, richest right where sphere is closest to the ground plane
-    var coreRx = R * 0.46 * altitudeFactor * (scaleX || 1);
-    var coreRy = R * 0.11 * altitudeFactor * (scaleY || 1);
-    var coreAlpha = Math.min(0.96, 0.90 * (invAlt * altitudeFactor));
-    var coreGrad = ctx.createRadialGradient(cx, shadowFloorY, 0, cx, shadowFloorY, coreRx);
-    coreGrad.addColorStop(0.00, "rgba(1, 2, 5, " + coreAlpha.toFixed(3) + ")");
-    coreGrad.addColorStop(0.65, "rgba(2, 4, 8, " + (coreAlpha * 0.75).toFixed(3) + ")");
-    coreGrad.addColorStop(1.00, "rgba(0, 0, 0, 0)");
-    ctx.beginPath();
-    ctx.ellipse(cx, shadowFloorY, coreRx, coreRy, 0, 0, Math.PI * 2);
-    ctx.fillStyle = coreGrad;
-    ctx.fill();
-
-    ctx.restore();
+    if (contactSprite && poolSprite) {
+      ctx.save();
+      // A. Studio floor pool (static size, breathes faintly with float)
+      var poolW = R * 4.7 * squashX, poolH = R * 1.17 * squashY;
+      ctx.globalAlpha = 0.95;
+      ctx.drawImage(poolSprite, shadowX - poolW / 2, shadowFloorY - poolH / 2, poolW, poolH);
+      // B. Warm porcelain bounce directly under the body
+      var bW = R * 1.9 * squashX, bH = R * 0.48 * squashY;
+      ctx.globalAlpha = Math.min(1, 0.45 + 0.55 * contact);
+      ctx.drawImage(bounceSprite, shadowX - bW / 2, shadowFloorY - 2 - bH / 2, bW, bH);
+      // C. Layered AO contact shadow (the Pixar core)
+      var cW = R * 2.9 * cScale * squashX, cH = R * 0.88 * cScale * squashY;
+      ctx.globalAlpha = Math.min(1, Math.max(0, cAlpha));
+      ctx.drawImage(contactSprite, shadowX - cW / 2, shadowFloorY - cH / 2, cW, cH);
+      ctx.restore();
+    }
 
     // -------------------------------------------------------------
-    // 5. WHITE PORCELAIN MATTE 3D SPHERE
+    // 5. PORCELAIN SPHERE — single pre-rendered sprite blit (was 2x
+    // radial gradients + 2x full-disc fills per frame). Squash &
+    // stretch preserved via draw dimensions.
     // -------------------------------------------------------------
-    ctx.save();
-    ctx.translate(cx, currentCy);
-    ctx.scale(scaleX, scaleY);
-    ctx.translate(-cx, -currentCy);
-
-    var keyLightX = cx - R * 0.32;
-    var keyLightY = currentCy - R * 0.36;
-
-    var sphereGrad = ctx.createRadialGradient(keyLightX, keyLightY, R * 0.04, cx, currentCy, R * 1.05);
-    sphereGrad.addColorStop(0.00, "#ffffff");
-    sphereGrad.addColorStop(0.22, "#f8fafc");
-    sphereGrad.addColorStop(0.50, "#e2e8f0");
-    sphereGrad.addColorStop(0.78, "#94a3b8");
-    sphereGrad.addColorStop(0.94, "#64748b");
-    sphereGrad.addColorStop(1.00, "#475569");
-
-    ctx.beginPath();
-    ctx.arc(cx, currentCy, R, 0, Math.PI * 2);
-    ctx.fillStyle = sphereGrad;
-    ctx.fill();
-
-    var rimGrad = ctx.createRadialGradient(cx, currentCy, R * 0.84, cx, currentCy, R);
-    rimGrad.addColorStop(0.0, "rgba(255, 255, 255, 0)");
-    rimGrad.addColorStop(0.7, "rgba(255, 255, 255, 0.12)");
-    rimGrad.addColorStop(1.0, "rgba(255, 255, 255, 0.32)");
-    ctx.beginPath();
-    ctx.arc(cx, currentCy, R, 0, Math.PI * 2);
-    ctx.fillStyle = rimGrad;
-    ctx.fill();
-
-    ctx.restore();
+    if (sphereSprite) {
+      var dW = R * 2 * squashX, dH = R * 2 * squashY;
+      ctx.drawImage(sphereSprite, cx - dW / 2, currentCy - dH / 2, dW, dH);
+    } else {
+      // Fallback (should never run): flat disc so the bot never vanishes
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, currentCy, R, 0, Math.PI * 2);
+      ctx.fillStyle = "#e2e8f0";
+      ctx.fill();
+      ctx.restore();
+    }
 
     // -------------------------------------------------------------
     // 6. 3D PROJECTED EYES & REAL-TIME LIP-SYNC MOUTH

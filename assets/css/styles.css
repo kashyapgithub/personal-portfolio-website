@@ -1803,8 +1803,12 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   outline: none;
   perspective: 1400px;
   transform-style: preserve-3d;
-  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  /* Compositor-only properties (transform/opacity). Filter and
+     box-shadow are deliberately absent: animating them forces a
+     CPU repaint every frame and is the #1 bookshelf jank source. */
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
+  contain: layout paint;
 }
 
 .book-card:focus-visible {
@@ -1813,7 +1817,8 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   border-radius: 8px;
 }
 
-/* Ground Contact Shadow on light shelf */
+/* Ground Contact Shadow on light shelf (static blur — animated only
+   via transform/opacity so it stays on the GPU compositor) */
 .book-contact-shadow {
   position: absolute;
   left: 6%;
@@ -1822,8 +1827,8 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   height: 12px;
   border-radius: 50%;
   background: rgba(120, 138, 162, 0.55);
-  filter: blur(4px);
-  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease, filter 0.4s ease;
+  filter: blur(6px);
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.38s ease;
   z-index: -1;
   pointer-events: none;
 }
@@ -2006,11 +2011,12 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   box-shadow: -2px 0 8px rgba(166, 178, 195, 0.25);
   transform-origin: 0% 50%;
   transform: rotateY(0deg);
-  transition: transform 0.62s cubic-bezier(0.25, 1, 0.5, 1) 0.06s, box-shadow 0.62s ease;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.05s;
   z-index: 2;
   pointer-events: none;
   padding: 16px 10px 10px 16px;
   overflow: hidden;
+  will-change: transform;
 }
 
 .page-leaf-content {
@@ -2050,7 +2056,8 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   inset: 0;
   transform-origin: 0% 50%; /* Anchor precisely to left spine hinge */
   transform-style: preserve-3d;
-  transition: transform 0.72s cubic-bezier(0.2, 0.9, 0.25, 1);
+  transform: translateZ(0);
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
   z-index: 5;
 }
@@ -2071,7 +2078,7 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   transform: rotateY(0deg);
-  transition: border-color 0.32s ease, box-shadow 0.32s ease;
+  transition: border-color 0.25s ease;
 }
 
 /* Spine Crease Line */
@@ -2101,7 +2108,7 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   opacity: 0;
   pointer-events: none;
   transform: translateX(-100%);
-  transition: opacity 0.4s ease, transform 0.72s cubic-bezier(0.2, 0.9, 0.25, 1);
+  transition: opacity 0.3s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
   z-index: 4;
 }
 
@@ -2284,9 +2291,8 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 
 .book-card:hover:not(.is-opening):not(.is-closing) .book-contact-shadow,
 .book-card:focus-visible:not(.is-opening):not(.is-closing) .book-contact-shadow {
-  transform: scale(1.18) translateY(7px);
-  opacity: 0.38;
-  filter: blur(7px);
+  transform: scale(1.15) translateY(6px);
+  opacity: 0.42;
 }
 
 .book-card:hover:not(.is-opening):not(.is-closing) .book-cover,
@@ -2313,43 +2319,40 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 }
 
 /* ============================================================
-   3D Real Book Opening Animation (.is-opening)
+   3D Real Book Opening Animation (.is-opening) — 0.55s GPU-only
    ============================================================ */
 .book-card.is-opening {
-  transform: translateY(-28px) translateZ(85px) rotateX(6deg) rotateY(-8deg) scale(1.08);
+  transform: translateY(-24px) translateZ(60px) rotateX(5deg) rotateY(-7deg) scale(1.06);
   z-index: 120;
   pointer-events: none;
-  transition: transform 0.72s cubic-bezier(0.2, 0.9, 0.25, 1);
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .book-card.is-opening .book-cover {
   transform: rotateY(-155deg);
-  transition: transform 0.72s cubic-bezier(0.2, 0.9, 0.25, 1);
-  box-shadow: -14px 18px 38px rgba(15, 23, 42, 0.45);
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .book-card.is-opening .book-page-leaf {
-  transform: rotateY(-36deg);
-  transition: transform 0.65s cubic-bezier(0.25, 1, 0.5, 1) 0.06s;
-  box-shadow: -6px 6px 16px rgba(0, 0, 0, 0.2);
+  transform: rotateY(-34deg);
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.05s;
 }
 
 .book-card.is-opening .page-cover-shadow {
   opacity: 0;
-  transition: opacity 0.45s ease 0.12s;
+  transition: opacity 0.35s ease 0.1s;
 }
 
 .book-card.is-opening .book-cover-glare {
   opacity: 0.85;
   transform: translateX(120%);
-  transition: transform 0.7s cubic-bezier(0.2, 0.9, 0.25, 1), opacity 0.5s ease;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease;
 }
 
 .book-card.is-opening .book-contact-shadow {
-  transform: scale(1.4) translateY(22px);
-  opacity: 0.22;
-  filter: blur(12px);
-  transition: all 0.72s cubic-bezier(0.2, 0.9, 0.25, 1);
+  transform: scale(1.35) translateY(18px);
+  opacity: 0.25;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.55s ease;
 }
 
 
@@ -2359,31 +2362,30 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
    ============================================================ */
 .book-card.is-closing {
   transform: translateY(0) translateZ(0) rotateX(0deg) rotateY(0deg) scale(1);
-  transition: transform 0.48s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
   z-index: 100;
   pointer-events: none;
 }
 
 .book-card.is-closing .book-cover {
   transform: rotateY(0deg);
-  transition: transform 0.48s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .book-card.is-closing .book-page-leaf {
   transform: rotateY(0deg);
-  transition: transform 0.42s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .book-card.is-closing .page-cover-shadow {
   opacity: 1;
-  transition: opacity 0.35s ease;
+  transition: opacity 0.28s ease;
 }
 
 .book-card.is-closing .book-contact-shadow {
   transform: scale(1) translateY(0);
   opacity: 0.55;
-  filter: blur(4px);
-  transition: all 0.48s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.38s ease;
 }
 
 /* ---------------- Individual Book Themes ---------------- */
