@@ -261,17 +261,19 @@
     var r = S / 2;
     var kkx = r * (1 - 0.32), kky = r * (1 - 0.36); // key light top-left
 
-    // Base porcelain body — 9 stops for band-free limb falloff
+    // Pixar-style base: hero props stay bright. Limb falls to a light
+    // cool gray, never to dark slate -- dark limbs are what made the old
+    // ball read as a dirty gray disc instead of a lit white sphere.
     var base = sctx.createRadialGradient(kkx, kky, r * 0.02, r, r, r * 1.02);
     base.addColorStop(0.00, "#ffffff");
-    base.addColorStop(0.14, "#fbfcfe");
-    base.addColorStop(0.30, "#f1f5f9");
-    base.addColorStop(0.46, "#e2e8f0");
-    base.addColorStop(0.60, "#cbd5e1");
-    base.addColorStop(0.72, "#a9b6c9");
-    base.addColorStop(0.83, "#8494ab");
-    base.addColorStop(0.93, "#64748b");
-    base.addColorStop(1.00, "#4c5c75");
+    base.addColorStop(0.18, "#fefaf4");
+    base.addColorStop(0.36, "#f4eee6");
+    base.addColorStop(0.52, "#e6ebf2");
+    base.addColorStop(0.66, "#ccd6e3");
+    base.addColorStop(0.78, "#b3c0d2");
+    base.addColorStop(0.88, "#9fadc1");
+    base.addColorStop(0.95, "#93a1b6");
+    base.addColorStop(1.00, "#8b99ae");
     sctx.fillStyle = base;
     sctx.beginPath();
     sctx.arc(r, r, r - 0.5, 0, Math.PI * 2);
@@ -283,24 +285,16 @@
     sctx.arc(r, r, r - 0.5, 0, Math.PI * 2);
     sctx.clip();
 
-    // --- TEXTURE PASS 1: large-scale glaze mottling -------------------
-    // Soft-light keeps the value range centred on the base so this
-    // breaks up the gradient without repainting the sphere's tone.
-    var mottle = makeNoiseTile(96, 4, 6, 1337, 18, 238);
-    if (mottle) {
-      sctx.save();
-      sctx.globalCompositeOperation = "soft-light";
-      sctx.globalAlpha = 0.55;
-      sctx.drawImage(mottle, 0, 0, S, S);
-      sctx.restore();
-    }
-
-    // --- TEXTURE PASS 2: fine ceramic grain ---------------------------
-    var grain = makeNoiseTile(192, 2, 64, 4711, 40, 215);
+    // --- PIXAR MICRO-SURFACE: one ultra-subtle pass ------------------
+    // Pixar hero spheres are clean. Detail lives in the light response
+    // (normal variation), not in dark albedo blotches. A single fine
+    // grain at 0.08 alpha breaks the CG-perfect gradient just enough to
+    // kill banding, without reading as sand, dirt, or scratches.
+    var grain = makeNoiseTile(192, 2, 64, 4711, 96, 160);
     if (grain) {
       sctx.save();
       sctx.globalCompositeOperation = "overlay";
-      sctx.globalAlpha = 0.30;
+      sctx.globalAlpha = 0.08;
       var pat = sctx.createPattern(grain, "repeat");
       if (pat) {
         sctx.fillStyle = pat;
@@ -309,13 +303,21 @@
       sctx.restore();
     }
 
-    // Soft key specular (controlled, not blown out) — broad lobe
-    var spec = sctx.createRadialGradient(r * 0.66, r * 0.60, 0, r * 0.66, r * 0.60, r * 0.30);
-    spec.addColorStop(0.00, "rgba(255,255,255,0.85)");
+    // Soft key specular: large softbox, slightly elliptical (wider than
+    // tall, like a studio window). Pixar highlights are shaped area
+    // lights, not circular blobs.
+    sctx.save();
+    sctx.translate(r * 0.66, r * 0.58);
+    sctx.scale(1.25, 0.9);
+    var spec = sctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.30);
+    spec.addColorStop(0.00, "rgba(255,255,255,0.9)");
     spec.addColorStop(0.45, "rgba(255,255,255,0.28)");
     spec.addColorStop(1.00, "rgba(255,255,255,0)");
     sctx.fillStyle = spec;
-    sctx.fillRect(0, 0, S, S);
+    sctx.beginPath();
+    sctx.arc(0, 0, r * 0.30, 0, Math.PI * 2);
+    sctx.fill();
+    sctx.restore();
 
     // Tight specular core — the second lobe. A single lobe reads as a
     // painted highlight; two (broad + tight) is what a real curved
@@ -338,20 +340,24 @@
     // the fill so the dark side gets a lit edge instead of dying flat.
     paintDirectionalRim(sctx, S, r, kkx, kky);
 
-    // Subsurface warm bounce: porcelain is thin at the limb, so light
-    // bleeds through the bottom-right edge. Sells "material" not "paint".
-    var sss = sctx.createRadialGradient(r * 1.24, r * 1.22, r * 0.30, r * 1.24, r * 1.22, r * 0.95);
-    sss.addColorStop(0.00, "rgba(255, 236, 214, 0.00)");
-    sss.addColorStop(0.55, "rgba(255, 231, 205, 0.13)");
-    sss.addColorStop(1.00, "rgba(255, 214, 178, 0.22)");
-    sctx.fillStyle = sss;
+    // Subsurface terminator band: warm peach ring where light turns
+    // the corner, before the shadow. This is the Pixar porcelain cue --
+    // light scattering through the material, not a dark gray gradient.
+    var sssBand = sctx.createRadialGradient(kkx, kky, r * 0.42, r, r, r * 0.98);
+    sssBand.addColorStop(0.00, "rgba(255,205,175,0)");
+    sssBand.addColorStop(0.55, "rgba(255,199,168,0.16)");
+    sssBand.addColorStop(0.80, "rgba(244,186,158,0.20)");
+    sssBand.addColorStop(1.00, "rgba(244,186,158,0)");
+    sctx.fillStyle = sssBand;
     sctx.fillRect(0, 0, S, S);
 
-    // Grounded bottom AO crescent (sells contact with the floor)
-    var ao = sctx.createLinearGradient(0, r * 1.15, 0, r * 2.0);
+    // Grounded bottom AO crescent, kept light. Pixar grounds with a soft
+    // contact shadow on the floor (already a separate sprite), not by
+    // crushing the sphere's own belly to dark gray.
+    var ao = sctx.createLinearGradient(0, r * 1.30, 0, r * 2.0);
     ao.addColorStop(0.00, "rgba(30,41,59,0)");
-    ao.addColorStop(0.55, "rgba(30,41,59,0.16)");
-    ao.addColorStop(1.00, "rgba(30,41,59,0.38)");
+    ao.addColorStop(0.60, "rgba(30,41,59,0.10)");
+    ao.addColorStop(1.00, "rgba(30,41,59,0.22)");
     sctx.fillStyle = ao;
     sctx.fillRect(0, 0, S, S);
 
@@ -361,26 +367,6 @@
     wb.addColorStop(1.00, "rgba(226,232,240,0)");
     sctx.fillStyle = wb;
     sctx.fillRect(0, 0, S, S);
-
-    // Micro-scratches: a handful of faint curved hairlines. Real glazed
-    // ceramic is not optically perfect, and a few of these read as
-    // surface rather than noise.
-    sctx.save();
-    sctx.lineCap = "round";
-    for (var sc = 0; sc < 7; sc++) {
-      var a0 = hash2(sc, 11, 991) * Math.PI * 2;
-      var len = 0.10 + hash2(sc, 23, 337) * 0.26;
-      var rr = r * (0.30 + hash2(sc, 41, 733) * 0.56);
-      var bright = hash2(sc, 57, 421) > 0.45;
-      sctx.strokeStyle = bright
-        ? "rgba(255,255,255,0.055)"
-        : "rgba(15,23,42,0.045)";
-      sctx.lineWidth = Math.max(0.5, r * 0.0035);
-      sctx.beginPath();
-      sctx.arc(r, r, rr, a0, a0 + len);
-      sctx.stroke();
-    }
-    sctx.restore();
 
     sctx.restore();
 
