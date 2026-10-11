@@ -273,8 +273,8 @@ body {
   background-size: 220% 120%, 220% 120%, 220% 120%, 220% 120%, 220% 120%, 260% 100%;
   background-position: 0% 50%, 20% 50%, 40% 50%, 60% 50%, 80% 50%, 0% 50%;
   animation:
-    capsule-flow 14s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate,
-    holi-glow 9s ease-in-out infinite alternate;
+    capsule-flow 10s linear infinite alternate,
+    holi-glow 9s linear infinite alternate;
   border: 1px solid rgba(255, 255, 255, 0.16);
   box-shadow:
     0 8px 24px -10px rgba(0, 0, 0, 0.7),
@@ -356,7 +356,7 @@ body {
   background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 220% 100%;
   background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 150% 0;
   animation:
-    liquid-slosh 7s ease-in-out infinite alternate,
+    liquid-slosh 6s linear infinite alternate,
     capsule-sheen 6.5s ease-in-out infinite;
 }
 
@@ -421,6 +421,10 @@ body {
   transform: translateY(-1px);
   border-color: rgba(255, 255, 255, 0.28);
 }
+/* NOTE: loop timing is linear (not eased) on purpose. Ease-in-out drops
+   velocity to zero at each turnaround, which reads as the water pausing
+   twice per cycle. Linear alternate keeps every layer at constant speed
+   so the inside never settles -- direction reverses, motion doesn't. */
 
 /* Each link tints dim gulal on hover -- readable, never neon. */
 .nav-capsule > li:nth-child(1) .nav-link:hover { background: rgba(255, 46, 136, 0.30); }
