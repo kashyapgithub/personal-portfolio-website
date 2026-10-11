@@ -1379,23 +1379,45 @@
           return x * x * (3 - 2 * x);
         }
 
-        function easeInOutCubic(val) {
-          return val < 0.5 ? 4 * val * val * val : 1 - Math.pow(-2 * val + 2, 3) / 2;
+        // ONE master curve for the entire morph.
+        //
+        // The old stack — easeInOutCubic, then sin(p*PI/2) for the top and
+        // p^1.5 for the bottom — composed three SATURATING curves into an
+        // effective ~quintic ease-out. Measured over the 520ms run, 99.7% of
+        // the width travel was done by 400ms and the panel then sat at
+        // literally 0.0px/frame for 100ms straight before the DOM handoff.
+        // That dead tail is exactly the "freezes on a smaller frame, then
+        // pops to the bigger one" artifact. A single smoothstep still peaks
+        // mid-flight and decelerates, but only reaches zero velocity in the
+        // final frames, so motion is continuous across the whole duration.
+        function easeMorph(val) {
+          var x = val < 0 ? 0 : (val > 1 ? 1 : val);
+          return x * x * (3 - 2 * x);
         }
 
-        function getGeometry(k, j, vty) {
-          var fullHeight = Mh + (Hchimney - Mh) * k;
-          var currentHeight = fullHeight * (1 - j);
-          var topY = Mtop + (Btop - Mtop) * j;
+        // Trumpet "chimney" headroom, added to the panel height only while it
+        // is in flight. Capped at a quarter of Mh so that
+        // d(height)/d(reveal) = Mh + NECK*PI*cos(PI*reveal) stays strictly
+        // positive (>= 0.21*Mh): the panel is GUARANTEED never to grow taller
+        // than the rect it lands into, and never to have to retract.
+        var NECK = Math.min(Mh * 0.25, Math.max(0, (Hchimney - Mh) * 0.5));
+
+        // topProg/botProg are the two edge progresses (0 at the book, 1 at the
+        // modal). Height and top-edge position are driven by the SAME scalar
+        // (topProg), which is what guarantees the final frame is exactly the
+        // modal rect: at topProg=1 the neck term is sin(PI)=0.
+        function getGeometry(topProg, botProg, vty) {
+          var currentHeight = Mh * topProg + NECK * Math.sin(Math.PI * topProg);
+          var topY = Mtop + (Btop - Mtop) * (1 - topProg);
           var screenY = topY + currentHeight * vty;
 
           // Non-linear flared trumpet waist profile (authentic macOS Catalina curve)
           var profile = Math.pow(1 - vty, 1.45);
-          var w = Bw + (Mw - Bw) * ((1 - j) * profile + (1 - k) * (1 - profile));
+          var w = Bw + (Mw - Bw) * (topProg * profile + botProg * (1 - profile));
 
           // Centerline with Compiz harmonic S-swish
-          var centerShift = (Bcx - Mcx) * (vty * k + (1 - vty) * j);
-          var swish = Math.sin(vty * Math.PI) * (Bcx - Mcx) * 0.25 * k * (1 - j);
+          var centerShift = (Bcx - Mcx) * (vty * (1 - botProg) + (1 - vty) * (1 - topProg));
+          var swish = Math.sin(vty * Math.PI) * (Bcx - Mcx) * 0.25 * (1 - botProg) * topProg;
           var centerX = Mcx + centerShift + swish;
 
           return {
@@ -1423,27 +1445,31 @@
             }
           }
 
-          var p = easeInOutCubic(t);
-          var k, j;
+          var p = easeMorph(t);
 
-          if (isOpening) {
-            // Opening (Unminimize): Top shoots up and expands first, bottom follows
-            // smoothly in one continuous wave with rich intermediate frames throughout.
-            var topProg = Math.sin(p * Math.PI * 0.5); // smoothly leads: 0 -> 1
-            var botProg = Math.pow(p, 1.5);            // smoothly follows: 0 -> 1
-            j = 1 - topProg; // 1 -> 0 (top moves from book to modal)
-            k = 1 - botProg; // 1 -> 0 (bottom expands from book to modal)
-          } else {
-            // Closing (Minimize): Bottom narrows into book first, top follows down smoothly
-            var botShrink = Math.sin(p * Math.PI * 0.5); // bottom leads into book
-            var topShrink = Math.pow(p, 1.5);            // top follows down
-            k = botShrink; // 0 -> 1
-            j = topShrink; // 0 -> 1
-          }
+          // r is the single "distance from the book" scalar:
+          //   opening 0 -> 1 (book  -> modal)
+          //   closing 1 -> 0 (modal -> book)
+          // Driving both directions from one formula keeps them symmetric, so
+          // open and close are exact time-reverses of each other.
+          var r = isOpening ? p : (1 - p);
 
-          var fullHeight = Mh + (Hchimney - Mh) * k;
-          var currentHeight = fullHeight * (1 - j);
-          var elevation = isOpening ? p : (1 - p);
+          // Leading-edge offset, expressed as 4*L*r*(1-r) so it peaks at
+          // mid-flight and is EXACTLY zero at BOTH ends. A plain additive lead
+          // (or a second saturating ease) saturates early and then pins the
+          // leading edge while the rest of the shape keeps travelling — which
+          // is what produced the frozen tail. Here both edges are still
+          // moving at t=1 and still moving apart mid-flight:
+          //   opening  -> topProg < botProg  (top leads, bottom follows)
+          //   closing  -> botProg < topProg  (bottom leads into the book)
+          var lead4 = 4 * 0.16 * r * (1 - r);
+          var topProg = r;
+          var botProg = r + lead4;
+
+          // Height mirrors getGeometry() so the shadow/silhouette guards below
+          // test the real flown height, not a re-derived second copy of it.
+          var currentHeight = Mh * topProg + NECK * Math.sin(Math.PI * topProg);
+          var elevation = r;
 
           clearCanvas();
 
@@ -1456,8 +1482,8 @@
             var vty0 = i / N;
             var vty1 = (i + 1) / N;
 
-            var s0 = getGeometry(k, j, vty0);
-            var s1 = getGeometry(k, j, vty1);
+            var s0 = getGeometry(topProg, botProg, vty0);
+            var s1 = getGeometry(topProg, botProg, vty1);
 
             var y0 = s0.screenY;
             var y1 = s1.screenY;
@@ -1512,8 +1538,12 @@
           // final stretch of flight so the panel lands INTO its final
           // shadow. At t=1 the canvas shadow == the preloaded modal's real
           // shadow, and the CSS cross-fade below swaps them with no jump.
+          // Window starts at 0.75 (not 0.55): under the new master curve
+          // p=0.55 is only ~62% expanded, and a full-size modal shadow
+          // blooming under a small flying panel reads as a second, larger
+          // frame appearing behind the first.
           if (isOpening && restShadow) {
-            var restAlpha = smoothstep(0.55, 1, p);
+            var restAlpha = smoothstep(0.75, 1, p);
             if (restAlpha > 0.01 && currentHeight > 12) {
               ctx.save();
               ctx.globalAlpha = Math.min(1, restAlpha);
@@ -1829,9 +1859,17 @@
 
       // 3. Let the cover lead and rasterize the preloaded modal in parallel:
       // the morph starts once BOTH are ready, so the flight panel is the
-      // true modal pixels (raster ~tens of ms, usually beats the 180ms lead;
-      // on failure raster yields null and the painted fallback is used).
-      // A hover-prebuilt hot texture skips the wait entirely.
+      // true modal pixels (raster ~tens of ms; on failure the raster yields
+      // null and the painted fallback is used). A hover-prebuilt hot texture
+      // skips the wait entirely.
+      //
+      // The arming delay is 90ms, not a fixed 180ms: it only has to cover the
+      // cover-swing beat so the panel visibly peels off the book, and the real
+      // gate is `rasterSettled`. A longer fixed delay stacked dead time in
+      // front of the morph, so the open read as two separate motions — a small
+      // one on the shelf, then a big one — instead of one continuous throw.
+      // tryLaunch() still blocks on the raster, so a slow build simply waits
+      // and this floor only ever removes dead time, never shortens a wait.
       var launchArmed = false;
       var rasterCanvas = null;
       var rasterSettled = false;
@@ -1894,7 +1932,7 @@
       setTimeout(function () {
         launchArmed = true;
         tryLaunch();
-      }, 180);
+      }, 90);
       // Piggyback: if hover already triggered this book's prebuild, wait for
       // it (single raster) instead of racing a duplicate build.
       whenPrebuildSettles(bookId, function measureAndRasterize() {
