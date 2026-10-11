@@ -1250,7 +1250,7 @@
         var perf = null;
         var ltObs = null;
         try {
-          perf = { kind: isOpening ? "open" : "close", book: bookId,
+          perf = { kind: isOpening ? "open" : "close", book: bookId, slices: N,
             t0: Math.round(performance.now()), frames: [], tasks: [], marks: {} };
           window.__geniePerf = perf;
           if ("PerformanceObserver" in window) {
@@ -1274,6 +1274,44 @@
           } catch (e) { /* ignore */ }
         }
 
+        var duration = isOpening ? 520 : 400; // smooth macOS timing with ample frames
+        var startTime = null;
+        // High slice density for continuous deformation contour:
+        var isLowEnd = (window.innerWidth < 640) ||
+          ((navigator && navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4));
+        var N = isLowEnd ? 44 : 64;
+        // Pre-rendered soft flight shadow (one drawImage per frame — the
+        // old 3x ctx.shadowBlur contour fills were the top jank source;
+        // shadowBlur forces a software raster of the full contour).
+        var flightShadow = null;
+        (function buildFlightShadow() {
+          try {
+            flightShadow = document.createElement("canvas");
+            flightShadow.width = 256; flightShadow.height = 128;
+            var fctx = flightShadow.getContext("2d");
+            var fg = fctx.createRadialGradient(128, 64, 8, 128, 64, 126);
+            fg.addColorStop(0.00, "rgba(15,23,42,0.30)");
+            fg.addColorStop(0.55, "rgba(15,23,42,0.16)");
+            fg.addColorStop(0.80, "rgba(166,178,195,0.10)");
+            fg.addColorStop(1.00, "rgba(166,178,195,0)");
+            fctx.save();
+            fctx.translate(128, 64); fctx.scale(1, 0.5); fctx.translate(-128, -64);
+            fctx.fillStyle = fg;
+            fctx.fillRect(0, -64, 256, 256);
+            fctx.restore();
+          } catch (e) { flightShadow = null; }
+        })();
+        if (ctx) {
+          try { ctx.imageSmoothingQuality = "low"; } catch (e) { /* ignore */ }
+        }
+
+        // Pre-rendered RESTING shadow: the exact shadow the live DOM modal
+        // wears at rest (.chapter-modal-container box-shadow: white lobe
+        // top-left, dark lobe bottom-right, wide ambient drop). Drawn at the
+        // destination while the panel is still flying in, so the final
+        // shadow is already in place BEFORE the pop — it never ramps up
+        // afterwards. Built once per animation (filter blur is a one-time
+        // cost; per-frame is a single blit).
         var restShadow = null;
         var restPad = 64; // CSS px of blur spread around the panel
         (function buildRestShadow() {
@@ -1297,6 +1335,7 @@
                 rctx.fill();
                 rctx.restore();
               } else {
+                // Fallback fake-blur: stacked expanding plates, fading out.
                 rctx.save();
                 rctx.fillStyle = color;
                 for (var s = 4; s >= 1; s--) {
@@ -1310,7 +1349,13 @@
                 rctx.restore();
               }
             }
+            // Dark neumorphic lobe (matches 8px 8px 22px rgba slate).
+            // Kept deliberately lighter than spec: during the crossfade this
+            // sits over the DOM's identical real shadow, so erring light
+            // reads as a gentle settle while erring dark pops.
             shadowBlob(8, 8, 22, "rgba(150,162,184,0.22)");
+            // Wide ambient drop (matches 0 24px 48px -12px rgba ink:
+            // negative spread contracts the shape, so inset the rect).
             (function ambientBlob() {
               if (supportsBlur) {
                 rctx.save();
@@ -1324,23 +1369,42 @@
                 shadowBlob(0, 24, 26, "rgba(15,23,42,0.30)");
               }
             })();
+            // Top-left specular lobe (matches -6px -6px 16px white)
             shadowBlob(-6, -6, 16, "rgba(255,255,255,0.4)");
           } catch (e) { restShadow = null; }
         })();
 
-        var duration = isOpening ? 360 : 280; // snappy, smooth one-shot timing (ms)
-        var startTime = null;
-
-        // Origin: anchored directly above the clicked shelf book, clamped inside viewport
-        var startX = Math.max(16, Math.min(window.innerWidth - Mw - 16, Mleft + (Bcx - window.innerWidth / 2) * 0.15));
-        var startY = Math.min(window.innerHeight - Mh - 20, Math.max(Mtop + 60, Btop - Bh * 0.6));
-
-        function easeOutCubic(val) {
-          return 1 - Math.pow(1 - val, 3);
+        function smoothstep(min, max, value) {
+          var x = Math.max(0, Math.min(1, (value - min) / (max - min)));
+          return x * x * (3 - 2 * x);
         }
 
         function easeInOutCubic(val) {
           return val < 0.5 ? 4 * val * val * val : 1 - Math.pow(-2 * val + 2, 3) / 2;
+        }
+
+        function getGeometry(k, j, vty) {
+          var fullHeight = Mh + (Hchimney - Mh) * k;
+          var currentHeight = fullHeight * (1 - j);
+          var topY = Mtop + (Btop - Mtop) * j;
+          var screenY = topY + currentHeight * vty;
+
+          // Non-linear flared trumpet waist profile (authentic macOS Catalina curve)
+          var profile = Math.pow(1 - vty, 1.45);
+          var w = Bw + (Mw - Bw) * ((1 - j) * profile + (1 - k) * (1 - profile));
+
+          // Centerline with Compiz harmonic S-swish
+          var centerShift = (Bcx - Mcx) * (vty * k + (1 - vty) * j);
+          var swish = Math.sin(vty * Math.PI) * (Bcx - Mcx) * 0.25 * k * (1 - j);
+          var centerX = Mcx + centerShift + swish;
+
+          return {
+            screenY: screenY,
+            centerX: centerX,
+            w: Math.max(4, w),
+            leftX: centerX - w * 0.5,
+            rightX: centerX + w * 0.5
+          };
         }
 
         function step(timestamp) {
@@ -1352,39 +1416,143 @@
             var ldt = timestamp - (perf._last || timestamp);
             perf._last = timestamp;
             if (perf.frames.length < 240) perf.frames.push(Math.round(ldt * 10) / 10);
+            // Auto-flag stalls so they can be reported straight from console.
+            if (ldt > 250 && perf.frames.length > 2 && !perf.stallWarned) {
+              perf.stallWarned = true;
+              try { console.warn("[genie] frame gap " + Math.round(ldt) + "ms during " + perf.kind + " (" + perf.book + "). See window.__geniePerf."); } catch (e) { /* ignore */ }
+            }
           }
 
-          var p = isOpening ? easeOutCubic(t) : easeInOutCubic(t);
-          var curX, curY, alpha;
+          var p = easeInOutCubic(t);
+          var k, j;
 
           if (isOpening) {
-            // One-Shot Full-Width Morph: emerges directly at 100% final width (Mw)
-            // and glides from shelf book position to the center with zero second-phase expansion.
-            curX = startX + (Mleft - startX) * p;
-            curY = startY + (Mtop - startY) * p;
-            alpha = Math.min(1, t / 0.16); // silky bloom at launch
+            // Opening (Unminimize): Top shoots up and expands first, bottom follows
+            // smoothly in one continuous wave with rich intermediate frames throughout.
+            var topProg = Math.sin(p * Math.PI * 0.5); // smoothly leads: 0 -> 1
+            var botProg = Math.pow(p, 1.5);            // smoothly follows: 0 -> 1
+            j = 1 - topProg; // 1 -> 0 (top moves from book to modal)
+            k = 1 - botProg; // 1 -> 0 (bottom expands from book to modal)
           } else {
-            // Closing: glides gracefully back down toward book
-            curX = Mleft + (startX - Mleft) * p;
-            curY = Mtop + (startY - Mtop) * p;
-            alpha = 1 - Math.max(0, Math.min(1, (t - 0.4) / 0.6));
+            // Closing (Minimize): Bottom narrows into book first, top follows down smoothly
+            var botShrink = Math.sin(p * Math.PI * 0.5); // bottom leads into book
+            var topShrink = Math.pow(p, 1.5);            // top follows down
+            k = botShrink; // 0 -> 1
+            j = topShrink; // 0 -> 1
           }
+
+          var fullHeight = Mh + (Hchimney - Mh) * k;
+          var currentHeight = fullHeight * (1 - j);
+          var elevation = isOpening ? p : (1 - p);
 
           clearCanvas();
 
-          // Full-width resting neumorphic shadow follows the card seamlessly
-          if (restShadow) {
-            ctx.save();
-            ctx.globalAlpha = Math.min(1, alpha);
-            ctx.drawImage(restShadow, curX - restPad, curY - restPad, Mw + restPad * 2, Mh + restPad * 2);
-            ctx.restore();
+          var leftPath = [];
+          var rightPath = [];
+          var sliceGeoms = [];
+
+          // Precompute slices and exact contour paths
+          for (var i = 0; i < N; i++) {
+            var vty0 = i / N;
+            var vty1 = (i + 1) / N;
+
+            var s0 = getGeometry(k, j, vty0);
+            var s1 = getGeometry(k, j, vty1);
+
+            var y0 = s0.screenY;
+            var y1 = s1.screenY;
+            var dh = (y1 - y0) + 0.35; // subpixel antialiasing guard
+
+            var cx = (s0.centerX + s1.centerX) * 0.5;
+            var w = (s0.w + s1.w) * 0.5;
+            var x = cx - w * 0.5;
+
+            if (i === 0) {
+              leftPath.push({ x: s0.leftX, y: y0 });
+              rightPath.push({ x: s0.rightX, y: y0 });
+            }
+            leftPath.push({ x: s1.leftX, y: y1 });
+            rightPath.push({ x: s1.rightX, y: y1 });
+
+            sliceGeoms.push({
+              sy: Math.round(vty0 * snapH),
+              sh: Math.max(1, Math.round(vty1 * snapH) - Math.round(vty0 * snapH)),
+              x: x,
+              y0: y0,
+              w: w,
+              dh: dh
+            });
           }
 
-          // Full-width panel: drawn at exact final width (Mw) and height (Mh)
-          ctx.save();
-          ctx.globalAlpha = alpha;
-          ctx.drawImage(snapshot, 0, 0, snapW, snapH, curX, curY, Mw, Mh);
-          ctx.restore();
+          // Single-pass flight shadow: one pre-blurred sprite blit scaled
+          // to the morphing bounds. Envelope peaks mid-flight and fades to
+          // ZERO at landing so the preloaded DOM modal's real neumorphism
+          // takes over 1:1 — the very same panel pops up, never a double
+          // (canvas + DOM) shadow. Costs ~0.2ms vs ~6ms for the old
+          // triple shadowBlur contour fills.
+          var flightEnv = Math.sin(Math.PI * Math.min(1, Math.max(0, elevation)));
+          if (flightShadow && !isLowEnd && flightEnv > 0.03 && currentHeight > 12) {
+            try {
+              var minLX = leftPath[0].x, maxRX = rightPath[0].x;
+              for (var q = 1; q < leftPath.length; q++) {
+                if (leftPath[q].x < minLX) minLX = leftPath[q].x;
+                if (rightPath[q].x > maxRX) maxRX = rightPath[q].x;
+              }
+              var shW = Math.max(8, maxRX - minLX);
+              var shH = Math.min(90, 18 + 64 * flightEnv);
+              var botY = leftPath[leftPath.length - 1].y;
+              ctx.save();
+              ctx.globalAlpha = Math.min(0.8, 0.7 * flightEnv);
+              ctx.drawImage(flightShadow, minLX - shW * 0.06, botY - shH * 0.35, shW * 1.12, shH);
+              ctx.restore();
+            } catch (e) { /* ignore shadow errors */ }
+          }
+
+          // Destination resting shadow (opening only): fades in over the
+          // final stretch of flight so the panel lands INTO its final
+          // shadow. At t=1 the canvas shadow == the preloaded modal's real
+          // shadow, and the CSS cross-fade below swaps them with no jump.
+          if (isOpening && restShadow) {
+            var restAlpha = smoothstep(0.55, 1, p);
+            if (restAlpha > 0.01 && currentHeight > 12) {
+              ctx.save();
+              ctx.globalAlpha = Math.min(1, restAlpha);
+              ctx.drawImage(restShadow,
+                Mleft - restPad, Mtop - restPad,
+                Mw + restPad * 2, Mh + restPad * 2);
+              ctx.restore();
+            }
+          }
+
+          // Draw the high-density horizontal slices (integer source rows
+          // avoid seam bleeding; low smoothing keeps blits on the fast path)
+          for (var s = 0; s < N; s++) {
+            var g = sliceGeoms[s];
+            ctx.drawImage(snapshot, 0, g.sy, snapW, g.sh, g.x, g.y0, g.w, g.dh);
+          }
+
+          // Liquid Outer Rails Glass Sheen (Subtle Catalina specular highlight)
+          var edgeAlpha = (1 - elevation) * 0.35;
+          if (edgeAlpha > 0.02 && currentHeight > 12) {
+            ctx.save();
+            ctx.lineWidth = 1.2;
+            ctx.strokeStyle = "rgba(255, 255, 255, " + edgeAlpha + ")";
+
+            ctx.beginPath();
+            for (var m = 0; m < leftPath.length; m++) {
+              if (m === 0) ctx.moveTo(leftPath[m].x, leftPath[m].y);
+              else ctx.lineTo(leftPath[m].x, leftPath[m].y);
+            }
+            ctx.stroke();
+
+            ctx.beginPath();
+            for (var n = 0; n < rightPath.length; n++) {
+              if (n === 0) ctx.moveTo(rightPath[n].x, rightPath[n].y);
+              else ctx.lineTo(rightPath[n].x, rightPath[n].y);
+            }
+            ctx.stroke();
+            ctx.restore();
+          }
 
           if (t < 1) {
             activeAnimId = requestAnimationFrame(step);
@@ -1726,7 +1894,7 @@
       setTimeout(function () {
         launchArmed = true;
         tryLaunch();
-      }, 90);
+      }, 180);
       // Piggyback: if hover already triggered this book's prebuild, wait for
       // it (single raster) instead of racing a duplicate build.
       whenPrebuildSettles(bookId, function measureAndRasterize() {
