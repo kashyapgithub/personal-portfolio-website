@@ -328,28 +328,51 @@ body {
   }
 }
 
-/* Liquid glass highlight: a soft top-edge light plus one slow dim
-   specular pass. Both sit low so the pill reads wet, not lit. */
+/* Trapped liquid: an oversized coloured mass sloshing inside the glass.
+   inset is wider than the pill so the transform has room to travel;
+   overflow:hidden on the capsule clips it, which is exactly what makes
+   it read as liquid sealed in glass. Blobs + meniscus + glint all ride
+   one layer so they move as a single body of water. */
 .nav-capsule::before {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: -35% -12%;
   border-radius: inherit;
   pointer-events: none;
   background-image:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 26%),
+    radial-gradient(18% 55% at 22% 60%, rgba(255, 46, 136, 0.50), transparent 70%),
+    radial-gradient(16% 55% at 42% 44%, rgba(255, 217, 26, 0.42), transparent 70%),
+    radial-gradient(16% 55% at 60% 62%, rgba(46, 224, 107, 0.45), transparent 70%),
+    radial-gradient(18% 55% at 80% 48%, rgba(46, 155, 255, 0.50), transparent 70%),
     linear-gradient(100deg,
-      transparent 32%,
-      rgba(255, 255, 255, 0.12) 50%,
-      transparent 68%);
-  background-size: 100% 100%, 220% 100%;
-  background-position: 0 0, 150% 0;
-  animation: capsule-sheen 6.5s ease-in-out infinite;
+      transparent 42%,
+      rgba(255, 255, 255, 0.14) 50%,
+      transparent 58%);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 220% 100%;
+  background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 150% 0;
+  animation:
+    liquid-slosh 7s ease-in-out infinite alternate,
+    capsule-sheen 6.5s ease-in-out infinite;
+}
+
+/* Slosh: the whole mass rocks side to side with a slight squash, like
+   water settling after the pill is nudged. translate % is of the
+   oversized pseudo, so ±2.5% stays inside the clip. */
+@keyframes liquid-slosh {
+  from { transform: translate3d(-2.5%, 1.5%, 0) rotate(-1.2deg) scale(1.02, 0.99); }
+  50%  { transform: translate3d(0%, -1.5%, 0) rotate(0.6deg) scale(1.03, 0.985); }
+  to   { transform: translate3d(2.5%, 1.5%, 0) rotate(1.2deg) scale(1.02, 0.99); }
 }
 
 @keyframes capsule-sheen {
-  from { background-position: 0 0, 150% 0; }
-  to   { background-position: 0 0, -60% 0; }
+  from { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 150% 0; }
+  to   { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, -60% 0; }
+}
+
+/* Shaking the pill agitates the liquid: slosh + glint both quicken. */
+.nav-capsule:hover::before {
+  animation-duration: 3.2s, 3s;
 }
 
 /* Powder grain + splash speckle over everything, under the links.
@@ -370,6 +393,15 @@ body {
   background-position: 0 0, 4px 8px, 12px 3px, 7px 14px;
   opacity: 0.55;
   mix-blend-mode: screen;
+  /* Bubbles rise: each dot layer shifts up by exactly one tile height,
+     so the loop is seamless. Grain (first layer) stays pinned -- moving
+     grain would read as shimmer, not liquid. */
+  animation: bubble-rise 9s linear infinite;
+}
+
+@keyframes bubble-rise {
+  from { background-position: 0 0, 4px 8px, 12px 3px, 7px 14px; }
+  to   { background-position: 0 0, 4px -18px, 12px -31px, 7px -28px; }
 }
 
 /* Links sit above grain, splash and sheen so text stays crisp. */
@@ -393,7 +425,8 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .nav-capsule,
-  .nav-capsule::before {
+  .nav-capsule::before,
+  .nav-capsule::after {
     animation: none;
   }
   .nav-capsule {
