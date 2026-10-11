@@ -332,23 +332,50 @@
 
     // MUST stay in the same order as data-book-id in index.html: index() maps
     // position -> key, and openChapter reverse-maps key -> index.
-    //   LEVEL 01: the four category volumes
-    //   LEVEL 02: the project volumes
-    // genie/mrp/tui/dryrun are deliberately absent — they are no longer
-    // standalone books; their writing is folded into the `development`
-    // volume. The CHAPTERS entries are kept so that text is not lost.
-    var CHAPTER_KEYS = ["design", "development", "opensource", "education", "cred", "fyers", "imagine", "zomato", "cloud"];
+    //   LEVEL 01: product, design, development, opensource
+    //   LEVEL 02: education, fyers, imagine, zomato, cloud
+    // genie/mrp/tui/dryrun/cred are deliberately absent — they are no longer
+    // standalone books; their writing is folded into the `development` and
+    // `education` volumes. The CHAPTERS entries are kept so text is not lost.
+    var CHAPTER_KEYS = ["product", "design", "development", "opensource", "education", "fyers", "imagine", "zomato", "cloud"];
 
     var CHAPTERS = {
       // ================================================================
       // LEVEL 01 — CATEGORY VOLUMES
       // Each replaces a row of former project books. The genie/mrp/tui/
-      // dryrun entries below are retained verbatim so their writing is
-      // preserved; they now live inside the `development` volume.
+      // dryrun/cred entries below are retained verbatim so their writing
+      // is preserved; they now live inside the `development` and
+      // `education` volumes.
       // ================================================================
+      product: {
+        id: "product",
+        chapterNum: "01",
+        category: "VOLUME 01 · PRODUCT DEVELOPMENT",
+        title: "My Product Development Works",
+        tagline: "Taking things from an idea to something people actually use.",
+        era: "2021 – 2026 · ZERO TO ONE",
+        quote: "“A product is not what you planned. It is what survived contact with people.”",
+        metrics: [
+          { label: "Stage", val: "Idea → Ship" },
+          { label: "Domains", val: "Fintech · Commerce" },
+          { label: "Approach", val: "Build & Measure" },
+          { label: "Ownership", val: "End to End" }
+        ],
+        tags: ["Product Development", "Zero to One", "MVP", "Fintech", "Commerce", "Rapid Prototyping", "Product Strategy"],
+        narrative: [
+          "This is the work where I owned the whole arc rather than one slice of it — deciding what to build, building it, and staying with it long enough to see what the numbers said afterwards.",
+          "Most of it started as a problem someone was willing to bet on: a trading engine that had to be right in microseconds, a safety problem in quick-commerce logistics, a campaign idea that had to survive being read by actual traders. The through-line is building the real thing, not a presentation of the idea, and letting real usage correct the plan."
+        ],
+        highlights: [
+          "Genie 2.0 — alpha generation engine taken from concept to 12–100 μs live execution.",
+          "Partner Safety UX — logistics-side safety problem reframed and shipped with Zomato & Blinkit.",
+          "Candle Signals — a trading campaign concept built and taken to market with FYERS.",
+          "Singularity Cloud — multi-cloud telemetry app built for Android from the ground up."
+        ]
+      },
       design: {
         id: "design",
-        chapterNum: "01",
+        chapterNum: "02",
         category: "VOLUME 01 · DESIGN PORTFOLIO",
         title: "My Design Works",
         tagline: "Product design, interface systems and the thinking behind them.",
@@ -374,7 +401,7 @@
       },
       development: {
         id: "development",
-        chapterNum: "02",
+        chapterNum: "03",
         category: "VOLUME 02 · ENGINEERING",
         title: "My Development Works",
         tagline: "Low-latency engines, realtime infrastructure and tooling built to hold up under load.",
@@ -400,7 +427,7 @@
       },
       opensource: {
         id: "opensource",
-        chapterNum: "03",
+        chapterNum: "04",
         category: "VOLUME 03 · PUBLIC REPOSITORIES",
         title: "My Open Source Works",
         tagline: "Public repositories and shared tooling — in preparation.",
@@ -424,7 +451,7 @@
       },
       education: {
         id: "education",
-        chapterNum: "04",
+        chapterNum: "05",
         category: "VOLUME 04 · CREDENTIALS",
         title: "Education",
         tagline: "Academic record, continuous study, and the work that came out of leadership review.",
@@ -702,7 +729,7 @@
       if (!data) return;
 
       if (progressEl) {
-        progressEl.textContent = "CHAPTER " + data.chapterNum + " OF 09";
+        progressEl.textContent = "VOLUME " + data.chapterNum + " OF 09";
       }
       if (categoryEl) {
         categoryEl.textContent = data.category;
@@ -798,6 +825,7 @@
 
       var THEME_COLORS = {
         // LEVEL 01 — category volumes (must mirror .book-card--* in styles.css)
+        product: { bg1: "#10193a", bg2: "#1e2f66", accent: "#81a1ff" },
         design: { bg1: "#2a0f3d", bg2: "#43206b", accent: "#c084fc" },
         development: { bg1: "#04231d", bg2: "#0b4437", accent: "#34d399" },
         opensource: { bg1: "#14171c", bg2: "#23272e", accent: "#f0f6fc" },
@@ -942,7 +970,7 @@
         insetPlate(pillX, pillY, pillW, pillH, 14, 2.5, 4);
         sctx.fillStyle = "#0284c7";
         sctx.font = "700 11px monospace";
-        sctx.fillText("CHAPTER " + (data.chapterNum || "01") + " OF 09", pillX + 14, pillY + 18);
+        sctx.fillText("VOLUME " + (data.chapterNum || "01") + " OF 09", pillX + 14, pillY + 18);
 
         // Header Navigation Controls (Prev / Next / Close)
         var btnW = 104, btnH = 32, btnY = 20;

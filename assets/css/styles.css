@@ -2499,7 +2499,16 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 
 /* ===== LEVEL 01 · Category volumes ===== */
 
-/* V1. My Design Works — violet, reads as the creative volume */
+/* V1. My Product Development Works — indigo/blue, the lead volume */
+.book-card--product {
+  --book-bg: linear-gradient(145deg, #10193a 0%, #1e2f66 50%, #0a0f24 100%);
+  --book-border: rgba(129, 161, 255, 0.28);
+  --book-accent: #81a1ff;
+  --book-accent-soft: rgba(129, 161, 255, 0.15);
+  --book-glow: rgba(129, 161, 255, 0.34);
+}
+
+/* V2. My Design Works — violet, reads as the creative volume */
 .book-card--design {
   --book-bg: linear-gradient(145deg, #2a0f3d 0%, #43206b 50%, #1a0a26 100%);
   --book-border: rgba(192, 132, 252, 0.28);
