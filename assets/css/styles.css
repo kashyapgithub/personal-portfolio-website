@@ -550,10 +550,10 @@ body {
   min-height: calc(100svh - var(--header-h));
   padding: 0 1.25rem clamp(1.5rem, 3.5vh, 2.75rem);
   border-bottom: 1px solid var(--border);
-  background: 
-    radial-gradient(ellipse 70% 50% at 50% 28%, rgba(224, 231, 255, 0.08) 0%, rgba(148, 163, 184, 0.025) 50%, transparent 75%),
-    radial-gradient(ellipse 65% 26% at 50% 74%, rgba(148, 163, 184, 0.15) 0%, rgba(71, 85, 105, 0.06) 45%, transparent 75%),
-    linear-gradient(180deg, #080a10 0%, #0d111b 45%, #121827 75%, #090c13 100%);
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 28%, rgba(224, 231, 255, 0.04) 0%, rgba(148, 163, 184, 0.012) 50%, transparent 75%),
+    radial-gradient(ellipse 65% 26% at 50% 74%, rgba(148, 163, 184, 0.08) 0%, rgba(71, 85, 105, 0.03) 45%, transparent 75%),
+    linear-gradient(180deg, #04060b 0%, #080b13 45%, #0b0f18 75%, #05070c 100%);
 }
 
 #grok-bot-canvas {
@@ -586,8 +586,8 @@ body {
   z-index: 2;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 34% 62% at 50% 0%, rgba(255, 232, 196, 0.14) 0%, rgba(255, 232, 196, 0) 70%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.28) 0%, rgba(0, 0, 0, 0) 100%);
+    radial-gradient(ellipse 34% 62% at 50% 0%, rgba(255, 232, 196, 0.07) 0%, rgba(255, 232, 196, 0) 70%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0) 100%);
 }
 
 .hero::after {
@@ -597,8 +597,8 @@ body {
   z-index: 2;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 118% 96% at 50% 44%, rgba(0, 0, 0, 0) 56%, rgba(2, 4, 9, 0.42) 82%, rgba(1, 2, 6, 0.62) 100%),
-    linear-gradient(180deg, rgba(1, 2, 6, 0.30) 0%, rgba(1, 2, 6, 0) 12%, rgba(1, 2, 6, 0) 88%, rgba(1, 2, 6, 0.34) 100%);
+    radial-gradient(ellipse 118% 96% at 50% 44%, rgba(0, 0, 0, 0) 56%, rgba(2, 4, 9, 0.55) 82%, rgba(1, 2, 6, 0.75) 100%),
+    linear-gradient(180deg, rgba(1, 2, 6, 0.42) 0%, rgba(1, 2, 6, 0) 12%, rgba(1, 2, 6, 0) 88%, rgba(1, 2, 6, 0.48) 100%);
 }
 
 /* Container for dynamic mouth-emerging dialogue & thought bubble */
