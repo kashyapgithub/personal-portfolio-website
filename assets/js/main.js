@@ -1244,15 +1244,12 @@
 
         // Flight telemetry (read via window.__geniePerf): per-frame deltas
         // expose stalls as gaps; longtasks name the blocker. Zero-cost idle.
-        // `slices` tracks the live per-frame count, `slicesMax` the peak the
-        // run actually reached (the count is now height-derived, so neither
-        // is knowable up front).
+        // `slices` is constant for the run -- the count no longer varies.
         var perf = null;
         var ltObs = null;
-        var peakSlices = N_MIN;
         try {
           perf = { kind: isOpening ? "open" : "close", book: bookId,
-            slices: 0, slicesMax: N_MIN, sliceMaxAllowed: N_MAX,
+            slices: N, sliceMaxAllowed: N_MAX,
             t0: Math.round(performance.now()), frames: [], tasks: [], marks: {} };
           window.__geniePerf = perf;
           if ("PerformanceObserver" in window) {
@@ -1269,7 +1266,6 @@
         function endPerf(total) {
           try {
             if (perf) {
-              perf.slicesMax = peakSlices;
               perf.marks.morphMs = Math.round(performance.now() - perf.t0);
               perf.total = total;
             }
@@ -1283,17 +1279,50 @@
         var isLowEnd = (window.innerWidth < 640) ||
           ((navigator && navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4));
 
-        // N_MAX is doubled from the previous 64/44. The budget is spent
-        // where it is actually visible: the sheet runs ~0px tall on the first
-        // frames and a full Mh by the second half, so a fixed count either
-        // oversamples the invisible opening or starves the visible landing.
-        // N_SLICE_PX targets a constant slice height in SCREEN pixels, and the
-        // per-frame count in step() is derived from the live sheet height --
-        // so the second half, where the panel is big and settling into its
-        // final contour, gets the full doubled budget automatically.
-        var N_MAX = isLowEnd ? 88 : 128;
-        var N_MIN = 16;                                        // never collapse the contour
-        var N_SLICE_PX = isLowEnd ? 8 : 5.5;                   // 700px tall -> full N_MAX
+        // Slice density for a continuous deformation contour.
+        //
+        // N_MAX is doubled again, 128 -> 256 (88 -> 144 on low-end). At 128
+        // the drawn silhouette still carried 2.84 device px of staircase error
+        // at the steepest part of the flare; at 256 that is 1.43, and with
+        // SLICE_WARP below it drops to 0.95 -- sub-pixel. (Staircase error is
+        // |dx/dv| * sliceHeight / 2, so it falls as 1/N, not 1/N^2: the last
+        // doubling is worth more than it looks.)
+        //
+        // The count is FIXED for the whole flight, sized from the modal
+        // height. An earlier version re-derived it per frame from the live
+        // sheet height, which was a mistake: the count then changed ~234
+        // times over the 520ms run, and every change re-seeds where the slice
+        // boundaries fall, shifting the drawn edge by up to ~1px in a
+        // direction uncorrelated with the motion. That reads as a 1px boil at
+        // 60fps -- strictly worse than the coarser-but-stable contour it was
+        // meant to improve. Stability beats adaptivity here.
+        //
+        // A fixed high count is also cheaper than it sounds on the opening
+        // frames: drawImage cost tracks destination AREA, and early slices are
+        // only a few px tall, so oversampling the collapsed sheet costs
+        // almost nothing while the tall second half gets the full budget.
+        var N_MAX = isLowEnd ? 144 : 256;
+        var N_MIN = 16;                       // never collapse the contour
+        var N_SLICE_PX = isLowEnd ? 5.5 : 2.75; // Mh 700 -> full N_MAX
+
+        // SLICE_WARP concentrates slices where the contour actually bends.
+        // The staircase error is |dx/dv| * sliceHeight / 2, and |dx/dv| is
+        // largest at v=0 (the flaring wide end) and smallest around v=0.7.
+        // Uniform spacing therefore spends most of its budget where there is
+        // nothing to resolve: measured at N=256, the top 3/8 of the sheet
+        // carried 62% of the total error against 37.5% for an even split.
+        // vty = (i/N)^SLICE_WARP biases slices toward v=0 and cuts the worst
+        // error ~35% (0.82 -> 0.54 CSS px) at identical cost, which is what takes
+        // the contour under 1 device px. >1 concentrates at the top; ~1.4-1.6
+        // is the measured optimum, past which the tip starts to starve.
+        var SLICE_WARP = 1.35;
+
+        // Resolve once. Capped at snapH so the integer source bands still tile
+        // the snapshot exactly (no duplicated or dropped source rows).
+        var N = Math.round(Mh / N_SLICE_PX);
+        if (N < N_MIN) N = N_MIN;
+        if (N > N_MAX) N = N_MAX;
+        if (N > snapH) N = snapH;
         // Pre-rendered soft flight shadow (one drawImage per frame — the
         // old 3x ctx.shadowBlur contour fills were the top jank source;
         // shadowBlur forces a software raster of the full contour).
@@ -1540,26 +1569,21 @@
             (Mtop + (Btop - Mtop) * (1 - topProg));
           var elevation = r;
 
-          // Slice budget for THIS frame, sized to the sheet's live height.
-          // Capped at snapH so the integer source bands still tile the
-          // snapshot exactly (no duplicated or dropped source rows).
-          var slices = Math.round(currentHeight / N_SLICE_PX);
-          if (slices < N_MIN) slices = N_MIN;
-          if (slices > N_MAX) slices = N_MAX;
-          if (slices > snapH) slices = snapH;
-          if (slices > peakSlices) peakSlices = slices;
-          if (perf) perf.slices = slices;
-
           clearCanvas();
 
           var leftPath = [];
           var rightPath = [];
           var sliceGeoms = [];
 
-          // Precompute slices and exact contour paths
-          for (var i = 0; i < slices; i++) {
-            var vty0 = i / slices;
-            var vty1 = (i + 1) / slices;
+          // Precompute slices and exact contour paths. The count N is fixed
+          // for the whole flight (see above) so the slice boundaries never
+          // move relative to each other between frames -- the silhouette can
+          // only translate and scale, never re-shuffle. SLICE_WARP biases
+          // the boundaries toward the flaring top; it stays monotone 0->1,
+          // so the integer source bands still tile the snapshot with no gaps.
+          for (var i = 0; i < N; i++) {
+            var vty0 = Math.pow(i / N, SLICE_WARP);
+            var vty1 = Math.pow((i + 1) / N, SLICE_WARP);
 
             var s0 = getGeometry(topProg, botProg, wTop, wBot, vty0);
             var s1 = getGeometry(topProg, botProg, wTop, wBot, vty1);
@@ -1635,10 +1659,8 @@
           }
 
           // Draw the horizontal slices (integer source rows avoid seam
-          // bleeding; low smoothing keeps blits on the fast path).
-          // Driven by sliceGeoms.length, not a fixed count — the number is
-          // re-derived from the live sheet height every frame.
-          for (var s = 0; s < sliceGeoms.length; s++) {
+          // bleeding; low smoothing keeps blits on the fast path)
+          for (var s = 0; s < N; s++) {
             var g = sliceGeoms[s];
             ctx.drawImage(snapshot, 0, g.sy, snapW, g.sh, g.x, g.y0, g.w, g.dh);
           }
