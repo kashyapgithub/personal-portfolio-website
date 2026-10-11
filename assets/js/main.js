@@ -1323,6 +1323,35 @@
         if (N < N_MIN) N = N_MIN;
         if (N > N_MAX) N = N_MAX;
         if (N > snapH) N = snapH;
+
+        // -------------------------------------------------------------
+        // SETTLE PHASE
+        //
+        // The morph's last frame lands exactly on the rect measured when the
+        // flight STARTED. The DOM modal underneath, though, is live and has
+        // had the whole flight to settle: webfonts land, images resolve, a
+        // scrollbar appears. It can end up bigger than the frame we drew.
+        //
+        // Rather than let that difference surface as a pop when the canvas
+        // dissolves, measure the live rect at t=1 and interpolate the canvas
+        // across the difference over SETTLE_STEPS frames, increasing in width
+        // and height, so the two are pixel-aligned before the crossfade.
+        //
+        // It is skipped entirely when the difference is under SETTLE_MIN_PX:
+        // these frames exist to absorb a mismatch, and when there is no
+        // mismatch they would just be a visible stall -- the exact thing the
+        // rest of this engine works to avoid.
+        // -------------------------------------------------------------
+        var SETTLE_STEPS = 20;    // interpolated frames, as requested
+        var SETTLE_MIN_PX = 2;    // below this the canvas already matches
+        var SETTLE_MAX_MS = 260;  // hard cap, so a slow frame rate can't drag it
+        var settleTo = null;      // {sx, sy, tx, ty} mapping modal rect -> live rect
+        var settleXf = null;      // this frame's interpolated transform
+        var settleStep = 0;
+        var settleT0 = 0;
+        var settling = false;
+        var settleInited = false;
+
         // Pre-rendered soft flight shadow (one drawImage per frame — the
         // old 3x ctx.shadowBlur contour fills were the top jank source;
         // shadowBlur forces a software raster of the full contour).
@@ -1619,6 +1648,17 @@
           // takes over 1:1 — the very same panel pops up, never a double
           // (canvas + DOM) shadow. Costs ~0.2ms vs ~6ms for the old
           // triple shadowBlur contour fills.
+          //
+          // SETTLE TRANSFORM: on settle frames the whole panel (slices, resting
+          // shadow, rails) is drawn through one transform that maps the modal
+          // rect onto the live settled rect. Identity until the settle phase
+          // arms it, so the normal flight is untouched.
+          if (settleXf) {
+            ctx.save();
+            ctx.translate(Mcx + settleXf.tx, (Mtop + Mh * 0.5) + settleXf.ty);
+            ctx.scale(settleXf.sx, settleXf.sy);
+            ctx.translate(-Mcx, -(Mtop + Mh * 0.5));
+          }
           var flightEnv = Math.sin(Math.PI * Math.min(1, Math.max(0, elevation)));
           if (flightShadow && !isLowEnd && flightEnv > 0.03 && currentHeight > 12) {
             try {
@@ -1688,7 +1728,72 @@
             ctx.restore();
           }
 
-          if (t < 1) {
+          if (settleXf) ctx.restore();
+
+          if (t >= 1 && isOpening && !settleInited) {
+            // Measure the LIVE rect now. Fonts, images and any scrollbar have
+            // had the whole flight to resolve, so this is the modal as it will
+            // actually be presented — not as it was when we launched.
+            settleInited = true;
+            try {
+              var fr = containerEl ? containerEl.getBoundingClientRect() : null;
+              var fw = Mw, fh = Mh;
+              var fcx = Mcx, fcy = Mtop + Mh * 0.5;
+              if (fr && fr.width > 50 && fr.height > 50) {
+                fw = fr.width; fh = fr.height;
+                fcx = fr.left + fr.width * 0.5;
+                fcy = fr.top + fr.height * 0.5;
+              }
+              var dW = Math.abs(fw - Mw), dH = Math.abs(fh - Mh);
+              var dX = fcx - Mcx, dY = fcy - (Mtop + Mh * 0.5);
+              var dC = Math.sqrt(dX * dX + dY * dY);
+              if (perf) {
+                perf.marks.settleDW = Math.round(dW);
+                perf.marks.settleDH = Math.round(dH);
+                perf.marks.settleDC = Math.round(dC);
+              }
+              if (Math.max(dW, dH, dC) >= SETTLE_MIN_PX) {
+                settleTo = { sx: fw / Mw, sy: fh / Mh, tx: dX, ty: dY };
+                settling = true;
+                settleStep = 0;
+                settleT0 = performance.now();
+              }
+            } catch (e) { /* ignore: fall through to a plain handoff */ }
+
+            // Reveal the preloaded modal HERE, not at the end of the settle.
+            // The CSS comment on .is-genie-active is explicit that an
+            // opacity-0 subtree skips raster entirely, so the handoff must
+            // find the panel already painted -- otherwise its first full
+            // style+paint lands between the last morph frame and the settled
+            // panel, which is the exact n-1 -> n gap this engine exists to
+            // avoid. Doing it here buys the settle frames to cover that cost.
+            overlay.classList.remove("is-genie-active");
+            overlay.classList.add("genie-settled");
+          }
+
+          if (settling) {
+            // Increasing order, eased so the first and last settle frames are
+            // both still. Time-capped so a dropped frame rate cannot stretch
+            // this into a stall.
+            settleStep++;
+            var sStep = settleStep / SETTLE_STEPS;
+            if (performance.now() - settleT0 > SETTLE_MAX_MS) sStep = 1;
+            if (sStep > 1) sStep = 1;
+            var sEase = sStep * sStep * (3 - 2 * sStep);
+            // settleXf is deliberately NOT cleared on completion: the handoff
+            // frame still has to draw at the FINAL transform, or the panel
+            // would snap back to the smaller modal rect for one frame right
+            // before the crossfade -- reintroducing the pop this absorbs.
+            settleXf = {
+              sx: 1 + (settleTo.sx - 1) * sEase,
+              sy: 1 + (settleTo.sy - 1) * sEase,
+              tx: settleTo.tx * sEase,
+              ty: settleTo.ty * sEase
+            };
+            if (sStep >= 1) settling = false;
+          }
+
+          if (t < 1 || settling) {
             activeAnimId = requestAnimationFrame(step);
           } else {
             if (isOpening) {
@@ -1696,11 +1801,11 @@
               // + painted) before the transition started, the canvas already
               // wears the identical resting shadow — so cross-fade the two
               // (canvas out, modal in) instead of a hard clear. Shadow and
-              // panel stay constant through the swap.
+              // panel stay constant through the swap. The reveal itself
+              // already happened above, at the top of the settle, so this
+              // frame is a pure composite swap.
               endPerf("open-done");
               if (perf) perf.marks.flipT = Math.round(performance.now());
-              overlay.classList.remove("is-genie-active");
-              overlay.classList.add("genie-settled");
               isAnimating = false;
               if (callback) callback();
 
