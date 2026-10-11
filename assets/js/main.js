@@ -1282,7 +1282,10 @@
         var isLowEnd = (window.innerWidth < 640) ||
           ((navigator && navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4));
         var N = isLowEnd ? 40 : 56;
-        var split = 0.38; // Dual-phase transition boundary
+        // Overlapping dual-phase ranges: both j and k change simultaneously
+        // through the middle 50% of the animation for a single continuous sweep.
+        var jEnd  = 0.75;  // j completes at p = 0.75
+        var kStart = 0.25; // k begins   at p = 0.25
         // Pre-rendered soft flight shadow (one drawImage per frame — the
         // old 3x ctx.shadowBlur contour fills were the top jank source;
         // shadowBlur forces a software raster of the full contour).
@@ -1430,13 +1433,13 @@
           var k, j;
 
           if (isOpening) {
-            // Opening (Unminimize): Top shoots up first, bottom releases into place
-            j = 1 - smoothstep(0, 1 - split, p);
-            k = 1 - smoothstep(1 - split, 1, p);
+            // Opening (Unminimize): vertical flight and shape expansion overlap
+            j = 1 - smoothstep(0, jEnd, p);
+            k = 1 - smoothstep(kStart, 1, p);
           } else {
-            // Closing (Minimize): Bottom docks into book first, top gets sucked down
-            k = smoothstep(0, split, p);
-            j = smoothstep(split, 1, p);
+            // Closing (Minimize): shape narrowing and vertical collapse overlap
+            k = smoothstep(0, jEnd, p);
+            j = smoothstep(kStart, 1, p);
           }
 
           var fullHeight = Mh + (Hchimney - Mh) * k;
