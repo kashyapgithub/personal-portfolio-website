@@ -1599,11 +1599,11 @@
         // -------------------------------------------------------------
         // LANDING TAIL: 40 FRAMES BETWEEN n-1 AND n
         //
-        // The flight holds back its last 2.5% (it lands at re=0.975, see
+        // The flight holds back its last 12% (it lands at re=0.88, see
         // the re mapping below). These 40 frames walk re to 1.0 along the
-        // exact same geometry curve, so every frame is bigger than the
-        // last: sizes never repeat and the opening sequence runs unbroken
-        // into the live modal. The live rect is measured at t=1 (webfonts,
+        // exact same geometry curve, so every frame is visibly bigger than
+        // the last: sizes never repeat and the opening sequence runs
+        // unbroken into the live modal. The live rect is measured at t=1 (webfonts,
         // images and scrollbar have had the whole flight to resolve) and
         // eased in over the same 40 frames, so panel and page are
         // pixel-aligned before the crossfade. The tail always runs on
@@ -1838,13 +1838,13 @@
           // Both directions run the same formula, so close is the exact
           // time-reverse of open — no second curve to keep in sync.
           var r = isOpening ? p : (1 - p);
-          // Opening holds back its last 2.5%: the flight lands at re=0.975
-          // and the 40-frame landing tail walks re to 1.0 along this exact
-          // same curve, so every tail frame is bigger than the last —
-          // sizes never repeat, the sequence never breaks. Closing keeps
-          // the full range (it has no tail).
+          // Opening flight covers 0 -> 0.88; the 40-frame landing tail
+          // walks re 0.88 -> 1.0 along this exact same curve, so every
+          // frame is visibly bigger than the last — sizes never repeat,
+          // the sequence never breaks, no dead hold. Closing keeps the
+          // full range (it has no tail).
           var re = r;
-          if (isOpening) re = settling ? 0.975 + 0.025 * tailEase : Math.min(r, 0.975);
+          if (isOpening) re = settling ? 0.88 + 0.12 * tailEase : r * 0.88;
 
           // bell is 0 at BOTH ends and 1 at mid-flight. Everything below is a
           // multiple of it, which is the structural reason no edge can ever be
@@ -1992,7 +1992,7 @@
 
           if (t >= 1 && isOpening && !settleInited) {
             // Tail arming: measure the LIVE rect now and run all 40 frames
-            // unconditionally — the re walk (0.975 -> 1.0) guarantees every
+            // unconditionally — the re walk (0.88 -> 1.0) guarantees every
             // frame differs in size even when live == flight rect.
             settleInited = true;
             try {
@@ -2043,7 +2043,7 @@
             if (performance.now() - settleT0 > SETTLE_MAX_MS) sStep = 1;
             if (sStep > 1) sStep = 1;
             var sEase = sStep * sStep * (3 - 2 * sStep);
-            // Tail progress drives next frame's geometry (re 0.975 -> 1.0),
+            // Tail progress drives next frame's geometry (re 0.88 -> 1.0),
             // so size grows every single frame along the flight's own curve.
             tailEase = sEase;
             // settleXf is deliberately NOT cleared on completion: the handoff
