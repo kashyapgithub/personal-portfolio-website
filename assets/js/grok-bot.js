@@ -34,9 +34,15 @@
   var R = 115; // Sphere radius in CSS px
   var cx = 0, targetCy = 0;
 
-  // Ambient Stardust Particles
-  var stars = [];
-  var STAR_COUNT = 42;
+  // Cinematic overhead spotlight rig (volumetric beam + lamp + hot pool)
+  var beamSprite = null;   // baked volumetric shaft, drawn stretched
+  var lampSprite = null;   // baked lamp head glow at the apex
+  var hotPoolSprite = null;// baked tungsten pool on the floor
+  var reduceSpotMotion = false;
+  try {
+    reduceSpotMotion = window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch (e) { /* ignore */ }
 
   // ---------------------------------------------------------------
   // PIXAR-LEVEL PRE-RENDERED SPRITES (baked once per resize, zero
@@ -394,18 +400,77 @@
     sctx.restore();
   }
 
-  function initStars() {
-    stars = [];
-    for (var i = 0; i < STAR_COUNT; i++) {
-      stars.push({
-        x: Math.random() * (W || window.innerWidth),
-        y: Math.random() * (H || 600),
-        r: 0.7 + Math.random() * 1.3,
-        alpha: 0.08 + Math.random() * 0.28,
-        vx: (Math.random() - 0.5) * 0.1,
-        vy: -0.05 - Math.random() * 0.12
-      });
+  // Baked once per resize: volumetric beam shaft with soft side falloff,
+  // lamp head, and tungsten floor pool. Per-frame cost = 3 drawImages.
+  function buildSpotSprites() {
+    // ---- Beam shaft: trapezoid, hot at the lamp, breathing out toward
+    // the floor. Side edges feathered via destination-in. ----
+    var BW = 512, BH = 1024;
+    beamSprite = makeCanvas(BW, BH);
+    var bctx = beamSprite.getContext("2d");
+    if (bctx) {
+      var topW = 92, botW = 452;
+      bctx.beginPath();
+      bctx.moveTo(BW / 2 - topW / 2, 0);
+      bctx.lineTo(BW / 2 + topW / 2, 0);
+      bctx.lineTo(BW / 2 + botW / 2, BH);
+      bctx.lineTo(BW / 2 - botW / 2, BH);
+      bctx.closePath();
+      var shaft = bctx.createLinearGradient(0, 0, 0, BH);
+      shaft.addColorStop(0.00, "rgba(255,240,212,0.85)");
+      shaft.addColorStop(0.30, "rgba(255,232,192,0.42)");
+      shaft.addColorStop(0.65, "rgba(255,224,176,0.20)");
+      shaft.addColorStop(1.00, "rgba(255,218,168,0.10)");
+      bctx.fillStyle = shaft;
+      bctx.fill();
+      // Hot core: narrower, brighter spine of the shaft
+      bctx.save();
+      bctx.globalCompositeOperation = "lighter";
+      bctx.beginPath();
+      bctx.moveTo(BW / 2 - topW * 0.28, 0);
+      bctx.lineTo(BW / 2 + topW * 0.28, 0);
+      bctx.lineTo(BW / 2 + botW * 0.30, BH);
+      bctx.lineTo(BW / 2 - botW * 0.30, BH);
+      bctx.closePath();
+      var core = bctx.createLinearGradient(0, 0, 0, BH);
+      core.addColorStop(0.00, "rgba(255,246,224,0.55)");
+      core.addColorStop(0.55, "rgba(255,238,200,0.16)");
+      core.addColorStop(1.00, "rgba(255,238,200,0)");
+      bctx.fillStyle = core;
+      bctx.fill();
+      bctx.restore();
+      // Feather the side edges
+      bctx.save();
+      bctx.globalCompositeOperation = "destination-in";
+      var edge = bctx.createLinearGradient(0, 0, BW, 0);
+      edge.addColorStop(0.00, "rgba(0,0,0,0)");
+      edge.addColorStop(0.18, "rgba(0,0,0,1)");
+      edge.addColorStop(0.82, "rgba(0,0,0,1)");
+      edge.addColorStop(1.00, "rgba(0,0,0,0)");
+      bctx.fillStyle = edge;
+      bctx.fillRect(0, 0, BW, BH);
+      bctx.restore();
     }
+    // ---- Lamp head: small hot source ----
+    lampSprite = makeCanvas(160, 160);
+    var lctx = lampSprite.getContext("2d");
+    if (lctx) {
+      var lamp = lctx.createRadialGradient(80, 80, 0, 80, 80, 80);
+      lamp.addColorStop(0.00, "rgba(255,252,244,0.95)");
+      lamp.addColorStop(0.25, "rgba(255,240,210,0.55)");
+      lamp.addColorStop(0.60, "rgba(255,224,170,0.18)");
+      lamp.addColorStop(1.00, "rgba(255,224,170,0)");
+      lctx.fillStyle = lamp;
+      lctx.fillRect(0, 0, 160, 160);
+    }
+    // ---- Hot tungsten pool for the floor ----
+    hotPoolSprite = makeCanvas(512, 128);
+    paintEllipticalGlow(hotPoolSprite, 256, 64, 250, 0.25, [
+      [0.00, "rgba(255,214,160,0.50)"],
+      [0.35, "rgba(255,206,148,0.30)"],
+      [0.65, "rgba(255,198,140,0.12)"],
+      [1.00, "rgba(255,198,140,0)"]
+    ]);
   }
 
   // Debounced sprite re-bake. resize() itself must stay synchronous (the
@@ -425,6 +490,7 @@
       bakedR = R;
       buildShadowSprites();
       buildSphereSprite();
+      buildSpotSprites();
     }, 140);
   }
 
@@ -456,7 +522,6 @@
     var availableH = Math.max(260, H - headerH - dockH);
     targetCy = Math.round(headerH + availableH * 0.38);
 
-    if (stars.length === 0) initStars();
     // Re-bake supersampled sprites for the new radius.
     // Deferred by scheduleRebake() -- see the note there. During a drag
     // the previous sprite is reused; it is square and drawn at R*2, so a
@@ -1260,24 +1325,36 @@
     updateScrollTimer(now);
 
     // -------------------------------------------------------------
-    // 2. CLEAR CANVAS & BACKGROUND STARDUST
+    // 2. CLEAR CANVAS & CINEMATIC OVERHEAD SPOTLIGHT
     // -------------------------------------------------------------
     ctx.clearRect(0, 0, W, H);
 
-    for (var i = 0; i < stars.length; i++) {
-      var s = stars[i];
-      s.x += s.vx;
-      s.y += s.vy;
-      if (s.x < 0) s.x = W;
-      if (s.x > W) s.x = 0;
-      if (s.y < 0) s.y = H;
-      if (s.y > H) s.y = 0;
-
-      var pulse = 0.8 + Math.sin(elapsedSec * 2.5 + i) * 0.2;
-      ctx.fillStyle = "rgba(255, 255, 255, " + (s.alpha * pulse).toFixed(3) + ")";
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fill();
+    // Volumetric shaft + lamp head. Baked sprites; per-frame work is
+    // 2 drawImages plus sway/breath math. The shaft lands on the same
+    // floor line the contact shadow uses (targetCy + R + 36).
+    var spotSway = reduceSpotMotion ? 0 : Math.sin(elapsedSec * 0.5) * R * 0.14;
+    var spotX = cx + spotSway;
+    var spotBreath = reduceSpotMotion ? 0.5 : 0.46 + Math.sin(elapsedSec * 0.9) * 0.07;
+    if (beamSprite) {
+      var beamW = R * 4.8;
+      var beamTop = -H * 0.06;
+      var beamH = (targetCy + R + 44) - beamTop;
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = spotBreath;
+      ctx.drawImage(beamSprite, spotX - beamW / 2, beamTop, beamW, beamH);
+      ctx.restore();
+    }
+    if (lampSprite) {
+      var flick = reduceSpotMotion
+        ? 0.85
+        : 0.82 + Math.sin(elapsedSec * 9.7) * 0.06 + Math.sin(elapsedSec * 23.7) * 0.04;
+      var lampS = Math.max(48, R * 0.62);
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = Math.min(1, Math.max(0, flick));
+      ctx.drawImage(lampSprite, spotX - lampS / 2, -lampS * 0.28, lampS, lampS);
+      ctx.restore();
     }
 
     // -------------------------------------------------------------
@@ -1340,6 +1417,14 @@
       var cW = R * 2.9 * cScale * squashX, cH = R * 0.88 * cScale * squashY;
       ctx.globalAlpha = Math.min(1, Math.max(0, cAlpha));
       ctx.drawImage(contactSprite, shadowX - cW / 2, shadowFloorY - cH / 2, cW, cH);
+      // D. Tungsten hot pool: the spotlight landing on the floor
+      if (hotPoolSprite) {
+        var hW = R * 3.4 * squashX, hH = R * 0.85 * squashY;
+        ctx.globalCompositeOperation = "screen";
+        ctx.globalAlpha = Math.min(1, 0.30 + 0.45 * contact);
+        ctx.drawImage(hotPoolSprite, spotX - hW / 2, shadowFloorY - hH / 2, hW, hH);
+        ctx.globalCompositeOperation = "source-over";
+      }
       ctx.restore();
     }
 
@@ -1496,6 +1581,7 @@
   bakedR = R;
   buildShadowSprites();
   buildSphereSprite();
+  buildSpotSprites();
   window.addEventListener("resize", scheduleRebake);
   requestAnimationFrame(render);
 

@@ -573,6 +573,34 @@ body {
   cursor: grabbing;
 }
 
+/* Cinematic rig globals: lamp wash from the top + vignette.
+   Canvas (z-index 1) paints the beam; these sit above it (z-index 2),
+   below dialogue and dock (z-index 10+). Pointer-transparent. */
+.hero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 34%;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 34% 62% at 50% 0%, rgba(255, 232, 196, 0.14) 0%, rgba(255, 232, 196, 0) 70%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.28) 0%, rgba(0, 0, 0, 0) 100%);
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 118% 96% at 50% 44%, rgba(0, 0, 0, 0) 56%, rgba(2, 4, 9, 0.42) 82%, rgba(1, 2, 6, 0.62) 100%),
+    linear-gradient(180deg, rgba(1, 2, 6, 0.30) 0%, rgba(1, 2, 6, 0) 12%, rgba(1, 2, 6, 0) 88%, rgba(1, 2, 6, 0.34) 100%);
+}
+
 /* Container for dynamic mouth-emerging dialogue & thought bubble */
 .bot-mouth-bubble-wrap {
   position: absolute;
