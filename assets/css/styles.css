@@ -2216,15 +2216,16 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   pointer-events: none;
 }
 
-/* Left Spine Joint Hinge Anchor */
+/* Left Spine Joint Hinge Anchor — rounded spine edge catching the lamp */
 .book-spine-joint {
   position: absolute;
-  left: -2px;
-  top: 0;
-  bottom: 0;
-  width: 5px;
-  background: linear-gradient(90deg, rgba(15, 23, 42, 0.5) 0%, rgba(255, 255, 255, 0.2) 50%, rgba(15, 23, 42, 0.4) 100%);
-  border-radius: 4px 0 0 4px;
+  left: -4px;
+  top: 2px;
+  bottom: 2px;
+  width: 9px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.65) 0%, rgba(255, 244, 220, 0.35) 38%, rgba(255, 244, 220, 0.10) 58%, rgba(0, 0, 0, 0.55) 100%);
+  border-radius: 5px 0 0 5px;
+  box-shadow: 2px 0 3px rgba(0, 0, 0, 0.35);
   z-index: 6;
   pointer-events: none;
 }
@@ -2453,7 +2454,8 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   background: var(--book-bg, #131722);
   border: 1px solid var(--book-border, rgba(255, 255, 255, 0.1));
   box-shadow: 
-    0 4px 14px -3px rgba(0, 0, 0, 0.6),
+    0 18px 30px -10px rgba(0, 0, 0, 0.65),
+    0 3px 8px rgba(0, 0, 0, 0.4),
     inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   overflow: hidden;
   display: flex;
@@ -2480,6 +2482,39 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   );
   border-right: 1px solid rgba(0, 0, 0, 0.2);
   z-index: 3;
+  pointer-events: none;
+}
+
+/* Fore-edge + head page block painted on the face so the volume reads
+   thick from straight-on. Scoped under .book-card: the modal artwork
+   clone shares .book-cover-front but lives outside .book-card. */
+.book-card .book-cover-front::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 24px;
+  right: 12px;
+  height: 7px;
+  border-radius: 1px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.30) 0%, rgba(0, 0, 0, 0) 50%),
+    repeating-linear-gradient(180deg, rgba(122, 102, 74, 0.55) 0 1px, rgba(240, 234, 218, 0.95) 1px 2px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+.book-card .book-cover-front::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  right: 3px;
+  width: 8px;
+  border-radius: 0 2px 2px 0;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.14) 32%, rgba(0, 0, 0, 0) 58%),
+    repeating-linear-gradient(180deg, rgba(122, 102, 74, 0.5) 0 1px, rgba(242, 236, 220, 0.95) 1px 2px);
+  box-shadow: -1px 0 2px rgba(0, 0, 0, 0.35);
   pointer-events: none;
 }
 
@@ -2669,7 +2704,7 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
    ============================================================ */
 .book-card:hover:not(.is-opening):not(.is-closing),
 .book-card:focus-visible:not(.is-opening):not(.is-closing) {
-  transform: translateY(-14px) rotateX(2deg) rotateY(-4deg);
+  transform: translateY(-14px) rotateX(3deg) rotateY(-7deg);
 }
 
 .book-card:hover:not(.is-opening):not(.is-closing) .book-contact-shadow,
@@ -2680,7 +2715,7 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 
 .book-card:hover:not(.is-opening):not(.is-closing) .book-cover,
 .book-card:focus-visible:not(.is-opening):not(.is-closing) .book-cover {
-  transform: rotateY(-8deg); /* interactive crack-open teaser */
+  transform: rotateY(-14deg); /* interactive crack-open teaser */
 }
 
 .book-card:hover:not(.is-opening):not(.is-closing) .book-cover-front,
