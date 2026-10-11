@@ -880,7 +880,7 @@
     var targetEl = document.getElementById("work") || document.querySelector(".bookshelf-section");
     if (!targetEl) return;
 
-    var headerHeight = window.innerWidth < 640 ? 56 : 60;
+    var headerHeight = 46;
     var startY = window.pageYOffset || (document.documentElement ? document.documentElement.scrollTop : 0) || (document.body ? document.body.scrollTop : 0) || 0;
     var targetRect = targetEl.getBoundingClientRect();
     var targetY = Math.max(0, Math.round(targetRect.top + startY - headerHeight));

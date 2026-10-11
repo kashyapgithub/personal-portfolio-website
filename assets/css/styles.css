@@ -51,7 +51,7 @@
   --radius-xl: 18px;
   --radius-pill: 9999px;
   --container: 1180px;
-  --header-h: 60px;
+  --header-h: 46px;
   --ease: cubic-bezier(0.23, 1, 0.32, 1);
   --tracking-tight: -0.03em;
 
@@ -251,7 +251,7 @@ body {
   align-items: center;
   list-style: none;
   gap: 2px;
-  padding: 4px;
+  padding: 2px;
   border-radius: 999px;
   overflow: hidden;
   /* Dark glass pill with Holi powder suspended inside it. The base is
@@ -451,9 +451,9 @@ body {
 .nav-link {
   display: inline-flex;
   align-items: center;
-  padding: 7px 16px;
+  padding: 4px 13px;
   border-radius: 999px;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: var(--fg);
   text-decoration: none;
