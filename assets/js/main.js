@@ -1244,10 +1244,15 @@
 
         // Flight telemetry (read via window.__geniePerf): per-frame deltas
         // expose stalls as gaps; longtasks name the blocker. Zero-cost idle.
+        // `slices` tracks the live per-frame count, `slicesMax` the peak the
+        // run actually reached (the count is now height-derived, so neither
+        // is knowable up front).
         var perf = null;
         var ltObs = null;
+        var peakSlices = N_MIN;
         try {
-          perf = { kind: isOpening ? "open" : "close", book: bookId, slices: N,
+          perf = { kind: isOpening ? "open" : "close", book: bookId,
+            slices: 0, slicesMax: N_MIN, sliceMaxAllowed: N_MAX,
             t0: Math.round(performance.now()), frames: [], tasks: [], marks: {} };
           window.__geniePerf = perf;
           if ("PerformanceObserver" in window) {
@@ -1264,6 +1269,7 @@
         function endPerf(total) {
           try {
             if (perf) {
+              perf.slicesMax = peakSlices;
               perf.marks.morphMs = Math.round(performance.now() - perf.t0);
               perf.total = total;
             }
@@ -1273,10 +1279,21 @@
 
         var duration = isOpening ? 520 : 400; // smooth macOS timing with ample frames
         var startTime = null;
-        // High slice density for continuous deformation contour:
+        // Slice density for a continuous deformation contour.
         var isLowEnd = (window.innerWidth < 640) ||
           ((navigator && navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4));
-        var N = isLowEnd ? 44 : 64;
+
+        // N_MAX is doubled from the previous 64/44. The budget is spent
+        // where it is actually visible: the sheet runs ~0px tall on the first
+        // frames and a full Mh by the second half, so a fixed count either
+        // oversamples the invisible opening or starves the visible landing.
+        // N_SLICE_PX targets a constant slice height in SCREEN pixels, and the
+        // per-frame count in step() is derived from the live sheet height --
+        // so the second half, where the panel is big and settling into its
+        // final contour, gets the full doubled budget automatically.
+        var N_MAX = isLowEnd ? 88 : 128;
+        var N_MIN = 16;                                        // never collapse the contour
+        var N_SLICE_PX = isLowEnd ? 8 : 5.5;                   // 700px tall -> full N_MAX
         // Pre-rendered soft flight shadow (one drawImage per frame — the
         // old 3x ctx.shadowBlur contour fills were the top jank source;
         // shadowBlur forces a software raster of the full contour).
@@ -1523,6 +1540,16 @@
             (Mtop + (Btop - Mtop) * (1 - topProg));
           var elevation = r;
 
+          // Slice budget for THIS frame, sized to the sheet's live height.
+          // Capped at snapH so the integer source bands still tile the
+          // snapshot exactly (no duplicated or dropped source rows).
+          var slices = Math.round(currentHeight / N_SLICE_PX);
+          if (slices < N_MIN) slices = N_MIN;
+          if (slices > N_MAX) slices = N_MAX;
+          if (slices > snapH) slices = snapH;
+          if (slices > peakSlices) peakSlices = slices;
+          if (perf) perf.slices = slices;
+
           clearCanvas();
 
           var leftPath = [];
@@ -1530,9 +1557,9 @@
           var sliceGeoms = [];
 
           // Precompute slices and exact contour paths
-          for (var i = 0; i < N; i++) {
-            var vty0 = i / N;
-            var vty1 = (i + 1) / N;
+          for (var i = 0; i < slices; i++) {
+            var vty0 = i / slices;
+            var vty1 = (i + 1) / slices;
 
             var s0 = getGeometry(topProg, botProg, wTop, wBot, vty0);
             var s1 = getGeometry(topProg, botProg, wTop, wBot, vty1);
@@ -1607,9 +1634,11 @@
             }
           }
 
-          // Draw the high-density horizontal slices (integer source rows
-          // avoid seam bleeding; low smoothing keeps blits on the fast path)
-          for (var s = 0; s < N; s++) {
+          // Draw the horizontal slices (integer source rows avoid seam
+          // bleeding; low smoothing keeps blits on the fast path).
+          // Driven by sliceGeoms.length, not a fixed count — the number is
+          // re-derived from the live sheet height every frame.
+          for (var s = 0; s < sliceGeoms.length; s++) {
             var g = sliceGeoms[s];
             ctx.drawImage(snapshot, 0, g.sy, snapW, g.sh, g.x, g.y0, g.w, g.dh);
           }
