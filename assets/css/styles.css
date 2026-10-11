@@ -3525,6 +3525,48 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 }
 
 /* -------------------------------------------------------------
+   SAND GRAIN
+
+   A matte, speckled finish over the whole tile. Inline SVG
+   feTurbulence (fractalNoise at high baseFrequency) gives genuine
+   per-pixel grain rather than a repeating dot pattern, and
+   stitchTiles makes it seamless so nothing reads as a grid.
+
+   Three details that matter:
+   - feColorMatrix saturate 0 desaturates it. Raw fractalNoise is RGB
+     noise and would speckle the card magenta and green.
+   - feComponentTransfer damps alpha to 16%. Sand should be felt, not
+     seen; at full alpha it reads as sensor noise, not grain.
+   - background-size/repeat are comma-matched per layer, so the noise
+     tiles at 140px while both demo radial gradients keep their own
+     geometry. A single background-size would have squashed them.
+
+   background-image only -- background-color stays #101014 / #141014
+   from the verbatim block, which this does not touch.
+
+   The two gradient pairs below are copied verbatim from that block.
+   If it is ever updated, these must move with it. Nothing else about
+   the demo styling is modified.
+   ------------------------------------------------------------- */
+[data-od-id="trust"] .trust-card {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.16'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(130% 100% at 0% 0%, rgba(30, 215, 96, 0.24), transparent 55%),
+    radial-gradient(120% 120% at 100% 100%, rgba(0, 113, 227, 0.22), transparent 55%);
+  background-size: 140px 140px, auto, auto;
+  background-repeat: repeat, no-repeat, no-repeat;
+}
+
+[data-od-id="trust"] .trust-card:nth-child(even) {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.16'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(130% 100% at 100% 0%, rgba(255, 162, 43, 0.24), transparent 55%),
+    radial-gradient(120% 120% at 0% 100%, rgba(150, 80, 255, 0.2), transparent 55%);
+  background-size: 140px 140px, auto, auto;
+  background-repeat: repeat, no-repeat, no-repeat;
+}
+
+/* -------------------------------------------------------------
    Base card rule -- MISSING from the earlier port.
 
    In the demo this is the rule that carries the `transition`. I only
