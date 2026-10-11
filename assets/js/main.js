@@ -1250,7 +1250,7 @@
         var perf = null;
         var ltObs = null;
         try {
-          perf = { kind: isOpening ? "open" : "close", book: bookId, slices: N,
+          perf = { kind: isOpening ? "open" : "close", book: bookId,
             t0: Math.round(performance.now()), frames: [], tasks: [], marks: {} };
           window.__geniePerf = perf;
           if ("PerformanceObserver" in window) {
@@ -1273,6 +1273,60 @@
             if (ltObs) ltObs.disconnect();
           } catch (e) { /* ignore */ }
         }
+
+        var restShadow = null;
+        var restPad = 64; // CSS px of blur spread around the panel
+        (function buildRestShadow() {
+          try {
+            var RS = 0.5; // half-scale backing: shadow is soft, needs no res
+            restShadow = document.createElement("canvas");
+            restShadow.width = Math.max(2, Math.round((Mw + restPad * 2) * RS));
+            restShadow.height = Math.max(2, Math.round((Mh + restPad * 2) * RS));
+            var rctx = restShadow.getContext("2d");
+            if (!rctx) { restShadow = null; return; }
+            rctx.scale(RS, RS);
+            var px = restPad, py = restPad;
+            var supportsBlur = (typeof rctx.filter === "string");
+            function shadowBlob(dx, dy, blurPx, color) {
+              if (supportsBlur) {
+                rctx.save();
+                rctx.filter = "blur(" + blurPx + "px)";
+                rctx.fillStyle = color;
+                rctx.beginPath();
+                drawRoundRect(rctx, px + dx, py + dy, Mw, Mh, 28);
+                rctx.fill();
+                rctx.restore();
+              } else {
+                rctx.save();
+                rctx.fillStyle = color;
+                for (var s = 4; s >= 1; s--) {
+                  rctx.globalAlpha = 0.22 / s;
+                  var grow = blurPx * (s / 4);
+                  rctx.beginPath();
+                  drawRoundRect(rctx, px + dx - grow, py + dy - grow,
+                    Mw + grow * 2, Mh + grow * 2, 28 + grow);
+                  rctx.fill();
+                }
+                rctx.restore();
+              }
+            }
+            shadowBlob(8, 8, 22, "rgba(150,162,184,0.22)");
+            (function ambientBlob() {
+              if (supportsBlur) {
+                rctx.save();
+                rctx.filter = "blur(48px)";
+                rctx.fillStyle = "rgba(15,23,42,0.12)";
+                rctx.beginPath();
+                drawRoundRect(rctx, px + 12, py + 24, Mw - 24, Mh - 24, 22);
+                rctx.fill();
+                rctx.restore();
+              } else {
+                shadowBlob(0, 24, 26, "rgba(15,23,42,0.30)");
+              }
+            })();
+            shadowBlob(-6, -6, 16, "rgba(255,255,255,0.4)");
+          } catch (e) { restShadow = null; }
+        })();
 
         var duration = isOpening ? 360 : 280; // snappy, smooth one-shot timing (ms)
         var startTime = null;
