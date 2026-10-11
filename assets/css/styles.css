@@ -2929,6 +2929,128 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 }
 
 /* ============================================================
+   Library case — walnut bookcase, brass plates, dark recess.
+   Books keep their front-facing covers; only the shelf dressing
+   changes.
+   ============================================================ */
+
+/* Reading-room plaster wall */
+.bookshelf-section {
+  background: #e9e3d6;
+  border-bottom: 1px solid rgba(120, 100, 70, 0.35);
+}
+
+/* The bookcase carcass: dark walnut, inner trim ring, top cornice,
+   bottom plinth, warm lamp glow from above */
+.bookshelf-stage.neumorphic-stage {
+  background:
+    linear-gradient(180deg, rgba(255, 222, 168, 0.10) 0%, rgba(255, 222, 168, 0) 24%),
+    repeating-linear-gradient(90deg, rgba(12, 6, 2, 0.20) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(90deg, rgba(255, 220, 170, 0.05) 0 1px, transparent 1px 7px),
+    linear-gradient(180deg, #4a2e17 0%, #3a2312 32%, #2b1a0d 72%, #221306 100%);
+  border: 1px solid #180d04;
+  border-radius: 14px;
+  box-shadow:
+    0 34px 64px -22px rgba(62, 36, 12, 0.6),
+    0 12px 28px rgba(62, 36, 12, 0.35),
+    inset 0 0 0 10px #2e1d0e,
+    inset 0 0 0 11px rgba(255, 220, 170, 0.16),
+    inset 0 26px 54px rgba(0, 0, 0, 0.5);
+}
+
+.bookshelf-stage.neumorphic-stage::before,
+.bookshelf-stage.neumorphic-stage::after {
+  content: "";
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bookshelf-stage.neumorphic-stage::before {
+  top: 13px;
+  height: 15px;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #6f4725 0%, #4a2e17 45%, #291808 100%);
+  border-top: 1px solid rgba(255, 226, 182, 0.4);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5);
+}
+
+.bookshelf-stage.neumorphic-stage::after {
+  bottom: 13px;
+  height: 22px;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #54341b 0%, #38220f 55%, #201205 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.6);
+  border-top: 1px solid rgba(255, 226, 182, 0.22);
+  box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.4);
+}
+
+.bookshelf-stage .shelf-neumorphic-ambient {
+  border-radius: 14px;
+  background: radial-gradient(ellipse 62% 42% at 50% 0%, rgba(255, 212, 148, 0.22) 0%, transparent 70%);
+}
+
+/* Brass shelf plates */
+.bookshelf-stage .shelf-level-header {
+  background: linear-gradient(180deg, #cfa855 0%, #a37c33 52%, #86611f 100%);
+  border: 1px solid #64491b;
+  border-radius: 5px;
+  padding: 5px 18px;
+  margin-bottom: 18px;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 242, 202, 0.65);
+}
+
+.bookshelf-stage .shelf-level-tag {
+  background: transparent;
+  box-shadow: none;
+  color: #2c1f07;
+  padding: 0;
+}
+
+.bookshelf-stage .shelf-level-title {
+  color: #33240a;
+}
+
+.bookshelf-stage .shelf-level-count {
+  color: rgba(51, 36, 10, 0.72);
+}
+
+/* Case sides: dark walnut */
+.bookshelf-stage .shelf-level::before,
+.bookshelf-stage .shelf-level::after {
+  background:
+    repeating-linear-gradient(90deg, rgba(12, 6, 2, 0.22) 0 2px, transparent 2px 7px),
+    linear-gradient(90deg, #39220f 0%, #4f2d17 50%, #39220f 100%);
+}
+
+.bookshelf-stage .shelf-level::before {
+  border-left: 2px solid #6f4725;
+}
+
+.bookshelf-stage .shelf-level::after {
+  border-right: 2px solid #6f4725;
+}
+
+/* Shelf recess: deep walnut interior behind the covers */
+.bookshelf-stage .shelf-books-row {
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.38) 0%, rgba(0, 0, 0, 0) 20%),
+    linear-gradient(180deg, rgba(255, 214, 150, 0.09) 0%, rgba(255, 214, 150, 0) 28%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.15) 0 2px, transparent 2px 11px),
+    linear-gradient(180deg, #30200f 0%, #231606 60%, #180e04 100%);
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  box-shadow:
+    inset 0 16px 32px rgba(0, 0, 0, 0.55),
+    inset 0 -3px 8px rgba(0, 0, 0, 0.5),
+    inset 12px 0 26px rgba(0, 0, 0, 0.4),
+    inset -12px 0 26px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================================
    Book Inspection Modal Dialog
    ============================================================ */
 /* ============================================================
