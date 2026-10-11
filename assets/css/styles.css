@@ -3447,6 +3447,18 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   margin: 0;
 }
 
+/* Icon-only tiles need explicit height now that the copy is gone: with a
+   44px icon and 2-2.75rem padding the card collapsed to roughly 130px.
+   The icon is centred vertically so the extra height reads as deliberate
+   rather than as dead space under a pinned icon. Layout only -- the
+   colour layer above is untouched. */
+[data-od-id="trust"] .trust-card {
+  min-height: clamp(190px, 20vw, 260px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-od-id="trust"] .trust-card:nth-child(odd):hover,
   [data-od-id="trust"] .trust-card:nth-child(even):hover {
