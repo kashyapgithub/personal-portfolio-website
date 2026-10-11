@@ -330,9 +330,123 @@
     var bookCards = document.querySelectorAll(".book-card");
     if (!overlay || !bookCards.length) return;
 
-    var CHAPTER_KEYS = ["genie", "mrp", "tui", "dryrun", "cred", "fyers", "imagine", "zomato", "cloud"];
+    // MUST stay in the same order as data-book-id in index.html: index() maps
+    // position -> key, and openChapter reverse-maps key -> index.
+    //   LEVEL 01: the four category volumes
+    //   LEVEL 02: the project volumes
+    // genie/mrp/tui/dryrun are deliberately absent — they are no longer
+    // standalone books; their writing is folded into the `development`
+    // volume. The CHAPTERS entries are kept so that text is not lost.
+    var CHAPTER_KEYS = ["design", "development", "opensource", "education", "cred", "fyers", "imagine", "zomato", "cloud"];
 
     var CHAPTERS = {
+      // ================================================================
+      // LEVEL 01 — CATEGORY VOLUMES
+      // Each replaces a row of former project books. The genie/mrp/tui/
+      // dryrun entries below are retained verbatim so their writing is
+      // preserved; they now live inside the `development` volume.
+      // ================================================================
+      design: {
+        id: "design",
+        chapterNum: "01",
+        category: "VOLUME 01 · DESIGN PORTFOLIO",
+        title: "My Design Works",
+        tagline: "Product design, interface systems and the thinking behind them.",
+        era: "2019 – 2026 · IMAGINE PLANET & PARTNERSHIPS",
+        quote: "“Design is not what you add at the end. It is the argument you make at the start.”",
+        metrics: [
+          { label: "Discipline", val: "Product · UI/UX" },
+          { label: "Systems", val: "Design Systems" },
+          { label: "Focus", val: "Fintech · Commerce" },
+          { label: "Approach", val: "Research → Ship" }
+        ],
+        tags: ["Product Design", "UI/UX", "Design Systems", "User Research", "Prototyping", "Fintech", "Commerce"],
+        narrative: [
+          "My design practice sits where product thinking meets interface craft. I work end to end — framing the problem with research, sketching the system, and carrying it through to a shipped, measurable interface.",
+          "The work below spans consumer fintech, quick commerce, and long-running product studios. Across all of it the method is consistent: understand the real constraint, design the system rather than the screen, and treat visual polish as a consequence of clarity rather than a substitute for it."
+        ],
+        highlights: [
+          "Life Matrix for CRED — a behavioural UX concept taken to top leadership review.",
+          "Candle Signals for FYERS — a campaign concept built around trading psychology.",
+          "Imagine Planet — a product studio shipping fintech and consumer interfaces.",
+          "Partner Safety UX for Zomato & Blinkit — a teardown of logistics-side safety experience."
+        ]
+      },
+      development: {
+        id: "development",
+        chapterNum: "02",
+        category: "VOLUME 02 · ENGINEERING",
+        title: "My Development Works",
+        tagline: "Low-latency engines, realtime infrastructure and tooling built to hold up under load.",
+        era: "2021 – 2026 · SYSTEMS & PLATFORM",
+        quote: "“Correctness is table stakes. The difference is what the system does when everything is on fire.”",
+        metrics: [
+          { label: "Latency", val: "12–100 μs" },
+          { label: "Stack", val: "C++ · Cloud · Android" },
+          { label: "Reliability", val: "Multi-Layered" },
+          { label: "Methodology", val: "AI-Assisted" }
+        ],
+        tags: ["Backend", "Low Latency", "Realtime Systems", "Cloud", "Android", "Simulation", "Observability"],
+        narrative: [
+          "Most of my engineering has been spent on systems where being fast and being right are the same requirement: order execution, risk containment, streaming telemetry, and the simulation harnesses that prove the first two behave before real capital is at stake.",
+          "These were built with AI coding agents under my direction. That changed the economics rather than the standard — I could hold more systems in my head at once, but the architecture, the failure modes, and the review of every generated change stayed mine."
+        ],
+        highlights: [
+          "Genie 2.0 — alpha generation engine running 12–100 μs on co-located AWS Mumbai infrastructure.",
+          "Manage Risk Pro 1.3 — multi-layered automated circuit breakers for tail-risk containment.",
+          "AWS Live TUI — streaming server telemetry for observability in dark infrastructure.",
+          "Dry Run Engine — deterministic pre-flight simulation with zero-slip verification."
+        ]
+      },
+      opensource: {
+        id: "opensource",
+        chapterNum: "03",
+        category: "VOLUME 03 · PUBLIC REPOSITORIES",
+        title: "My Open Source Works",
+        tagline: "Public repositories and shared tooling — in preparation.",
+        era: "IN PREPARATION · GITHUB",
+        quote: "“Software you publish is software you have to maintain in public. That is the point.”",
+        metrics: [
+          { label: "Status", val: "In Preparation" },
+          { label: "Hosting", val: "GitHub" },
+          { label: "Focus", val: "Reusable Tooling" },
+          { label: "License", val: "To Be Declared" }
+        ],
+        tags: ["Open Source", "GitHub", "Tooling", "Coming Soon"],
+        narrative: [
+          "This volume is being prepared. The intent is to publish the parts of my engineering work that stand on their own — the simulation harness, the low-latency instrumentation, and the small utilities that grew out of building the systems in the previous volume.",
+          "Anything published here will be documented well enough to be useful to someone who has never seen the original project, and maintained rather than abandoned."
+        ],
+        highlights: [
+          "Nothing published yet — this volume opens as work lands.",
+          "Repositories will link back to the originating case study where one exists."
+        ]
+      },
+      education: {
+        id: "education",
+        chapterNum: "04",
+        category: "VOLUME 04 · CREDENTIALS",
+        title: "Education",
+        tagline: "Academic record, continuous study, and the work that came out of leadership review.",
+        era: "2015 – 2026 · ACADEMIC & LEADERSHIP RECORD",
+        quote: "“Education is not the credential you hold. It is the habit of not stopping.”",
+        metrics: [
+          { label: "Focus", val: "Computer Science" },
+          { label: "Practice", val: "Continuous" },
+          { label: "Review", val: "CRED Leadership" },
+          { label: "Applied", val: "Fintech UX" }
+        ],
+        tags: ["Credentials", "Continuous Learning", "Fintech", "Leadership Review", "Applied Research"],
+        narrative: [
+          "My academic record sits underneath everything in the previous volumes: the systems thinking behind the engines, and the design reasoning behind the interfaces. Study has not stopped at the credential — the most useful part of it has been applied work under review.",
+          "The clearest example is the CRED Life Matrix concept, which reached top leadership review. That was not a classroom exercise: it was a design and behavioural problem put in front of people who decide what ships at scale, and it changed how I think about presenting an idea to a room that can say no."
+        ],
+        highlights: [
+          "Life Matrix for CRED — behavioural UX concept taken to top leadership review.",
+          "Foundations in computer science applied directly to low-latency and realtime systems work.",
+          "Continuous study: every credential here is applied to work in this portfolio."
+        ]
+      },
       genie: {
         id: "genie",
         chapterNum: "01",
@@ -683,6 +797,12 @@
       var isAnimating = false;
 
       var THEME_COLORS = {
+        // LEVEL 01 — category volumes (must mirror .book-card--* in styles.css)
+        design: { bg1: "#2a0f3d", bg2: "#43206b", accent: "#c084fc" },
+        development: { bg1: "#04231d", bg2: "#0b4437", accent: "#34d399" },
+        opensource: { bg1: "#14171c", bg2: "#23272e", accent: "#f0f6fc" },
+        education: { bg1: "#2b1c06", bg2: "#4d360f", accent: "#fbbf24" },
+        // LEVEL 02 — project volumes
         genie: { bg1: "#061917", bg2: "#0c332e", accent: "#00d4c8" },
         mrp: { bg1: "#240b12", bg2: "#3e121d", accent: "#f43f5e" },
         tui: { bg1: "#211606", bg2: "#3a270d", accent: "#ffa42b" },

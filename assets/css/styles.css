@@ -2496,6 +2496,49 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 }
 
 /* ---------------- Individual Book Themes ---------------- */
+
+/* ===== LEVEL 01 · Category volumes ===== */
+
+/* V1. My Design Works — violet, reads as the creative volume */
+.book-card--design {
+  --book-bg: linear-gradient(145deg, #2a0f3d 0%, #43206b 50%, #1a0a26 100%);
+  --book-border: rgba(192, 132, 252, 0.28);
+  --book-accent: #c084fc;
+  --book-accent-soft: rgba(192, 132, 252, 0.15);
+  --book-glow: rgba(192, 132, 252, 0.34);
+}
+
+/* V2. My Development Works — emerald, the "systems/code" volume */
+.book-card--development {
+  --book-bg: linear-gradient(145deg, #04231d 0%, #0b4437 50%, #031713 100%);
+  --book-border: rgba(52, 211, 153, 0.28);
+  --book-accent: #34d399;
+  --book-accent-soft: rgba(52, 211, 153, 0.15);
+  --book-glow: rgba(52, 211, 153, 0.34);
+}
+
+/* V3. My Open Source Works — GitHub neutral. The Octocat glyph is a SOLID
+   fill, not a stroke like the others, so the accent has to be light enough
+   to read against the near-black plate. */
+.book-card--opensource {
+  --book-bg: linear-gradient(145deg, #14171c 0%, #23272e 50%, #0d0f12 100%);
+  --book-border: rgba(240, 246, 252, 0.26);
+  --book-accent: #f0f6fc;
+  --book-accent-soft: rgba(240, 246, 252, 0.14);
+  --book-glow: rgba(240, 246, 252, 0.3);
+}
+
+/* V4. Education — amber/gold, academic */
+.book-card--education {
+  --book-bg: linear-gradient(145deg, #2b1c06 0%, #4d360f 50%, #1a1105 100%);
+  --book-border: rgba(251, 191, 36, 0.28);
+  --book-accent: #fbbf24;
+  --book-accent-soft: rgba(251, 191, 36, 0.15);
+  --book-glow: rgba(251, 191, 36, 0.34);
+}
+
+/* ===== LEVEL 02 · Project volumes (unchanged) ===== */
+
 /* 1. Genie 2.0 */
 .book-card--genie {
   --book-bg: linear-gradient(145deg, #061917 0%, #0c332e 50%, #061715 100%);
