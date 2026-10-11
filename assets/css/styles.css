@@ -254,109 +254,142 @@ body {
   padding: 4px;
   border-radius: 999px;
   overflow: hidden;
-  /* Holi gulal flow. Full-pigment powder palette painted at 300% width
-     and swept end to end, so pink, yellow, green, blue collide and
-     separate like thrown colour. Short 8s loop + alternate keeps it
-     playful without snapping. */
+  /* Dark glass pill with Holi powder suspended inside it. The base is
+     near-black glass; the colours are translucent washes (never opaque
+     pigment), so the pill stays dim and the powder reads as dye in
+     water rather than neon paint. Slow 14s drift keeps it calm. */
+  background-color: rgba(10, 12, 20, 0.62);
   background-image:
+    radial-gradient(60% 140% at 8% 50%, rgba(255, 46, 136, 0.30), transparent 70%),
+    radial-gradient(55% 140% at 32% 50%, rgba(255, 154, 0, 0.26), transparent 70%),
+    radial-gradient(55% 140% at 52% 50%, rgba(255, 217, 26, 0.20), transparent 70%),
+    radial-gradient(55% 140% at 70% 50%, rgba(46, 224, 107, 0.24), transparent 70%),
+    radial-gradient(60% 140% at 90% 50%, rgba(46, 155, 255, 0.30), transparent 70%),
     linear-gradient(100deg,
-      #ff2e88 0%,
-      #ff7a00 16%,
-      #ffd91a 32%,
-      #2ee06b 48%,
-      #2e9bff 64%,
-      #9b30ff 80%,
-      #ff2e88 100%);
-  background-size: 300% 100%;
-  background-position: 0% 50%;
+      rgba(155, 48, 255, 0.16),
+      rgba(46, 155, 255, 0.10) 40%,
+      rgba(46, 224, 107, 0.08) 60%,
+      rgba(255, 46, 136, 0.16));
+  background-size: 220% 120%, 220% 120%, 220% 120%, 220% 120%, 220% 120%, 260% 100%;
+  background-position: 0% 50%, 20% 50%, 40% 50%, 60% 50%, 80% 50%, 0% 50%;
   animation:
-    capsule-flow 8s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate,
-    holi-glow 6s ease-in-out infinite alternate;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+    capsule-flow 14s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate,
+    holi-glow 9s ease-in-out infinite alternate;
+  border: 1px solid rgba(255, 255, 255, 0.16);
   box-shadow:
-    0 8px 24px -8px rgba(255, 46, 136, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+    0 8px 24px -10px rgba(0, 0, 0, 0.7),
+    0 0 18px -6px rgba(155, 48, 255, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35);
   transition: transform 0.25s ease, border-color 0.25s ease;
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(160%) blur(22px);
+  backdrop-filter: saturate(160%) blur(22px);
 }
 
+/* All six layers drift together like one liquid mass. */
 @keyframes capsule-flow {
-  from { background-position: 0% 50%; }
-  to   { background-position: 100% 50%; }
+  from {
+    background-position: 0% 50%, 20% 50%, 40% 50%, 60% 50%, 80% 50%, 0% 50%;
+  }
+  to {
+    background-position: 100% 50%, 80% 50%, 60% 50%, 40% 50%, 20% 50%, 100% 50%;
+  }
 }
 
-/* Glow colour follows the powder: pink -> gold -> green -> blue. */
+/* Dim breathing glow. Never above 0.3 alpha so it never glares. */
 @keyframes holi-glow {
   0% {
     box-shadow:
-      0 8px 26px -8px rgba(255, 46, 136, 0.65),
-      inset 0 1px 0 rgba(255, 255, 255, 0.45),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+      0 8px 24px -10px rgba(0, 0, 0, 0.7),
+      0 0 18px -6px rgba(255, 46, 136, 0.30),
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.35);
   }
   35% {
     box-shadow:
-      0 8px 26px -8px rgba(255, 217, 26, 0.6),
-      inset 0 1px 0 rgba(255, 255, 255, 0.45),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+      0 8px 24px -10px rgba(0, 0, 0, 0.7),
+      0 0 18px -6px rgba(255, 217, 26, 0.24),
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.35);
   }
   70% {
     box-shadow:
-      0 8px 26px -8px rgba(46, 224, 107, 0.6),
-      inset 0 1px 0 rgba(255, 255, 255, 0.45),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+      0 8px 24px -10px rgba(0, 0, 0, 0.7),
+      0 0 18px -6px rgba(46, 224, 107, 0.26),
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.35);
   }
   100% {
     box-shadow:
-      0 8px 26px -8px rgba(46, 155, 255, 0.65),
-      inset 0 1px 0 rgba(255, 255, 255, 0.45),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+      0 8px 24px -10px rgba(0, 0, 0, 0.7),
+      0 0 18px -6px rgba(46, 155, 255, 0.30),
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.35);
   }
 }
 
-/* Travelling powder sheen, one pass behind the links. Faster and
-   brighter than before so it reads as a colour throw, not a glint. */
+/* Liquid glass highlight: a soft top-edge light plus one slow dim
+   specular pass. Both sit low so the pill reads wet, not lit. */
 .nav-capsule::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background-image: linear-gradient(100deg,
-    transparent 30%,
-    rgba(255, 255, 255, 0.35) 46%,
-    rgba(255, 255, 217, 0.28) 54%,
-    transparent 70%);
-  background-size: 220% 100%;
-  background-position: 150% 0;
-  animation: capsule-sheen 3.8s ease-in-out infinite;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 42%),
+    linear-gradient(100deg,
+      transparent 32%,
+      rgba(255, 255, 255, 0.12) 50%,
+      transparent 68%);
+  background-size: 100% 100%, 220% 100%;
+  background-position: 0 0, 150% 0;
+  animation: capsule-sheen 6.5s ease-in-out infinite;
 }
 
 @keyframes capsule-sheen {
-  from { background-position: 150% 0; }
-  to   { background-position: -60% 0; }
+  from { background-position: 0 0, 150% 0; }
+  to   { background-position: 0 0, -60% 0; }
 }
 
-/* Lift the links above the sheen so the highlight never washes the text. */
+/* Powder grain + splash speckle over everything, under the links.
+   feTurbulence fractalNoise at low alpha: matte gulal dust, not dirt.
+   radial-gradient dots at 7px tile: sparse thrown specks. */
+.nav-capsule::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.10'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(rgba(255, 255, 255, 0.20) 0.8px, transparent 1.2px),
+    radial-gradient(rgba(255, 217, 26, 0.20) 0.8px, transparent 1.2px),
+    radial-gradient(rgba(255, 46, 136, 0.20) 0.8px, transparent 1.2px);
+  background-size: 120px 120px, 26px 26px, 34px 34px, 42px 42px;
+  background-position: 0 0, 4px 8px, 12px 3px, 7px 14px;
+  opacity: 0.55;
+  mix-blend-mode: screen;
+}
+
+/* Links sit above grain, splash and sheen so text stays crisp. */
 .nav-capsule > li {
   position: relative;
   z-index: 1;
 }
 
-/* Hover: full energy. Flow + glow both quicken, pill lifts. */
+/* Hover: gentle lift only. No speed-up, no brightening. */
 .nav-capsule:hover {
-  animation-duration: 4s, 3s;
-  transform: translateY(-1px) scale(1.02);
-  border-color: rgba(255, 255, 255, 0.55);
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.28);
 }
 
-/* Each link splashes its own gulal colour on hover. */
-.nav-capsule > li:nth-child(1) .nav-link:hover { background: rgba(255, 46, 136, 0.85); }
-.nav-capsule > li:nth-child(2) .nav-link:hover { background: rgba(255, 154, 0, 0.88); }
-.nav-capsule > li:nth-child(3) .nav-link:hover { background: rgba(46, 155, 255, 0.88); }
-.nav-capsule > li:nth-child(4) .nav-link:hover { background: rgba(46, 224, 107, 0.85); }
-.nav-capsule > li:nth-child(5) .nav-link:hover { background: rgba(155, 48, 255, 0.88); }
+/* Each link tints dim gulal on hover -- readable, never neon. */
+.nav-capsule > li:nth-child(1) .nav-link:hover { background: rgba(255, 46, 136, 0.30); }
+.nav-capsule > li:nth-child(2) .nav-link:hover { background: rgba(255, 154, 0, 0.30); }
+.nav-capsule > li:nth-child(3) .nav-link:hover { background: rgba(46, 155, 255, 0.32); }
+.nav-capsule > li:nth-child(4) .nav-link:hover { background: rgba(46, 224, 107, 0.30); }
+.nav-capsule > li:nth-child(5) .nav-link:hover { background: rgba(155, 48, 255, 0.34); }
 
 @media (prefers-reduced-motion: reduce) {
   .nav-capsule,
@@ -364,10 +397,11 @@ body {
     animation: none;
   }
   .nav-capsule {
-    background-position: 30% 50%;
+    background-position: 30% 50%, 35% 50%, 42% 50%, 55% 50%, 65% 50%, 30% 50%;
   }
-  .nav-capsule::before {
-    background-position: 50% 0;
+  .nav-capsule::before,
+  .nav-capsule::after {
+    background-position: 0 0, 50% 0;
   }
 }
 
