@@ -123,8 +123,8 @@
       [0.82, "rgba(10,15,30,0.028)"],
       [1.00, "rgba(10,15,30,0)"]
     ]);
-    // Layer 2: directional penumbra (offset +x: key light is top-left)
-    paintEllipticalGlow(contactSprite, 268, 80, 172, 0.3125, [
+    // Layer 2: symmetric penumbra — overhead key, no directional offset
+    paintEllipticalGlow(contactSprite, 256, 80, 172, 0.3125, [
       [0.00, "rgba(7,11,24,0.58)"],
       [0.40, "rgba(7,11,24,0.42)"],
       [0.65, "rgba(7,11,24,0.22)"],
@@ -1373,9 +1373,9 @@
     lastFrameNow = (now !== undefined) ? now : lastFrameNow;
     var contact = smoothContact; // 1 = grounded, 0 = high airborne
 
-    // Directional offset: key light sits top-left, so the shadow falls
-    // slightly right; yaw lean drags it a touch for physicality.
-    var shadowX = cx + R * 0.075 + yaw * R * 0.10;
+    // Overhead key: the shadow drops straight beneath the sphere,
+    // breathing microscopically with the rig sway. No side offset.
+    var shadowX = cx + (spotX - cx) * 0.3;
     var cScale = 1.26 - 0.34 * contact;          // wider when high
     var cAlpha = 0.38 + 0.62 * contact;          // fainter when high
     var squashX = (scaleX || 1), squashY = (scaleY || 1);
