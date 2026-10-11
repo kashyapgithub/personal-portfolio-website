@@ -2537,13 +2537,51 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   --book-glow: rgba(240, 246, 252, 0.3);
 }
 
-/* V4. Education — amber/gold, academic */
+/* ===== LEVEL 02 · Record volumes ===== */
+
+/* V5. Education — amber/gold, academic */
 .book-card--education {
   --book-bg: linear-gradient(145deg, #2b1c06 0%, #4d360f 50%, #1a1105 100%);
   --book-border: rgba(251, 191, 36, 0.28);
   --book-accent: #fbbf24;
   --book-accent-soft: rgba(251, 191, 36, 0.15);
   --book-glow: rgba(251, 191, 36, 0.34);
+}
+
+/* V6. Work Experience — sky, professional */
+.book-card--experience {
+  --book-bg: linear-gradient(145deg, #04212e 0%, #0a3d54 50%, #03151f 100%);
+  --book-border: rgba(56, 189, 248, 0.28);
+  --book-accent: #38bdf8;
+  --book-accent-soft: rgba(56, 189, 248, 0.15);
+  --book-glow: rgba(56, 189, 248, 0.34);
+}
+
+/* V7. Marketing & Ad — rose */
+.book-card--marketing {
+  --book-bg: linear-gradient(145deg, #3a0a1a 0%, #63152c 50%, #22040f 100%);
+  --book-border: rgba(251, 113, 133, 0.28);
+  --book-accent: #fb7185;
+  --book-accent-soft: rgba(251, 113, 133, 0.15);
+  --book-glow: rgba(251, 113, 133, 0.34);
+}
+
+/* V8. Tech Stack — slate, deliberately neutral */
+.book-card--tools {
+  --book-bg: linear-gradient(145deg, #161c24 0%, #2a333f 50%, #0f1319 100%);
+  --book-border: rgba(148, 163, 184, 0.28);
+  --book-accent: #94a3b8;
+  --book-accent-soft: rgba(148, 163, 184, 0.15);
+  --book-glow: rgba(148, 163, 184, 0.32);
+}
+
+/* V9. AI-Focused Work — orange */
+.book-card--ai {
+  --book-bg: linear-gradient(145deg, #331205 0%, #5c2408 50%, #1e0b03 100%);
+  --book-border: rgba(249, 115, 22, 0.28);
+  --book-accent: #f97316;
+  --book-accent-soft: rgba(249, 115, 22, 0.15);
+  --book-glow: rgba(249, 115, 22, 0.34);
 }
 
 /* ===== LEVEL 02 · Project volumes (unchanged) ===== */

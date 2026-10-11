@@ -333,11 +333,12 @@
     // MUST stay in the same order as data-book-id in index.html: index() maps
     // position -> key, and openChapter reverse-maps key -> index.
     //   LEVEL 01: product, design, development, opensource
-    //   LEVEL 02: education, fyers, imagine, zomato, cloud
-    // genie/mrp/tui/dryrun/cred are deliberately absent — they are no longer
-    // standalone books; their writing is folded into the `development` and
-    // `education` volumes. The CHAPTERS entries are kept so text is not lost.
-    var CHAPTER_KEYS = ["product", "design", "development", "opensource", "education", "fyers", "imagine", "zomato", "cloud"];
+    //   LEVEL 02: education, experience, marketing, tools, ai
+    // genie/mrp/tui/dryrun/cred/fyers/imagine/zomato/cloud are deliberately
+    // absent — they are no longer standalone books; their writing is folded
+    // into the category volumes. The CHAPTERS entries are kept so that none
+    // of that text is lost and any of it can be restored later.
+    var CHAPTER_KEYS = ["product", "design", "development", "opensource", "education", "experience", "marketing", "tools", "ai"];
 
     var CHAPTERS = {
       // ================================================================
@@ -376,7 +377,7 @@
       design: {
         id: "design",
         chapterNum: "02",
-        category: "VOLUME 01 · DESIGN PORTFOLIO",
+        category: "VOLUME 02 · DESIGN PORTFOLIO",
         title: "My Design Works",
         tagline: "Product design, interface systems and the thinking behind them.",
         era: "2019 – 2026 · IMAGINE PLANET & PARTNERSHIPS",
@@ -402,7 +403,7 @@
       development: {
         id: "development",
         chapterNum: "03",
-        category: "VOLUME 02 · ENGINEERING",
+        category: "VOLUME 03 · ENGINEERING",
         title: "My Development Works",
         tagline: "Low-latency engines, realtime infrastructure and tooling built to hold up under load.",
         era: "2021 – 2026 · SYSTEMS & PLATFORM",
@@ -428,7 +429,7 @@
       opensource: {
         id: "opensource",
         chapterNum: "04",
-        category: "VOLUME 03 · PUBLIC REPOSITORIES",
+        category: "VOLUME 04 · PUBLIC REPOSITORIES",
         title: "My Open Source Works",
         tagline: "Public repositories and shared tooling — in preparation.",
         era: "IN PREPARATION · GITHUB",
@@ -452,7 +453,7 @@
       education: {
         id: "education",
         chapterNum: "05",
-        category: "VOLUME 04 · CREDENTIALS",
+        category: "VOLUME 05 · CREDENTIALS",
         title: "Education",
         tagline: "Academic record, continuous study, and the work that came out of leadership review.",
         era: "2015 – 2026 · ACADEMIC & LEADERSHIP RECORD",
@@ -472,6 +473,117 @@
           "Life Matrix for CRED — behavioural UX concept taken to top leadership review.",
           "Foundations in computer science applied directly to low-latency and realtime systems work.",
           "Continuous study: every credential here is applied to work in this portfolio."
+        ]
+      },
+// ================================================================
+      // LEVEL 02 — RECORD VOLUMES
+      // Replace the former project books (fyers/imagine/zomato/cloud).
+      // Their CHAPTERS entries are retained below so no writing is lost.
+      // ================================================================
+      experience: {
+        id: "experience",
+        chapterNum: "06",
+        category: "VOLUME 06 · PROFESSIONAL RECORD",
+        title: "Work Experience",
+        tagline: "Five years inside a stealth quantitative fund, and four and a half running an independent studio.",
+        era: "2021 – 2026 · B. SINGULARITY & IMAGINE PLANET",
+        quote: "“Most of what I know about building systems that matter, I learned from systems that were already on fire.”",
+        metrics: [
+          { label: "B. Singularity", val: "5 Years" },
+          { label: "Imagine Planet", val: "4 Years 9 Mos" },
+          { label: "Domain", val: "Fintech · HFT" },
+          { label: "Role", val: "Systems & Product" }
+        ],
+        tags: ["Stealth Fund", "Low Latency", "Risk Systems", "Observability", "Simulation", "Founder", "Studio"],
+        narrative: [
+          "I spent five years building core systems at B. Singularity, a stealth quantitative hedge fund. Speed was not a vanity metric there — it was the entire reason the firm existed. Markets do not wait for human reflexes, so the work was about making order evaluation, risk containment and execution fast enough to matter and disciplined enough to survive a crash.",
+          "Genie 2.0 was the flagship: an alpha generation engine running 12–100 microseconds on co-located AWS Mumbai infrastructure. Around it sat Manage Risk Pro, a multi-layer circuit-breaker system built after watching tail risk collapse other strategies; the AWS Live TUI for streaming telemetry when dark infrastructure goes wrong; and the Dry Run Engine, a deterministic pre-flight simulation that proved a strategy behaved before real capital was at stake.",
+          "In parallel I founded Imagine Planet Design in January 2021 and ran it for four years and nine months as an independent product studio — shipping software products, high-density backend dashboards and brand systems for fintech founders, including work appreciated by teams at CRED and FYERS. Singularity Cloud, the native Android companion that carried execution telemetry into my pocket, came out of that same stretch."
+        ],
+        highlights: [
+          "Five years at B. Singularity building low-latency execution and risk infrastructure for external hedge fund clients.",
+          "Genie 2.0 — 12–100 μs order execution on co-located AWS Mumbai nodes.",
+          "Manage Risk Pro 1.3, AWS Live TUI and the Dry Run Engine, covering risk, observability and pre-flight verification.",
+          "Founded and ran Imagine Planet Design for 4 years 9 months as an independent product studio."
+        ]
+      },
+      marketing: {
+        id: "marketing",
+        chapterNum: "07",
+        category: "VOLUME 07 · BRAND & CAMPAIGN",
+        title: "Marketing & Ad Work",
+        tagline: "Brand, campaign, and the copywriting that makes a product feel like something people already want.",
+        era: "2021 – 2026 · BRAND STORYTELLING",
+        quote: "“Advertising does not win attention. It wins the hour after the customer walks away from the screen.”",
+        metrics: [
+          { label: "Approach", val: "Ambient & OOH" },
+          { label: "Focus", val: "Emotional Truth" },
+          { label: "Recognition", val: "Founder Endorsed" },
+          { label: "Also", val: "Brand & Copywriting" }
+        ],
+        tags: ["Campaign Concept", "Out of Home", "Brand Identity", "Copywriting", "Trading Culture", "Storytelling"],
+        narrative: [
+          "The strongest marketing work I have done came from noticing something true rather than reaching for a format. Candlestick charts do not stay on screens — the green and red linger in a trader's head long after the 3:30 bell. That observation became the FYERS Candle Signals campaign: minimalist candle silhouettes placed outside busy evening supermarkets, where professionals unwind after work.",
+          "The concept was liked and publicly praised by the founder of FYERS. More valuable than the recognition was the lesson — reading your audience's emotional reality beats generic corporate advertising almost every time.",
+          "The same instinct runs through the studio work: brand narratives, copywriting and campaign storytelling for fintech founders, where the product may be dense but the story still has to land in one line."
+        ],
+        highlights: [
+          "Conceived and designed the FYERS Candle Signals ambient out-of-home campaign for evening supermarkets.",
+          "Personally liked and praised by the founder of FYERS on social media.",
+          "Brand identity, narrative and copywriting delivered through the Imagine Planet studio practice."
+        ]
+      },
+      tools: {
+        id: "tools",
+        chapterNum: "08",
+        category: "VOLUME 08 · DAILY TOOLKIT",
+        title: "Everyday Tech Stack",
+        tagline: "The tools I actually use, day in and day out.",
+        era: "TO BE COMPLETED",
+        quote: "“A tool you have not opened in a month is not part of your stack. It is part of your history.”",
+        metrics: [
+          { label: "Editor / IDE", val: "— to fill —" },
+          { label: "Terminal", val: "— to fill —" },
+          { label: "Version Control", val: "— to fill —" },
+          { label: "AI Tooling", val: "— to fill —" }
+        ],
+        tags: ["Tooling", "Workflow", "Productivity", "To Be Completed"],
+        narrative: [
+          "This volume is a scaffold. The categories below are the ones worth listing for someone who builds and designs at the same time — the rest of this portfolio is full of systems, interfaces and campaigns, and this is the honest answer to what runs underneath all of it.",
+          "Replace each placeholder with the tools you actually use. A list of tools you no longer open is worse than no list at all."
+        ],
+        highlights: [
+          "Editor / IDE — to fill in.",
+          "Terminal and shell — to fill in.",
+          "Version control and collaboration — to fill in.",
+          "Cloud, design and AI tooling — to fill in."
+        ]
+      },
+      ai: {
+        id: "ai",
+        chapterNum: "09",
+        category: "VOLUME 09 · APPLIED AI",
+        title: "AI-Focused Work",
+        tagline: "Using agentic AI to build systems where a human still owns the architecture and every hard call.",
+        era: "2021 – 2026 · AI-ASSISTED ENGINEERING",
+        quote: "“The point was never to let the model decide. It was to stop being the bottleneck on the parts that are not the decision.”",
+        metrics: [
+          { label: "Method", val: "Agentic AI + C++" },
+          { label: "Applied To", val: "Trading & Risk" },
+          { label: "Autonomy", val: "Engine-Level" },
+          { label: "Ownership", val: "Human Architectural" }
+        ],
+        tags: ["Agentic AI", "AI-Assisted Development", "Autonomous Systems", "LLM Workflow", "Architecture", "C++"],
+        narrative: [
+          "Genie 2.0 was developed with autonomous AI agents under my direction, and that is where this practice started rather than where it became a talking point. The economics changed immediately: I could hold more systems in context at once, iterate faster, and keep a much larger surface area under active development.",
+          "The discipline is what matters. Architecture, failure modes, the risk model and the review of every generated change stayed human. An engine that fires orders into a live market is exactly the place where being confidently wrong is expensive, so the AI did the work and I kept the decisions.",
+          "The same approach carries into risk work — Manage Risk Pro included AI-assisted risk management guidance for external hedge fund clients, and the Dry Run Engine exists precisely so that autonomous behaviour can be verified before it is trusted with anything real."
+        ],
+        highlights: [
+          "Pioneered AI-assisted low-latency algorithmic development, driving order turnaround down to 12–100 microseconds.",
+          "Built and directed autonomous agentic workflows across C++ execution infrastructure.",
+          "AI-assisted risk management guidance delivered to external hedge fund clients.",
+          "Designed verification-first pipelines so autonomous systems can be proven before deployment."
         ]
       },
       genie: {
@@ -829,7 +941,12 @@
         design: { bg1: "#2a0f3d", bg2: "#43206b", accent: "#c084fc" },
         development: { bg1: "#04231d", bg2: "#0b4437", accent: "#34d399" },
         opensource: { bg1: "#14171c", bg2: "#23272e", accent: "#f0f6fc" },
+        // LEVEL 02 — record volumes
         education: { bg1: "#2b1c06", bg2: "#4d360f", accent: "#fbbf24" },
+        experience: { bg1: "#04212e", bg2: "#0a3d54", accent: "#38bdf8" },
+        marketing: { bg1: "#3a0a1a", bg2: "#63152c", accent: "#fb7185" },
+        tools: { bg1: "#161c24", bg2: "#2a333f", accent: "#94a3b8" },
+        ai: { bg1: "#331205", bg2: "#5c2408", accent: "#f97316" },
         // LEVEL 02 — project volumes
         genie: { bg1: "#061917", bg2: "#0c332e", accent: "#00d4c8" },
         mrp: { bg1: "#240b12", bg2: "#3e121d", accent: "#f43f5e" },
