@@ -1228,9 +1228,6 @@
         var Btop = (bookRect && bookRect.top) ? bookRect.top : (window.innerHeight - Bh - 60);
         var Bcx = (bookRect && bookRect.left) ? (bookRect.left + bookRect.width / 2) : (window.innerWidth / 2);
 
-        // Maximum chimney height connecting modal top down to shelf volume
-        var Hchimney = Math.max(Mh + 40, Btop - Mtop);
-
         // Morph texture: pixel-true DOM raster when available, painted
         // approximation as fallback (also used for closing from a scrolled
         // modal, where live scroll offset can't be serialized).
@@ -1395,29 +1392,75 @@
           return x * x * (3 - 2 * x);
         }
 
-        // Trumpet "chimney" headroom, added to the panel height only while it
-        // is in flight. Capped at a quarter of Mh so that
-        // d(height)/d(reveal) = Mh + NECK*PI*cos(PI*reveal) stays strictly
-        // positive (>= 0.21*Mh): the panel is GUARANTEED never to grow taller
-        // than the rect it lands into, and never to have to retract.
-        var NECK = Math.min(Mh * 0.25, Math.max(0, (Hchimney - Mh) * 0.5));
+        // -------------------------------------------------------------
+        // GENIE SPINE
+        //
+        // The sheet is drawn from two INDEPENDENT edge travels, each a plain
+        // lerp between its book position and its modal position:
+        //
+        //   topY = Mtop + (Btop - Mtop) * (1 - topProg)
+        //   botY = Btop + ((Mtop + Mh) - Btop) * botProg
+        //
+        // Both hit their endpoints exactly at r=1, so the final frame is
+        // exactly the modal rect by construction. Nothing is clamped or
+        // corrected at the end, which is what keeps the handoff invisible.
+        //
+        // botProg LAGS topProg, and the book tip sits at the BOTTOM of the
+        // sheet, so the lagging edge is the tip: the panel is pinched at the
+        // book and flares as it climbs — the Catalina flask. (Leading with
+        // botProg instead inverts it and reads as a wedge, not a genie.)
+        // -------------------------------------------------------------
 
-        // topProg/botProg are the two edge progresses (0 at the book, 1 at the
-        // modal). Height and top-edge position are driven by the SAME scalar
-        // (topProg), which is what guarantees the final frame is exactly the
-        // modal rect: at topProg=1 the neck term is sin(PI)=0.
-        function getGeometry(topProg, botProg, vty) {
-          var currentHeight = Mh * topProg + NECK * Math.sin(Math.PI * topProg);
+        var NECK_TOP_MARGIN = 6;  // px the stretched tip may rise above Mtop
+        var NECK_OVER_MAX = 0.12; // hard ceiling on stretch, viewport permitting
+        var LEAD = 0.20;          // how far the top edge runs ahead mid-flight
+        var TIP_PINCH = 0.22;     // how far the tip lags at its narrowest
+        var FLARE = 2.0;          // taper exponent: 1 = linear, >1 = trumpet
+
+        // How far past 1 we may go before the sheet leaves the viewport.
+        var roomX = Math.max(0, (window.innerWidth * 0.995 - Bw) / Math.max(1, Mw - Bw) - 1);
+        var roomY = (Btop - Mtop) > 1 ? Math.max(0, (Mtop - NECK_TOP_MARGIN) / (Btop - Mtop)) : 0;
+        var neckRoom = Math.min(roomX, roomY, NECK_OVER_MAX);
+
+        // Peak of f(r) = r + A*bell(r), bell = 4r(1-r). f'(r) = 1 + 4A(1-2r),
+        // so the max sits at r* = (1 + 1/(4A))/2 when A <= 0.5, else f never
+        // exceeds 1 and there is no stretch to solve for.
+        function overshootPeak(A) {
+          if (A <= 1e-6) return 1;
+          var rStar = (1 + 1 / (4 * A)) / 2;
+          if (rStar >= 1) return 1;
+          return rStar + A * 4 * rStar * (1 - rStar);
+        }
+
+        // Solve the neck coefficient so the stretch peaks at exactly the
+        // available room. Monotone in S, so bisection is exact. Solving beats
+        // clamping: a hard clamp pins topProg against its ceiling for a few
+        // frames, which is precisely the freeze this rewrite is removing.
+        var SWELL = 0;
+        (function solveNeck() {
+          if (overshootPeak(LEAD) >= 1 + neckRoom - 1e-9) return; // lead alone already fills it
+          var lo = 0, hi = 0.60;
+          for (var i = 0; i < 40; i++) {
+            var mid = (lo + hi) / 2;
+            if (overshootPeak(LEAD + mid) < 1 + neckRoom) lo = mid; else hi = mid;
+          }
+          SWELL = lo;
+        })();
+
+        function getGeometry(topProg, botProg, wTop, wBot, vty) {
           var topY = Mtop + (Btop - Mtop) * (1 - topProg);
+          var botY = Btop + ((Mtop + Mh) - Btop) * botProg;
+          var currentHeight = botY - topY;
           var screenY = topY + currentHeight * vty;
 
-          // Non-linear flared trumpet waist profile (authentic macOS Catalina curve)
-          var profile = Math.pow(1 - vty, 1.45);
-          var w = Bw + (Mw - Bw) * (topProg * profile + botProg * (1 - profile));
+          // Trumpet taper: FLARE>1 holds the sheet near tip width through the
+          // lower body and opens it out fast over the top third.
+          var profile = Math.pow(1 - vty, FLARE);
+          var w = Bw + (Mw - Bw) * (wTop * profile + wBot * (1 - profile));
 
           // Centerline with Compiz harmonic S-swish
           var centerShift = (Bcx - Mcx) * (vty * (1 - botProg) + (1 - vty) * (1 - topProg));
-          var swish = Math.sin(vty * Math.PI) * (Bcx - Mcx) * 0.25 * (1 - botProg) * topProg;
+          var swish = Math.sin(vty * Math.PI) * (Bcx - Mcx) * 0.25 * botProg * (1 - topProg);
           var centerX = Mcx + centerShift + swish;
 
           return {
@@ -1450,25 +1493,34 @@
           // r is the single "distance from the book" scalar:
           //   opening 0 -> 1 (book  -> modal)
           //   closing 1 -> 0 (modal -> book)
-          // Driving both directions from one formula keeps them symmetric, so
-          // open and close are exact time-reverses of each other.
+          // Both directions run the same formula, so close is the exact
+          // time-reverse of open — no second curve to keep in sync.
           var r = isOpening ? p : (1 - p);
 
-          // Leading-edge offset, expressed as 4*L*r*(1-r) so it peaks at
-          // mid-flight and is EXACTLY zero at BOTH ends. A plain additive lead
-          // (or a second saturating ease) saturates early and then pins the
-          // leading edge while the rest of the shape keeps travelling — which
-          // is what produced the frozen tail. Here both edges are still
-          // moving at t=1 and still moving apart mid-flight:
-          //   opening  -> topProg < botProg  (top leads, bottom follows)
-          //   closing  -> botProg < topProg  (bottom leads into the book)
-          var lead4 = 4 * 0.16 * r * (1 - r);
-          var topProg = r;
-          var botProg = r + lead4;
+          // bell is 0 at BOTH ends and 1 at mid-flight. Everything below is a
+          // multiple of it, which is the structural reason no edge can ever be
+          // pinned while another is still travelling: at r=1 every bell term
+          // vanishes identically, so all four progresses land on 1 together.
+          var bell = 4 * r * (1 - r);
+
+          // Top edge runs ahead (the leading, wide end of the flask); the
+          // bottom edge lags and therefore stays pinched at the book tip.
+          // LEAD gives the diagonal shear, SWELL is the neck that carries the
+          // top edge past Mtop (and the sheet past Mw) before it settles.
+          var topProg = r + (LEAD + SWELL) * bell;
+          var botProg = r;
+
+          // Width gets its own pair so the tip can pinch harder than the edge
+          // travel alone would: wBot dips BELOW r at mid-flight, so the tip
+          // stays book-width while the top has already flared out.
+          var wTop = topProg;
+          var wBot = Math.max(0, r - TIP_PINCH * bell);
 
           // Height mirrors getGeometry() so the shadow/silhouette guards below
           // test the real flown height, not a re-derived second copy of it.
-          var currentHeight = Mh * topProg + NECK * Math.sin(Math.PI * topProg);
+          var currentHeight =
+            (Btop + ((Mtop + Mh) - Btop) * botProg) -
+            (Mtop + (Btop - Mtop) * (1 - topProg));
           var elevation = r;
 
           clearCanvas();
@@ -1482,8 +1534,8 @@
             var vty0 = i / N;
             var vty1 = (i + 1) / N;
 
-            var s0 = getGeometry(topProg, botProg, vty0);
-            var s1 = getGeometry(topProg, botProg, vty1);
+            var s0 = getGeometry(topProg, botProg, wTop, wBot, vty0);
+            var s1 = getGeometry(topProg, botProg, wTop, wBot, vty1);
 
             var y0 = s0.screenY;
             var y1 = s1.screenY;
@@ -1538,12 +1590,13 @@
           // final stretch of flight so the panel lands INTO its final
           // shadow. At t=1 the canvas shadow == the preloaded modal's real
           // shadow, and the CSS cross-fade below swaps them with no jump.
-          // Window starts at 0.75 (not 0.55): under the new master curve
-          // p=0.55 is only ~62% expanded, and a full-size modal shadow
-          // blooming under a small flying panel reads as a second, larger
-          // frame appearing behind the first.
+          // Window starts at 0.88: the sheet now deliberately overshoots
+          // the modal rect around p=0.85, and a full-size resting shadow
+          // blooming under a still-stretched panel reads as a second, larger
+          // frame. Holding it back until the neck has settled means the
+          // shadow only ever appears on the final approach.
           if (isOpening && restShadow) {
-            var restAlpha = smoothstep(0.75, 1, p);
+            var restAlpha = smoothstep(0.88, 1, p);
             if (restAlpha > 0.01 && currentHeight > 12) {
               ctx.save();
               ctx.globalAlpha = Math.min(1, restAlpha);
