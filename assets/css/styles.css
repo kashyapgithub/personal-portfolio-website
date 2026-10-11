@@ -3439,6 +3439,14 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   box-shadow: 0 8px 22px -6px rgba(255, 162, 43, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
+/* Icon-only tiles. The demo's shared .step-icon carries
+   `margin: 0 0 20px` to clear the heading that followed it; with the
+   card copy removed that leaves the icon sitting high in the tile.
+   Only the margin is touched -- every colour rule above is untouched. */
+[data-od-id="trust"] .step-icon {
+  margin: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-od-id="trust"] .trust-card:nth-child(odd):hover,
   [data-od-id="trust"] .trust-card:nth-child(even):hover {
