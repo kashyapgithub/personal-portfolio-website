@@ -1584,7 +1584,7 @@
                   if (canvas) canvas.classList.remove("is-fading");
                   return;
                 }
-                if (++fadeRafs < 2) { requestAnimationFrame(armFade); return; }
+                if (++fadeRafs < 1) { requestAnimationFrame(armFade); return; }
                 try { if (perf) perf.marks.fadeStartT = Math.round(performance.now()); } catch (e) { /* ignore */ }
                 if (canvas) canvas.classList.add("is-fading");
                 setTimeout(function () {
