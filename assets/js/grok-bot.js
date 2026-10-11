@@ -39,6 +39,11 @@
   // from darkness, so only shaft + landing read on screen.
   var beamSprite = null;   // baked volumetric shaft, drawn stretched
   var hotPoolSprite = null;// baked tungsten pool on the floor
+  // Spot WATTAGE. One knob for the whole rig: pool brightness and pool
+  // spread scale off this, so the light reads as one source instead of
+  // tuned-in-isolation layers. Raise it to overdrive the spot; the beam
+  // alpha is capped separately at spotBreath so the shaft can't blow out.
+  var SPOT_WATTS = 1.6;
   var topKissSprite = null;// baked top-light wash, clipped to the disc
   var reduceSpotMotion = false;
   try {
@@ -53,7 +58,7 @@
   // frame at 60fps, churning GC and CPU raster time)
   // ---------------------------------------------------------------
   var sphereSprite = null;   // porcelain bot body, supersampled 2x
-  var poolSprite = null;     // faint studio floor light pool
+  var poolSprite = null;     // (retired) second floor light — see buildShadowSprites
   var contactSprite = null;  // layered AO contact shadow (the Pixar look)
   var bounceSprite = null;   // warm bounce glow under sphere
   var smoothContact = 1.0;   // temporally smoothed grounding (no popping)
@@ -101,20 +106,12 @@
   }
 
   function buildShadowSprites() {
-    // ---- Floor light pool: very faint, cool, feathered to zero well
-    // before the sprite edge so NO visible saucer rim (the old bug) ----
-    // Kept close to the black stage so it reads as haze catching the
-    // spot, never as a light source — a bright pool fights the shadow
-    // and makes the shadow look grey/washed by comparison.
-    poolSprite = makeCanvas(512, 128);
-    paintEllipticalGlow(poolSprite, 256, 64, 250, 0.25, [
-      [0.00, "rgba(120,132,155,0.045)"],
-      [0.25, "rgba(112,124,148,0.032)"],
-      [0.50, "rgba(92,104,128,0.018)"],
-      [0.72, "rgba(76,88,112,0.008)"],
-      [0.88, "rgba(70,82,105,0.002)"],
-      [1.00, "rgba(70,82,105,0)"]
-    ]);
+    // NOTE: no cool "poolSprite" any more. There is exactly ONE light on
+    // this floor: the tungsten spot pool. The old cool ambient pool was a
+    // second, competing light that washed the contact shadow out. Removing
+    // it means buildShadowSprites() must not run its floor-pool branch —
+    // see the draw call in render(): the hot pool paints first, then the
+    // bounce, then the contact shadow last.
 
     // ---- Contact shadow: 4 baked layers, cool blue-black (never pure
     // black, so it reads as a shadow, not a hole), smoothstep falloffs --
@@ -431,10 +428,10 @@
       bctx.lineTo(BW / 2 - botW / 2, BH);
       bctx.closePath();
       var shaft = bctx.createLinearGradient(0, 0, 0, BH);
-      shaft.addColorStop(0.00, "rgba(255,240,212,0.55)");
-      shaft.addColorStop(0.30, "rgba(255,232,192,0.22)");
-      shaft.addColorStop(0.65, "rgba(255,224,176,0.07)");
-      shaft.addColorStop(1.00, "rgba(255,218,168,0.02)");
+      shaft.addColorStop(0.00, "rgba(255,242,218,0.92)");
+      shaft.addColorStop(0.30, "rgba(255,234,196,0.46)");
+      shaft.addColorStop(0.65, "rgba(255,226,180,0.17)");
+      shaft.addColorStop(1.00, "rgba(255,220,172,0.05)");
       bctx.fillStyle = shaft;
       bctx.fill();
       // Hot core: narrower, brighter spine of the shaft
@@ -447,9 +444,9 @@
       bctx.lineTo(BW / 2 - botW * 0.30, BH);
       bctx.closePath();
       var core = bctx.createLinearGradient(0, 0, 0, BH);
-      core.addColorStop(0.00, "rgba(255,246,224,0.35)");
-      core.addColorStop(0.55, "rgba(255,238,200,0.08)");
-      core.addColorStop(1.00, "rgba(255,238,200,0)");
+      core.addColorStop(0.00, "rgba(255,248,228,0.60)");
+      core.addColorStop(0.55, "rgba(255,240,204,0.15)");
+      core.addColorStop(1.00, "rgba(255,240,204,0)");
       bctx.fillStyle = core;
       bctx.fill();
       bctx.restore();
@@ -485,8 +482,8 @@
     var kctx = topKissSprite.getContext("2d");
     if (kctx) {
       var kiss = kctx.createRadialGradient(128, 84, 8, 128, 128, 150);
-      kiss.addColorStop(0.00, "rgba(255,244,222,0.85)");
-      kiss.addColorStop(0.45, "rgba(255,236,204,0.32)");
+      kiss.addColorStop(0.00, "rgba(255,246,226,0.92)");
+      kiss.addColorStop(0.45, "rgba(255,238,208,0.38)");
       kiss.addColorStop(1.00, "rgba(255,236,204,0)");
       kctx.fillStyle = kiss;
       kctx.fillRect(0, 0, 256, 256);
@@ -1358,9 +1355,9 @@
     var spotFade = reduceSpotMotion ? 1 : Math.min(1, elapsedSec / 2.2);
     spotFade = spotFade * spotFade * (3 - 2 * spotFade);
     var spotSwell = Math.min(0.15, Math.abs(hopY) * 0.012 + (bubbleState === "speaking" ? 0.06 : 0));
-    var spotBreath = (reduceSpotMotion ? 0.34 : 0.34 + Math.sin(elapsedSec * 0.9) * 0.04) * spotFade + spotSwell * spotFade;
+    var spotBreath = (reduceSpotMotion ? 0.42 : 0.42 + Math.sin(elapsedSec * 0.9) * 0.045) * spotFade;
     if (beamSprite) {
-      var beamW = R * 3.0;
+      var beamW = R * 3.0 * (0.85 + SPOT_WATTS * 0.15);
       var beamTop = -H * 0.06;
       var beamH = (targetCy + R + 44) - beamTop;
       ctx.save();
@@ -1416,30 +1413,21 @@
     var cAlpha = 0.38 + 0.62 * contact;          // fainter when high
     var squashX = (scaleX || 1), squashY = (scaleY || 1);
 
-    if (contactSprite && poolSprite) {
+    if (hotPoolSprite && contactSprite) {
       ctx.save();
-      // A. Studio floor pool (static size, breathes faintly with float)
-      var poolW = R * 4.7 * squashX, poolH = R * 1.17 * squashY;
-      ctx.globalAlpha = 0.95;
-      ctx.drawImage(poolSprite, shadowX - poolW / 2, shadowFloorY - poolH / 2, poolW, poolH);
-      // B. Tungsten hot pool: the spotlight landing on the floor. Drawn
-      // BEFORE the contact shadow, not after: compositing it on top with
-      // 'screen' re-lit the very area the shadow occupies, lifting the
-      // occlusion from near-black to warm grey. Painting it under the
-      // shadow keeps the shadow the darkest thing on the floor.
-      if (hotPoolSprite) {
-        var hW = R * 3.0 * squashX, hH = R * 0.75 * squashY;
-        ctx.globalCompositeOperation = "screen";
-        ctx.globalAlpha = Math.min(1, (0.45 + 0.45 * contact) * spotFade + spotSwell * spotFade);
-        ctx.drawImage(hotPoolSprite, spotX - hW / 2, shadowFloorY - hH / 2, hW, hH);
-        ctx.globalCompositeOperation = "source-over";
-      }
-      // C. Warm porcelain bounce directly under the body
+      // A. The spotlight pool: the ONLY floor light. Drawn BEFORE the
+      // contact shadow — compositing it on top with 'screen' re-lit the
+      // exact area the shadow occupies and turned the occlusion grey.
+      var hW = R * 3.0 * SPOT_WATTS * squashX, hH = R * 0.75 * squashY;
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = Math.min(1, ((0.45 + 0.45 * contact) + spotSwell) * spotFade * SPOT_WATTS);
+      ctx.drawImage(hotPoolSprite, spotX - hW / 2, shadowFloorY - hH / 2, hW, hH);
+      ctx.globalCompositeOperation = "source-over";
+      // B. Porcelain bounce off the body (a reflection, not a lamp)
       var bW = R * 1.9 * squashX, bH = R * 0.48 * squashY;
       ctx.globalAlpha = Math.min(1, 0.45 + 0.55 * contact);
       ctx.drawImage(bounceSprite, shadowX - bW / 2, shadowFloorY - 2 - bH / 2, bW, bH);
-      // D. Layered AO contact shadow (the Pixar core) — always last, on
-      // top of the lit floor, so occlusion wins.
+      // C. Layered AO contact shadow — always last, so occlusion wins.
       var cW = R * 2.9 * cScale * squashX, cH = R * 0.88 * cScale * squashY;
       ctx.globalAlpha = Math.min(1, Math.max(0, cAlpha));
       ctx.drawImage(contactSprite, shadowX - cW / 2, shadowFloorY - cH / 2, cW, cH);
@@ -1466,7 +1454,7 @@
         }
         ctx.clip();
         ctx.globalCompositeOperation = "screen";
-        ctx.globalAlpha = Math.min(1, 0.55 * spotFade + spotSwell * spotFade);
+        ctx.globalAlpha = Math.min(1, 0.62 * spotFade * SPOT_WATTS + spotSwell * spotFade);
         var kW = R * 2.1 * squashX, kH = R * 2.1 * squashY;
         ctx.drawImage(topKissSprite, cx - kW / 2, currentCy - kH / 2 - R * 0.18, kW, kH);
         ctx.restore();
