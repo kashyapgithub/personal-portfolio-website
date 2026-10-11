@@ -1597,27 +1597,32 @@
         if (N > snapH) N = snapH;
 
         // -------------------------------------------------------------
-        // LANDING TAIL: 40 FRAMES BETWEEN n-1 AND n
+        // SETTLE PHASE
         //
-        // The flight holds back its last 12% (it lands at re=0.88, see
-        // the re mapping below). These 40 frames walk re to 1.0 along the
-        // exact same geometry curve, so every frame is visibly bigger than
-        // the last: sizes never repeat and the opening sequence runs
-        // unbroken into the live modal. The live rect is measured at t=1 (webfonts,
-        // images and scrollbar have had the whole flight to resolve) and
-        // eased in over the same 40 frames, so panel and page are
-        // pixel-aligned before the crossfade. The tail always runs on
-        // open — it IS the landing, not a mismatch patch.
+        // The morph's last frame lands exactly on the rect measured when the
+        // flight STARTED. The DOM modal underneath, though, is live and has
+        // had the whole flight to settle: webfonts land, images resolve, a
+        // scrollbar appears. It can end up bigger than the frame we drew.
+        //
+        // Rather than let that difference surface as a pop when the canvas
+        // dissolves, measure the live rect at t=1 and interpolate the canvas
+        // across the difference over SETTLE_STEPS frames, increasing in width
+        // and height, so the two are pixel-aligned before the crossfade.
+        //
+        // It is skipped entirely when the difference is under SETTLE_MIN_PX:
+        // these frames exist to absorb a mismatch, and when there is no
+        // mismatch they would just be a visible stall -- the exact thing the
+        // rest of this engine works to avoid.
         // -------------------------------------------------------------
-        var SETTLE_STEPS = 40;    // landing frames between n-1 and n
-        var SETTLE_MAX_MS = 700;  // 40 frames @60Hz; cap only bites under jank
+        var SETTLE_STEPS = 20;    // interpolated frames, as requested
+        var SETTLE_MIN_PX = 2;    // below this the canvas already matches
+        var SETTLE_MAX_MS = 260;  // hard cap, so a slow frame rate can't drag it
         var settleTo = null;      // {sx, sy, tx, ty} mapping modal rect -> live rect
         var settleXf = null;      // this frame's interpolated transform
         var settleStep = 0;
         var settleT0 = 0;
         var settling = false;
         var settleInited = false;
-        var tailEase = 0;         // tail progress 0->1, drives next frame's re
 
         // Pre-rendered soft flight shadow (one drawImage per frame — the
         // old 3x ctx.shadowBlur contour fills were the top jank source;
@@ -1838,39 +1843,32 @@
           // Both directions run the same formula, so close is the exact
           // time-reverse of open — no second curve to keep in sync.
           var r = isOpening ? p : (1 - p);
-          // Opening flight covers 0 -> 0.88; the 40-frame landing tail
-          // walks re 0.88 -> 1.0 along this exact same curve, so every
-          // frame is visibly bigger than the last — sizes never repeat,
-          // the sequence never breaks, no dead hold. Closing keeps the
-          // full range (it has no tail).
-          var re = r;
-          if (isOpening) re = settling ? 0.88 + 0.12 * tailEase : r * 0.88;
 
           // bell is 0 at BOTH ends and 1 at mid-flight. Everything below is a
           // multiple of it, which is the structural reason no edge can ever be
           // pinned while another is still travelling: at r=1 every bell term
           // vanishes identically, so all four progresses land on 1 together.
-          var bell = 4 * re * (1 - re);
+          var bell = 4 * r * (1 - r);
 
           // Top edge runs ahead (the leading, wide end of the flask); the
           // bottom edge lags and therefore stays pinched at the book tip.
           // LEAD gives the diagonal shear, SWELL is the neck that carries the
           // top edge past Mtop (and the sheet past Mw) before it settles.
-          var topProg = re + (LEAD + SWELL) * bell;
-          var botProg = re;
+          var topProg = r + (LEAD + SWELL) * bell;
+          var botProg = r;
 
           // Width gets its own pair so the tip can pinch harder than the edge
           // travel alone would: wBot dips BELOW r at mid-flight, so the tip
           // stays book-width while the top has already flared out.
           var wTop = topProg;
-          var wBot = Math.max(0, re - TIP_PINCH * bell);
+          var wBot = Math.max(0, r - TIP_PINCH * bell);
 
           // Height mirrors getGeometry() so the shadow/silhouette guards below
           // test the real flown height, not a re-derived second copy of it.
           var currentHeight =
             (Btop + ((Mtop + Mh) - Btop) * botProg) -
             (Mtop + (Btop - Mtop) * (1 - topProg));
-          var elevation = re;
+          var elevation = r;
 
           clearCanvas();
 
@@ -1991,9 +1989,9 @@
           if (settleXf) ctx.restore();
 
           if (t >= 1 && isOpening && !settleInited) {
-            // Tail arming: measure the LIVE rect now and run all 40 frames
-            // unconditionally — the re walk (0.88 -> 1.0) guarantees every
-            // frame differs in size even when live == flight rect.
+            // Measure the LIVE rect now. Fonts, images and any scrollbar have
+            // had the whole flight to resolve, so this is the modal as it will
+            // actually be presented — not as it was when we launched.
             settleInited = true;
             try {
               var fr = containerEl ? containerEl.getBoundingClientRect() : null;
@@ -2012,16 +2010,13 @@
                 perf.marks.settleDH = Math.round(dH);
                 perf.marks.settleDC = Math.round(dC);
               }
-              settleTo = { sx: fw / Mw, sy: fh / Mh, tx: dX, ty: dY };
-            } catch (e) {
-              // Measure failed: tail still runs, walking re home onto the
-              // flight rect so the landing never holds dead.
-              settleTo = { sx: 1, sy: 1, tx: 0, ty: 0 };
-            }
-            settling = true;
-            settleStep = 0;
-            tailEase = 0;
-            settleT0 = performance.now();
+              if (Math.max(dW, dH, dC) >= SETTLE_MIN_PX) {
+                settleTo = { sx: fw / Mw, sy: fh / Mh, tx: dX, ty: dY };
+                settling = true;
+                settleStep = 0;
+                settleT0 = performance.now();
+              }
+            } catch (e) { /* ignore: fall through to a plain handoff */ }
 
             // Reveal the preloaded modal HERE, not at the end of the settle.
             // The CSS comment on .is-genie-active is explicit that an
@@ -2043,9 +2038,6 @@
             if (performance.now() - settleT0 > SETTLE_MAX_MS) sStep = 1;
             if (sStep > 1) sStep = 1;
             var sEase = sStep * sStep * (3 - 2 * sStep);
-            // Tail progress drives next frame's geometry (re 0.88 -> 1.0),
-            // so size grows every single frame along the flight's own curve.
-            tailEase = sEase;
             // settleXf is deliberately NOT cleared on completion: the handoff
             // frame still has to draw at the FINAL transform, or the panel
             // would snap back to the smaller modal rect for one frame right
