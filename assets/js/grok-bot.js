@@ -103,18 +103,25 @@
   function buildShadowSprites() {
     // ---- Floor light pool: very faint, cool, feathered to zero well
     // before the sprite edge so NO visible saucer rim (the old bug) ----
+    // Kept close to the black stage so it reads as haze catching the
+    // spot, never as a light source — a bright pool fights the shadow
+    // and makes the shadow look grey/washed by comparison.
     poolSprite = makeCanvas(512, 128);
     paintEllipticalGlow(poolSprite, 256, 64, 250, 0.25, [
-      [0.00, "rgba(158,173,198,0.10)"],
-      [0.25, "rgba(148,163,184,0.075)"],
-      [0.50, "rgba(120,135,165,0.045)"],
-      [0.72, "rgba(99,102,241,0.022)"],
-      [0.88, "rgba(80,95,130,0.006)"],
-      [1.00, "rgba(80,95,130,0)"]
+      [0.00, "rgba(120,132,155,0.045)"],
+      [0.25, "rgba(112,124,148,0.032)"],
+      [0.50, "rgba(92,104,128,0.018)"],
+      [0.72, "rgba(76,88,112,0.008)"],
+      [0.88, "rgba(70,82,105,0.002)"],
+      [1.00, "rgba(70,82,105,0)"]
     ]);
 
     // ---- Contact shadow: 4 baked layers, cool blue-black (never pure
     // black, so it reads as a shadow, not a hole), smoothstep falloffs --
+    // Dense at the core: under a real spot the occlusion is several
+    // stops below the lit floor. The old airy values left the core
+    // LIGHTER than the warm pool around it, so the shadow inverted
+    // into a grey smudge -- the "whitish shadow" read.
     contactSprite = makeCanvas(512, 160);
     // Layer 1: ultra-wide ambient wash
     paintEllipticalGlow(contactSprite, 256, 80, 250, 0.3125, [
@@ -148,21 +155,26 @@
       [0.92, "rgba(2,4,10,0.10)"],
       [1.00, "rgba(2,4,10,0)"]
     ]);
-    // Layer 5: life — faint cool bounce leaked into the very center so
-    // the core never crushes to a dead black disc
+    // Layer 5: ambient life — an extremely faint cool lift so the core
+    // reads as shadowed floor rather than a punched hole. Was 0.10 of
+    // near-white at the very center, which is exactly what made the
+    // shadow look grey/milky under the pool; 0.028 keeps it alive
+    // without competing with the lit floor.
     paintEllipticalGlow(contactSprite, 262, 80, 30, 0.28, [
-      [0.00, "rgba(203,213,235,0.10)"],
-      [0.60, "rgba(203,213,235,0.045)"],
+      [0.00, "rgba(203,213,235,0.028)"],
+      [0.60, "rgba(203,213,235,0.012)"],
       [1.00, "rgba(203,213,235,0)"]
     ]);
     ditherSprite(contactSprite, 1400, 0.020);
 
-    // ---- Bounce glow: porcelain light spilling onto the floor ----
+    // Bounce glow: porcelain light spilling onto the floor. Kept dim —
+    // this sits under the sphere on top of the lit floor and used to
+    // add a pale wash right where the occlusion should be darkest.
     bounceSprite = makeCanvas(256, 64);
     paintEllipticalGlow(bounceSprite, 128, 32, 124, 0.25, [
-      [0.00, "rgba(240,244,255,0.16)"],
-      [0.50, "rgba(224,231,255,0.07)"],
-      [0.80, "rgba(224,231,255,0.02)"],
+      [0.00, "rgba(240,244,255,0.07)"],
+      [0.50, "rgba(224,231,255,0.028)"],
+      [0.80, "rgba(224,231,255,0.008)"],
       [1.00, "rgba(224,231,255,0)"]
     ]);
   }
@@ -453,13 +465,19 @@
       bctx.fillRect(0, 0, BW, BH);
       bctx.restore();
     }
-    // ---- Hot tungsten pool for the floor: bright heart, soft penumbra --
+    // ---- Hot tungsten pool for the floor: the ONE light source down
+    // here. Small and bright so it reads as the spot's landing, with the
+    // contact shadow visibly darker than the lit floor around it. The
+    // previous version was wide and faint, so the shadow had nothing to
+    // read against and picked up its colour from it instead. ----
     hotPoolSprite = makeCanvas(512, 128);
     paintEllipticalGlow(hotPoolSprite, 256, 64, 250, 0.25, [
-      [0.00, "rgba(255,216,162,0.68)"],
-      [0.35, "rgba(255,208,150,0.38)"],
-      [0.65, "rgba(255,200,142,0.15)"],
-      [1.00, "rgba(255,200,142,0)"]
+      [0.00, "rgba(255,214,158,0.92)"],
+      [0.25, "rgba(255,206,146,0.62)"],
+      [0.45, "rgba(255,198,136,0.30)"],
+      [0.65, "rgba(255,190,128,0.10)"],
+      [0.82, "rgba(255,186,124,0.028)"],
+      [1.00, "rgba(255,186,124,0)"]
     ]);
     // ---- Top-light kiss: soft overhead wash, clipped to the disc at
     // draw time so the face (painted after) stays clean ----
@@ -1404,15 +1422,11 @@
       var poolW = R * 4.7 * squashX, poolH = R * 1.17 * squashY;
       ctx.globalAlpha = 0.95;
       ctx.drawImage(poolSprite, shadowX - poolW / 2, shadowFloorY - poolH / 2, poolW, poolH);
-      // B. Warm porcelain bounce directly under the body
-      var bW = R * 1.9 * squashX, bH = R * 0.48 * squashY;
-      ctx.globalAlpha = Math.min(1, 0.45 + 0.55 * contact);
-      ctx.drawImage(bounceSprite, shadowX - bW / 2, shadowFloorY - 2 - bH / 2, bW, bH);
-      // C. Layered AO contact shadow (the Pixar core)
-      var cW = R * 2.9 * cScale * squashX, cH = R * 0.88 * cScale * squashY;
-      ctx.globalAlpha = Math.min(1, Math.max(0, cAlpha));
-      ctx.drawImage(contactSprite, shadowX - cW / 2, shadowFloorY - cH / 2, cW, cH);
-      // D. Tungsten hot pool: the spotlight landing on the floor
+      // B. Tungsten hot pool: the spotlight landing on the floor. Drawn
+      // BEFORE the contact shadow, not after: compositing it on top with
+      // 'screen' re-lit the very area the shadow occupies, lifting the
+      // occlusion from near-black to warm grey. Painting it under the
+      // shadow keeps the shadow the darkest thing on the floor.
       if (hotPoolSprite) {
         var hW = R * 3.0 * squashX, hH = R * 0.75 * squashY;
         ctx.globalCompositeOperation = "screen";
@@ -1420,6 +1434,15 @@
         ctx.drawImage(hotPoolSprite, spotX - hW / 2, shadowFloorY - hH / 2, hW, hH);
         ctx.globalCompositeOperation = "source-over";
       }
+      // C. Warm porcelain bounce directly under the body
+      var bW = R * 1.9 * squashX, bH = R * 0.48 * squashY;
+      ctx.globalAlpha = Math.min(1, 0.45 + 0.55 * contact);
+      ctx.drawImage(bounceSprite, shadowX - bW / 2, shadowFloorY - 2 - bH / 2, bW, bH);
+      // D. Layered AO contact shadow (the Pixar core) — always last, on
+      // top of the lit floor, so occlusion wins.
+      var cW = R * 2.9 * cScale * squashX, cH = R * 0.88 * cScale * squashY;
+      ctx.globalAlpha = Math.min(1, Math.max(0, cAlpha));
+      ctx.drawImage(contactSprite, shadowX - cW / 2, shadowFloorY - cH / 2, cW, cH);
       ctx.restore();
     }
 
