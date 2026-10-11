@@ -509,6 +509,7 @@ body {
   font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
+  text-decoration: none;
   transition: all 0.15s var(--ease);
 }
 
