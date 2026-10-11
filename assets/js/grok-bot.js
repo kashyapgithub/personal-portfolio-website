@@ -159,6 +159,100 @@
     ]);
   }
 
+  // ---------------------------------------------------------------
+  // PROCEDURAL TEXTURE
+  // Tileable value-noise fBm. Used to break up the mathematically
+  // perfect gradient falloff: real ceramic is never that clean, and
+  // the flat banding is most of what makes a CG sphere read as 2D.
+  // Everything here runs once per bake, never per frame.
+  // ---------------------------------------------------------------
+  function hash2(x, y, seed) {
+    // Math.imul + >>> throughout: the signed >> in the obvious version
+    // leaves the output in [0, 0.5] with a mean of 0.25, and a dark-biased
+    // noise under soft-light/overlay visibly darkens the sphere instead of
+    // just breaking up its gradient.
+    var n = Math.imul(x | 0, 374761393) +
+            Math.imul(y | 0, 668265263) +
+            Math.imul(seed | 0, 1274126177);
+    n = Math.imul(n ^ (n >>> 13), 1274126177);
+    return ((n ^ (n >>> 16)) >>> 0) / 4294967295;
+  }
+
+  function smoothstep01(t) { return t * t * (3 - 2 * t); }
+
+  // Periodic value noise so the tile wraps seamlessly.
+  function valueNoise2(x, y, period, seed) {
+    var xi = Math.floor(x), yi = Math.floor(y);
+    var xf = x - xi, yf = y - yi;
+    var wrap = function (v) { return ((v % period) + period) % period; };
+    var x0 = wrap(xi), x1 = wrap(xi + 1), y0 = wrap(yi), y1 = wrap(yi + 1);
+    var v00 = hash2(x0, y0, seed), v10 = hash2(x1, y0, seed);
+    var v01 = hash2(x0, y1, seed), v11 = hash2(x1, y1, seed);
+    var u = smoothstep01(xf), v = smoothstep01(yf);
+    return (v00 * (1 - u) + v10 * u) * (1 - v) + (v01 * (1 - u) + v11 * u) * v;
+  }
+
+  function fbm2(x, y, octaves, period, seed) {
+    var sum = 0, amp = 0.5, freq = 1, norm = 0;
+    for (var o = 0; o < octaves; o++) {
+      sum += amp * valueNoise2(x * freq, y * freq, period, seed + o * 131);
+      norm += amp;
+      amp *= 0.5;
+      freq *= 2;
+    }
+    return sum / norm;
+  }
+
+  // Grayscale noise tile. `lo`/`hi` remap to [0,255].
+  function makeNoiseTile(size, octaves, cells, seed, lo, hi) {
+    var c = makeCanvas(size, size);
+    var cctx = c.getContext("2d");
+    var img;
+    try { img = cctx.createImageData(size, size); } catch (e) { return null; }
+    var d = img.data;
+    var span = hi - lo;
+    for (var y = 0; y < size; y++) {
+      for (var x = 0; x < size; x++) {
+        var n = fbm2((x / size) * cells, (y / size) * cells, octaves, cells, seed);
+        var g = lo + n * span;
+        var i = (y * size + x) * 4;
+        d[i] = g; d[i + 1] = g; d[i + 2] = g; d[i + 3] = 255;
+      }
+    }
+    cctx.putImageData(img, 0, 0);
+    return c;
+  }
+
+  // Directional Fresnel rim: a full bright ring, faded out on the side
+  // the key light comes FROM, so the rim survives only opposite the key.
+  // This is the single biggest 3D read on a shaded sphere -- without it
+  // a lit ball looks like a disc with a gradient on it.
+  function paintDirectionalRim(sctx, S, r, kx, ky) {
+    var rim = makeCanvas(S, S);
+    var rctx = rim.getContext("2d");
+    var g = rctx.createRadialGradient(r, r, r * 0.58, r, r, r * 1.02);
+    g.addColorStop(0.00, "rgba(255,255,255,0)");
+    g.addColorStop(0.52, "rgba(198,220,255,0.05)");
+    g.addColorStop(0.84, "rgba(214,232,255,0.22)");
+    g.addColorStop(0.95, "rgba(240,248,255,0.46)");
+    g.addColorStop(1.00, "rgba(255,255,255,0.10)");
+    rctx.fillStyle = g;
+    rctx.fillRect(0, 0, S, S);
+
+    // keep only the hemisphere away from the key
+    rctx.globalCompositeOperation = "destination-in";
+    var dx = (kx - r) / r, dy = (ky - r) / r;   // unit vector TOWARD the key
+    var mx = r - dx * r, my = r - dy * r;      // so "toward far side" is -
+    var mg = rctx.createLinearGradient(mx, my, mx + dx * r, my + dy * r);
+    mg.addColorStop(0.00, "rgba(0,0,0,1)");
+    mg.addColorStop(0.55, "rgba(0,0,0,0.45)");
+    mg.addColorStop(1.00, "rgba(0,0,0,0)");
+    rctx.fillStyle = mg;
+    rctx.fillRect(0, 0, S, S);
+
+    sctx.drawImage(rim, 0, 0);
+  }
+
   function buildSphereSprite() {
     var SS = 2; // supersample for crisp limb edge
     var S = Math.ceil(R * 2 * SS);
@@ -189,7 +283,33 @@
     sctx.arc(r, r, r - 0.5, 0, Math.PI * 2);
     sctx.clip();
 
-    // Soft key specular (controlled, not blown out)
+    // --- TEXTURE PASS 1: large-scale glaze mottling -------------------
+    // Soft-light keeps the value range centred on the base so this
+    // breaks up the gradient without repainting the sphere's tone.
+    var mottle = makeNoiseTile(96, 4, 6, 1337, 18, 238);
+    if (mottle) {
+      sctx.save();
+      sctx.globalCompositeOperation = "soft-light";
+      sctx.globalAlpha = 0.55;
+      sctx.drawImage(mottle, 0, 0, S, S);
+      sctx.restore();
+    }
+
+    // --- TEXTURE PASS 2: fine ceramic grain ---------------------------
+    var grain = makeNoiseTile(192, 2, 64, 4711, 40, 215);
+    if (grain) {
+      sctx.save();
+      sctx.globalCompositeOperation = "overlay";
+      sctx.globalAlpha = 0.30;
+      var pat = sctx.createPattern(grain, "repeat");
+      if (pat) {
+        sctx.fillStyle = pat;
+        sctx.fillRect(0, 0, S, S);
+      }
+      sctx.restore();
+    }
+
+    // Soft key specular (controlled, not blown out) — broad lobe
     var spec = sctx.createRadialGradient(r * 0.66, r * 0.60, 0, r * 0.66, r * 0.60, r * 0.30);
     spec.addColorStop(0.00, "rgba(255,255,255,0.85)");
     spec.addColorStop(0.45, "rgba(255,255,255,0.28)");
@@ -197,11 +317,34 @@
     sctx.fillStyle = spec;
     sctx.fillRect(0, 0, S, S);
 
+    // Tight specular core — the second lobe. A single lobe reads as a
+    // painted highlight; two (broad + tight) is what a real curved
+    // surface does, and it is what sells the curvature.
+    var spec2 = sctx.createRadialGradient(r * 0.635, r * 0.575, 0, r * 0.635, r * 0.575, r * 0.115);
+    spec2.addColorStop(0.00, "rgba(255,255,255,0.95)");
+    spec2.addColorStop(0.40, "rgba(255,255,255,0.40)");
+    spec2.addColorStop(1.00, "rgba(255,255,255,0)");
+    sctx.fillStyle = spec2;
+    sctx.fillRect(0, 0, S, S);
+
     // Cool fill from lower-right (cancels the old flat gray limb)
     var fill = sctx.createRadialGradient(r * 1.45, r * 1.30, 0, r * 1.45, r * 1.30, r * 1.10);
     fill.addColorStop(0.00, "rgba(165,180,252,0.20)");
     fill.addColorStop(1.00, "rgba(165,180,252,0)");
     sctx.fillStyle = fill;
+    sctx.fillRect(0, 0, S, S);
+
+    // Directional Fresnel rim (see paintDirectionalRim) — drawn after
+    // the fill so the dark side gets a lit edge instead of dying flat.
+    paintDirectionalRim(sctx, S, r, kkx, kky);
+
+    // Subsurface warm bounce: porcelain is thin at the limb, so light
+    // bleeds through the bottom-right edge. Sells "material" not "paint".
+    var sss = sctx.createRadialGradient(r * 1.24, r * 1.22, r * 0.30, r * 1.24, r * 1.22, r * 0.95);
+    sss.addColorStop(0.00, "rgba(255, 236, 214, 0.00)");
+    sss.addColorStop(0.55, "rgba(255, 231, 205, 0.13)");
+    sss.addColorStop(1.00, "rgba(255, 214, 178, 0.22)");
+    sctx.fillStyle = sss;
     sctx.fillRect(0, 0, S, S);
 
     // Grounded bottom AO crescent (sells contact with the floor)
@@ -218,6 +361,27 @@
     wb.addColorStop(1.00, "rgba(226,232,240,0)");
     sctx.fillStyle = wb;
     sctx.fillRect(0, 0, S, S);
+
+    // Micro-scratches: a handful of faint curved hairlines. Real glazed
+    // ceramic is not optically perfect, and a few of these read as
+    // surface rather than noise.
+    sctx.save();
+    sctx.lineCap = "round";
+    for (var sc = 0; sc < 7; sc++) {
+      var a0 = hash2(sc, 11, 991) * Math.PI * 2;
+      var len = 0.10 + hash2(sc, 23, 337) * 0.26;
+      var rr = r * (0.30 + hash2(sc, 41, 733) * 0.56);
+      var bright = hash2(sc, 57, 421) > 0.45;
+      sctx.strokeStyle = bright
+        ? "rgba(255,255,255,0.055)"
+        : "rgba(15,23,42,0.045)";
+      sctx.lineWidth = Math.max(0.5, r * 0.0035);
+      sctx.beginPath();
+      sctx.arc(r, r, rr, a0, a0 + len);
+      sctx.stroke();
+    }
+    sctx.restore();
+
     sctx.restore();
 
     // Fresnel limb: soft inner sheen, seamless full-circle base plus a
@@ -258,6 +422,26 @@
     }
   }
 
+  // Debounced sprite re-bake. resize() itself must stay synchronous (the
+  // canvas backing store and R have to track the viewport immediately,
+  // or the sphere draws at a stale size), but the expensive part -- the
+  // noise tiles and the gradient stack -- is deferred until the drag
+  // settles. The sprite is square and drawn to R*2, so a brief size
+  // mismatch just scales it; nothing visibly pops.
+  var rebakeTimer = 0;
+  var bakedR = 0;
+  function scheduleRebake() {
+    resize();
+    if (bakedR === R) return;
+    if (rebakeTimer) clearTimeout(rebakeTimer);
+    rebakeTimer = setTimeout(function () {
+      rebakeTimer = 0;
+      bakedR = R;
+      buildShadowSprites();
+      buildSphereSprite();
+    }, 140);
+  }
+
   function resize() {
     DPR = Math.min(window.devicePixelRatio || 1, 2);
     W = hero ? hero.clientWidth : window.innerWidth;
@@ -287,9 +471,10 @@
     targetCy = Math.round(headerH + availableH * 0.38);
 
     if (stars.length === 0) initStars();
-    // Re-bake supersampled sprites for the new radius (one-time cost)
-    buildShadowSprites();
-    buildSphereSprite();
+    // Re-bake supersampled sprites for the new radius.
+    // Deferred by scheduleRebake() -- see the note there. During a drag
+    // the previous sprite is reused; it is square and drawn at R*2, so a
+    // radius change just scales it until the timer lands.
     smoothContact = 1.0;
     lastFrameNow = -1;
   }
@@ -1320,7 +1505,12 @@
 
   // Initialize
   resize();
-  window.addEventListener("resize", resize);
+  // First paint must have sprites immediately — scheduleRebake defers,
+  // so bake up front and record the radius so the next resize is a no-op.
+  bakedR = R;
+  buildShadowSprites();
+  buildSphereSprite();
+  window.addEventListener("resize", scheduleRebake);
   requestAnimationFrame(render);
 
 })();
