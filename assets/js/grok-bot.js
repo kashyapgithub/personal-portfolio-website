@@ -1322,7 +1322,7 @@
     // barely-there air movement. Per-frame work is 1 drawImage.
     var spotSway = reduceSpotMotion ? 0 : Math.sin(elapsedSec * 0.35) * R * 0.05;
     var spotX = cx + spotSway;
-    var spotBreath = reduceSpotMotion ? 0.30 : 0.30 + Math.sin(elapsedSec * 0.9) * 0.035;
+    var spotBreath = reduceSpotMotion ? 0.34 : 0.34 + Math.sin(elapsedSec * 0.9) * 0.04;
     if (beamSprite) {
       var beamW = R * 3.0;
       var beamTop = -H * 0.06;
