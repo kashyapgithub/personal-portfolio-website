@@ -1914,6 +1914,8 @@
             });
           }
 
+          // (leftPath/rightPath still feed the flight-shadow bounds below.)
+
           // Single-pass flight shadow: one pre-blurred sprite blit scaled
           // to the morphing bounds. Envelope peaks mid-flight and fades to
           // ZERO at landing so the preloaded DOM modal's real neumorphism
@@ -1977,28 +1979,12 @@
             ctx.drawImage(snapshot, 0, g.sy, snapW, g.sh, g.x, g.y0, g.w, g.dh);
           }
 
-          // Liquid Outer Rails Glass Sheen (Subtle Catalina specular highlight)
-          var edgeAlpha = (1 - elevation) * 0.35;
-          if (edgeAlpha > 0.02 && currentHeight > 12) {
-            ctx.save();
-            ctx.lineWidth = 1.2;
-            ctx.strokeStyle = "rgba(255, 255, 255, " + edgeAlpha + ")";
-
-            ctx.beginPath();
-            for (var m = 0; m < leftPath.length; m++) {
-              if (m === 0) ctx.moveTo(leftPath[m].x, leftPath[m].y);
-              else ctx.lineTo(leftPath[m].x, leftPath[m].y);
-            }
-            ctx.stroke();
-
-            ctx.beginPath();
-            for (var n = 0; n < rightPath.length; n++) {
-              if (n === 0) ctx.moveTo(rightPath[n].x, rightPath[n].y);
-              else ctx.lineTo(rightPath[n].x, rightPath[n].y);
-            }
-            ctx.stroke();
-            ctx.restore();
-          }
+          // NOTE: a "Liquid Outer Rails Glass Sheen" used to stroke the
+          // left/right contour paths here in white. Screenshot-verified
+          // (fat red/green split test), those strokes rendered as long
+          // detached strings arcing hundreds of px past the panel into
+          // empty backdrop, while the slice panel itself was pixel-true.
+          // The sheen is decorative; the strings were not. Removed.
 
           if (settleXf) ctx.restore();
 
