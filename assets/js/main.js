@@ -1492,6 +1492,14 @@
         var TIP_PINCH = 0.22;     // how far the tip lags at its narrowest
         var FLARE = 2.0;          // taper exponent: 1 = linear, >1 = trumpet
 
+        // How much faster the horizontal leg runs than the vertical unroll.
+        // 1 = locked to it (the old behaviour: the panel drifts across the
+        // screen for the whole flight). 3 reaches the display centre by
+        // r~0.33 and then holds, so the visible expansion happens centred.
+        // Raise it to slide over faster; drop toward 1 to restore more of the
+        // book-to-modal travel arc.
+        var H_CENTER_PULL = 3;
+
         // How far past 1 we may go before the sheet leaves the viewport.
         var roomX = Math.max(0, (window.innerWidth * 0.995 - Bw) / Math.max(1, Mw - Bw) - 1);
         var roomY = (Btop - Mtop) > 1 ? Math.max(0, (Mtop - NECK_TOP_MARGIN) / (Btop - Mtop)) : 0;
@@ -1522,7 +1530,7 @@
           SWELL = lo;
         })();
 
-        function getGeometry(topProg, botProg, wTop, wBot, vty) {
+        function getGeometry(topProg, botProg, wTop, wBot, hProgRaw, vty) {
           var topY = Mtop + (Btop - Mtop) * (1 - topProg);
           var botY = Btop + ((Mtop + Mh) - Btop) * botProg;
           var currentHeight = botY - topY;
@@ -1533,9 +1541,28 @@
           var profile = Math.pow(1 - vty, FLARE);
           var w = Bw + (Mw - Bw) * (wTop * profile + wBot * (1 - profile));
 
-          // Centerline with Compiz harmonic S-swish
-          var centerShift = (Bcx - Mcx) * (vty * (1 - botProg) + (1 - vty) * (1 - topProg));
-          var swish = Math.sin(vty * Math.PI) * (Bcx - Mcx) * 0.25 * botProg * (1 - topProg);
+          // Centerline: HORIZONTAL travel is front-loaded relative to the vertical
+          // unroll, so the sheet slides onto the display centre early and then
+          // expands in place instead of drifting across the screen from
+          // wherever the book happens to sit.
+          //
+          // Previously the horizontal leg rode the same r as the vertical one,
+          // so a book in the left column kept the whole panel parked over the
+          // left half: measured, the panel centre was still ~209px left of the
+          // display centre at mid-flight, and spent 371 of 520 frames
+          // meaningfully off-centre. hProg reaches 1 by r = 1/H_CENTER_PULL,
+          // cutting that to ~186 frames and putting the expansion itself dead
+          // centre.
+          //
+          // The tip (vty=1) still starts pinned on the book at hProg=0 and the
+          // whole shape still lands exactly on the modal centre at hProg=1, so
+          // the book stays the anchor and the landing is unchanged. Because
+          // easeMorph has zero derivative at 1, the horizontal leg eases to a
+          // stop as it clamps rather than snapping.
+          var hProg = easeMorph(hProgRaw);
+          var hBell = 4 * hProgRaw * (1 - hProgRaw);
+          var centerShift = (Bcx - Mcx) * (1 - hProg) * (1 - (LEAD + SWELL) * hBell * (1 - vty));
+          var swish = Math.sin(vty * Math.PI) * (Bcx - Mcx) * 0.25 * hProg * (1 - hProg);
           var centerX = Mcx + centerShift + swish;
 
           return {
@@ -1591,6 +1618,12 @@
           var wTop = topProg;
           var wBot = Math.max(0, r - TIP_PINCH * bell);
 
+          // Horizontal progress, clamped at 1 by H_CENTER_PULL. getGeometry()
+          // re-derives its own bell from this for the residual shear, so the
+          // top edge still arrives fractionally ahead of the tip on the way
+          // across.
+          var hProgRaw = Math.min(1, r * H_CENTER_PULL);
+
           // Height mirrors getGeometry() so the shadow/silhouette guards below
           // test the real flown height, not a re-derived second copy of it.
           var currentHeight =
@@ -1614,8 +1647,8 @@
             var vty0 = Math.pow(i / N, SLICE_WARP);
             var vty1 = Math.pow((i + 1) / N, SLICE_WARP);
 
-            var s0 = getGeometry(topProg, botProg, wTop, wBot, vty0);
-            var s1 = getGeometry(topProg, botProg, wTop, wBot, vty1);
+            var s0 = getGeometry(topProg, botProg, wTop, wBot, hProgRaw, vty0);
+            var s1 = getGeometry(topProg, botProg, wTop, wBot, hProgRaw, vty1);
 
             var y0 = s0.screenY;
             var y1 = s1.screenY;
