@@ -431,7 +431,6 @@ body {
 .nav-capsule > li:nth-child(2) .nav-link:hover { background: rgba(255, 154, 0, 0.30); }
 .nav-capsule > li:nth-child(3) .nav-link:hover { background: rgba(46, 155, 255, 0.32); }
 .nav-capsule > li:nth-child(4) .nav-link:hover { background: rgba(46, 224, 107, 0.30); }
-.nav-capsule > li:nth-child(5) .nav-link:hover { background: rgba(155, 48, 255, 0.34); }
 
 @media (prefers-reduced-motion: reduce) {
   .nav-capsule,
@@ -2045,7 +2044,7 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   gap: clamp(14px, 2.4vw, 32px);
   width: 100%;
   padding: 0 16px;
-  margin-bottom: -5px; /* Sit right on top plane of shelf */
+  margin-bottom: -8px; /* Sit right on top plane of the thicker shelf */
   perspective: 1600px;
   perspective-origin: 50% 60%;
 }
