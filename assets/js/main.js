@@ -1492,6 +1492,13 @@
         var Mtop = (modalRect && modalRect.top) ? modalRect.top : (window.innerHeight - Mh) / 2;
         var Mleft = (modalRect && modalRect.left) ? modalRect.left : (window.innerWidth - Mw) / 2;
         var Mcx = Mleft + Mw / 2;
+        // MID-FLIGHT RETARGET (opening only): the launch rect above is read
+        // while the modal is freshly mounted and hidden — fonts, images and
+        // scrollbars may still move it. T* starts equal to M* and bends to
+        // the live rect from t=0.5 on, so the flight lands on truth instead
+        // of paying it off as a second stage at t=1.
+        var TMw = Mw, TMh = Mh, TMtop = Mtop, TMcx = Mcx;
+        var retargeted = false, retargetFrom = null, retargetTo = null;
 
         // Calculate Book Origin Rect (Anchor point on shelf)
         var bookRect = cardEl ? cardEl.getBoundingClientRect() : null;
@@ -1795,20 +1802,20 @@
         })();
 
         function getGeometry(topProg, botProg, wTop, wBot, vty) {
-          var topY = Mtop + (Btop - Mtop) * (1 - topProg);
-          var botY = Btop + ((Mtop + Mh) - Btop) * botProg;
+          var topY = TMtop + (Btop - TMtop) * (1 - topProg);
+          var botY = Btop + ((TMtop + TMh) - Btop) * botProg;
           var currentHeight = botY - topY;
           var screenY = topY + currentHeight * vty;
 
           // Trumpet taper: FLARE>1 holds the sheet near tip width through the
           // lower body and opens it out fast over the top third.
           var profile = Math.pow(1 - vty, FLARE);
-          var w = Bw + (Mw - Bw) * (wTop * profile + wBot * (1 - profile));
+          var w = Bw + (TMw - Bw) * (wTop * profile + wBot * (1 - profile));
 
           // Centerline with Compiz harmonic S-swish
-          var centerShift = (Bcx - Mcx) * (vty * (1 - botProg) + (1 - vty) * (1 - topProg));
-          var swish = Math.sin(vty * Math.PI) * (Bcx - Mcx) * 0.25 * botProg * (1 - topProg);
-          var centerX = Mcx + centerShift + swish;
+          var centerShift = (Bcx - TMcx) * (vty * (1 - botProg) + (1 - vty) * (1 - topProg));
+          var swish = Math.sin(vty * Math.PI) * (Bcx - TMcx) * 0.25 * botProg * (1 - topProg);
+          var centerX = TMcx + centerShift + swish;
 
           return {
             screenY: screenY,
@@ -1843,6 +1850,33 @@
           // Both directions run the same formula, so close is the exact
           // time-reverse of open — no second curve to keep in sync.
           var r = isOpening ? p : (1 - p);
+          // Mid-flight retarget (opening only): first frame past t=0.5,
+          // snapshot the live modal rect and bend T* onto it over the rest
+          // of the flight. Blend starts at 0 so this frame is identical to
+          // the last — no pop at the handoff point.
+          if (isOpening && !retargeted && t >= 0.5) {
+            retargeted = true;
+            try {
+              var rr = containerEl ? containerEl.getBoundingClientRect() : null;
+              if (rr && rr.width > 50 && rr.height > 50) {
+                retargetFrom = { w: TMw, h: TMh, cx: TMcx, top: TMtop };
+                retargetTo = { w: rr.width, h: rr.height, cx: rr.left + rr.width / 2, top: rr.top };
+                if (perf) {
+                  perf.marks.retargetDW = Math.round(Math.abs(rr.width - TMw));
+                  perf.marks.retargetDH = Math.round(Math.abs(rr.height - TMh));
+                }
+              }
+            } catch (e) { retargetFrom = null; }
+          }
+          if (retargetFrom && retargetTo) {
+            var rk = (t - 0.5) / 0.5;
+            if (rk < 0) rk = 0; if (rk > 1) rk = 1;
+            rk = rk * rk * (3 - 2 * rk);
+            TMw = retargetFrom.w + (retargetTo.w - retargetFrom.w) * rk;
+            TMh = retargetFrom.h + (retargetTo.h - retargetFrom.h) * rk;
+            TMcx = retargetFrom.cx + (retargetTo.cx - retargetFrom.cx) * rk;
+            TMtop = retargetFrom.top + (retargetTo.top - retargetFrom.top) * rk;
+          }
 
           // bell is 0 at BOTH ends and 1 at mid-flight. Everything below is a
           // multiple of it, which is the structural reason no edge can ever be
@@ -1866,8 +1900,8 @@
           // Height mirrors getGeometry() so the shadow/silhouette guards below
           // test the real flown height, not a re-derived second copy of it.
           var currentHeight =
-            (Btop + ((Mtop + Mh) - Btop) * botProg) -
-            (Mtop + (Btop - Mtop) * (1 - topProg));
+            (Btop + ((TMtop + TMh) - Btop) * botProg) -
+            (TMtop + (Btop - TMtop) * (1 - topProg));
           var elevation = r;
 
           clearCanvas();
@@ -1929,9 +1963,9 @@
           // arms it, so the normal flight is untouched.
           if (settleXf) {
             ctx.save();
-            ctx.translate(Mcx + settleXf.tx, (Mtop + Mh * 0.5) + settleXf.ty);
+            ctx.translate(TMcx + settleXf.tx, (TMtop + TMh * 0.5) + settleXf.ty);
             ctx.scale(settleXf.sx, settleXf.sy);
-            ctx.translate(-Mcx, -(Mtop + Mh * 0.5));
+            ctx.translate(-TMcx, -(TMtop + TMh * 0.5));
           }
           var flightEnv = Math.sin(Math.PI * Math.min(1, Math.max(0, elevation)));
           if (flightShadow && !isLowEnd && flightEnv > 0.03 && currentHeight > 12) {
@@ -1966,8 +2000,8 @@
               ctx.save();
               ctx.globalAlpha = Math.min(1, restAlpha);
               ctx.drawImage(restShadow,
-                Mleft - restPad, Mtop - restPad,
-                Mw + restPad * 2, Mh + restPad * 2);
+                (TMcx - TMw / 2) - restPad, TMtop - restPad,
+                TMw + restPad * 2, TMh + restPad * 2);
               ctx.restore();
             }
           }
@@ -1995,15 +2029,18 @@
             settleInited = true;
             try {
               var fr = containerEl ? containerEl.getBoundingClientRect() : null;
-              var fw = Mw, fh = Mh;
-              var fcx = Mcx, fcy = Mtop + Mh * 0.5;
+              // Fallback and deltas are measured against the CURRENT target
+              // (post-retarget): a flight that already landed on truth yields
+              // identity here and skips the second stage entirely.
+              var fw = TMw, fh = TMh;
+              var fcx = TMcx, fcy = TMtop + TMh * 0.5;
               if (fr && fr.width > 50 && fr.height > 50) {
                 fw = fr.width; fh = fr.height;
                 fcx = fr.left + fr.width * 0.5;
                 fcy = fr.top + fr.height * 0.5;
               }
-              var dW = Math.abs(fw - Mw), dH = Math.abs(fh - Mh);
-              var dX = fcx - Mcx, dY = fcy - (Mtop + Mh * 0.5);
+              var dW = Math.abs(fw - TMw), dH = Math.abs(fh - TMh);
+              var dX = fcx - TMcx, dY = fcy - (TMtop + TMh * 0.5);
               var dC = Math.sqrt(dX * dX + dY * dY);
               if (perf) {
                 perf.marks.settleDW = Math.round(dW);
@@ -2011,7 +2048,7 @@
                 perf.marks.settleDC = Math.round(dC);
               }
               if (Math.max(dW, dH, dC) >= SETTLE_MIN_PX) {
-                settleTo = { sx: fw / Mw, sy: fh / Mh, tx: dX, ty: dY };
+                settleTo = { sx: fw / TMw, sy: fh / TMh, tx: dX, ty: dY };
                 settling = true;
                 settleStep = 0;
                 settleT0 = performance.now();
