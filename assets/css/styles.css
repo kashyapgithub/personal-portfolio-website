@@ -2120,8 +2120,8 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
     radial-gradient(260px 14px at 90% 45%, rgba(255, 240, 210, 0.12) 0%, transparent 70%),
     radial-gradient(9px 5px at 63% 58%, rgba(96, 68, 38, 0.38) 0%, rgba(96, 68, 38, 0.18) 45%, transparent 72%),
     linear-gradient(90deg, rgba(96, 70, 40, 0.16) 0%, rgba(96, 70, 40, 0) 14%, rgba(255, 242, 214, 0.10) 50%, rgba(96, 70, 40, 0) 86%, rgba(96, 70, 40, 0.18) 100%),
-    linear-gradient(180deg, #7d5c38 0%, #a37e50 38%, #b8935f 72%, #c6a26c 100%);
-  border-top: 1px solid rgba(60, 42, 22, 0.55);
+    linear-gradient(180deg, #55402a 0%, #6b5136 38%, #7a5c3c 72%, #84633f 100%);
+  border-top: 1px solid rgba(30, 20, 10, 0.7);
   box-shadow:
     inset 0 3px 5px rgba(60, 42, 22, 0.35),
     inset 0 -1px 0 rgba(255, 244, 220, 0.4);
@@ -2147,8 +2147,8 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
     radial-gradient(200px 16px at 30% 30%, rgba(70, 50, 28, 0.18) 0%, transparent 70%),
     radial-gradient(260px 18px at 75% 65%, rgba(255, 238, 205, 0.10) 0%, transparent 70%),
     repeating-linear-gradient(180deg, rgba(70, 50, 28, 0.10) 0 1px, transparent 1px 4px),
-    linear-gradient(180deg, #8a6742 0%, #6f5233 55%, #574022 100%);
-  border-bottom: 2px solid #3d2d18;
+    linear-gradient(180deg, #5c452b 0%, #48351f 55%, #332515 100%);
+  border-bottom: 2px solid #1c1208;
   border-radius: 0 0 6px 6px;
   box-shadow: 0 10px 18px rgba(90, 70, 40, 0.35), inset 0 1px 0 rgba(255, 240, 210, 0.22);
 }
@@ -2989,19 +2989,19 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
    bottom plinth, warm lamp glow from above */
 .bookshelf-stage.neumorphic-stage {
   background:
-    linear-gradient(180deg, rgba(255, 236, 200, 0.08) 0%, rgba(255, 236, 200, 0) 24%),
-    repeating-linear-gradient(90deg, rgba(46, 33, 18, 0.14) 0 2px, transparent 2px 9px),
-    repeating-linear-gradient(89.4deg, rgba(255, 238, 205, 0.05) 0 1px, transparent 1px 7px),
-    repeating-linear-gradient(90.6deg, rgba(40, 28, 15, 0.09) 0 2px, transparent 2px 31px),
-    linear-gradient(180deg, #6b5136 0%, #54402c 32%, #42331f 72%, #372a19 100%);
-  border: 1px solid #2e2114;
+    linear-gradient(180deg, rgba(255, 236, 200, 0.05) 0%, rgba(255, 236, 200, 0) 24%),
+    repeating-linear-gradient(90deg, rgba(28, 18, 8, 0.20) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(89.4deg, rgba(255, 238, 205, 0.035) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(90.6deg, rgba(22, 14, 6, 0.13) 0 2px, transparent 2px 31px),
+    linear-gradient(180deg, #3d2c1c 0%, #2e2114 32%, #241a10 72%, #1b1309 100%);
+  border: 1px solid #140c05;
   border-radius: 14px;
   box-shadow:
-    0 34px 64px -22px rgba(80, 60, 35, 0.5),
-    0 12px 28px rgba(80, 60, 35, 0.3),
-    inset 0 0 0 10px #4a3826,
-    inset 0 0 0 11px rgba(255, 232, 200, 0.14),
-    inset 0 26px 54px rgba(0, 0, 0, 0.35);
+    0 34px 64px -22px rgba(30, 20, 8, 0.55),
+    0 12px 28px rgba(30, 20, 8, 0.4),
+    inset 0 0 0 10px #2a1d10,
+    inset 0 0 0 11px rgba(255, 232, 200, 0.10),
+    inset 0 26px 54px rgba(0, 0, 0, 0.5);
 }
 
 .bookshelf-stage.neumorphic-stage::before,
@@ -3018,8 +3018,8 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   top: 13px;
   height: 15px;
   border-radius: 5px;
-  background: linear-gradient(180deg, #8a6a42 0%, #5f4a2e 45%, #41321e 100%);
-  border-top: 1px solid rgba(255, 226, 182, 0.4);
+  background: linear-gradient(180deg, #55402a 0%, #3a2c1b 45%, #1f150b 100%);
+  border-top: 1px solid rgba(255, 226, 182, 0.22);
   box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5);
 }
 
@@ -3027,25 +3027,25 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   bottom: 13px;
   height: 22px;
   border-radius: 5px;
-  background: linear-gradient(180deg, #6e573d 0%, #4c3a24 55%, #372a18 100%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.6);
-  border-top: 1px solid rgba(255, 226, 182, 0.22);
+  background: linear-gradient(180deg, #43331f 0%, #2b2013 55%, #1a1208 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.75);
+  border-top: 1px solid rgba(255, 226, 182, 0.12);
   box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.4);
 }
 
 .bookshelf-stage .shelf-neumorphic-ambient {
   border-radius: 14px;
-  background: radial-gradient(ellipse 62% 42% at 50% 0%, rgba(255, 220, 180, 0.14) 0%, transparent 70%);
+  background: radial-gradient(ellipse 62% 42% at 50% 0%, rgba(255, 220, 180, 0.08) 0%, transparent 70%);
 }
 
 /* Brass shelf plates */
 .bookshelf-stage .shelf-level-header {
-  background: linear-gradient(180deg, #cfa855 0%, #a37c33 52%, #86611f 100%);
-  border: 1px solid #64491b;
+  background: linear-gradient(180deg, #9c7a33 0%, #75561f 52%, #5c4317 100%);
+  border: 1px solid #3d2c0f;
   border-radius: 5px;
   padding: 5px 18px;
   margin-bottom: 12px;
-  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 242, 202, 0.65);
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 242, 202, 0.35);
 }
 
 .bookshelf-stage .shelf-level-tag {
@@ -3070,33 +3070,33 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
     radial-gradient(16px 130px at 50% 28%, rgba(60, 42, 22, 0.20) 0%, transparent 70%),
     repeating-linear-gradient(90.5deg, rgba(255, 240, 210, 0.05) 0 1px, transparent 1px 12px),
     repeating-linear-gradient(90deg, rgba(60, 42, 22, 0.14) 0 2px, transparent 2px 7px),
-    linear-gradient(90deg, #54402a 0%, #6b543a 50%, #54402a 100%);
+    linear-gradient(90deg, #33261a 0%, #453626 50%, #33261a 100%);
 }
 
 .bookshelf-stage .shelf-level::before {
-  border-left: 2px solid #8a6f4d;
+  border-left: 2px solid #5d472e;
 }
 
 .bookshelf-stage .shelf-level::after {
-  border-right: 2px solid #8a6f4d;
+  border-right: 2px solid #5d472e;
 }
 
 /* Shelf recess: deep walnut interior behind the covers */
 .bookshelf-stage .shelf-books-row {
   background:
-    linear-gradient(180deg, rgba(46, 32, 16, 0.30) 0%, rgba(46, 32, 16, 0) 20%),
-    linear-gradient(180deg, rgba(255, 224, 180, 0.08) 0%, rgba(255, 224, 180, 0) 28%),
-    repeating-linear-gradient(90deg, rgba(46, 32, 16, 0.22) 0 2px, transparent 2px 160px),
-    repeating-linear-gradient(90deg, rgba(46, 32, 16, 0.10) 0 2px, transparent 2px 11px),
-    linear-gradient(180deg, #4e3a24 0%, #3a2b1a 60%, #2c2114 100%);
-  border: 1px solid rgba(0, 0, 0, 0.55);
+    linear-gradient(180deg, rgba(16, 10, 4, 0.55) 0%, rgba(16, 10, 4, 0) 22%),
+    linear-gradient(180deg, rgba(255, 224, 180, 0.05) 0%, rgba(255, 224, 180, 0) 28%),
+    repeating-linear-gradient(90deg, rgba(20, 13, 5, 0.30) 0 2px, transparent 2px 160px),
+    repeating-linear-gradient(90deg, rgba(20, 13, 5, 0.14) 0 2px, transparent 2px 11px),
+    linear-gradient(180deg, #2e2114 0%, #221809 60%, #170f06 100%);
+  border: 1px solid rgba(0, 0, 0, 0.7);
   border-bottom: none;
   border-radius: 10px 10px 0 0;
   box-shadow:
-    inset 0 16px 32px rgba(46, 32, 16, 0.4),
-    inset 0 -3px 8px rgba(46, 32, 16, 0.35),
-    inset 12px 0 26px rgba(46, 32, 16, 0.28),
-    inset -12px 0 26px rgba(46, 32, 16, 0.28);
+    inset 0 16px 32px rgba(0, 0, 0, 0.55),
+    inset 0 -3px 8px rgba(0, 0, 0, 0.5),
+    inset 12px 0 26px rgba(0, 0, 0, 0.4),
+    inset -12px 0 26px rgba(0, 0, 0, 0.4);
 }
 
 /* ============================================================
