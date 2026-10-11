@@ -1175,11 +1175,18 @@
         sctx.fillStyle = theme.accent;
         sctx.fillRect(bX + 10, bY + 14, 2, bH - 28);
 
-        // Book Cover Badges
+        // Book Cover Badges. Both strings were hardcoded to Genie's
+        // "HFT · 12–100 μs" / "ALPHA GENERATION", so every other book
+        // rendered its own cover wearing Genie's text whenever the DOM
+        // raster fell back to this painted path. Derive both from data.
+        var badgeTag = (data.tags && data.tags[0]) || (data.category || "");
+        // category reads "VOLUME 06 · PROFESSIONAL RECORD"; the tail is the
+        // series name that belongs on the cover.
+        var seriesName = String(data.category || "").split("·").pop().trim();
         sctx.fillStyle = theme.accent;
         sctx.font = "700 9px monospace";
-        sctx.fillText("HFT · 12–100 μs", bX + 18, bY + 28);
-        sctx.fillText("CH. " + (data.chapterNum || "01"), bX + bW - 48, bY + 28);
+        sctx.fillText(String(badgeTag).toUpperCase().slice(0, 22), bX + 18, bY + 28);
+        sctx.fillText("VOL. " + (data.chapterNum || "01"), bX + bW - 48, bY + 28);
 
         // Book Cover Central Radar Reticle
         var iconCx = bX + bW / 2;
@@ -1201,14 +1208,14 @@
         sctx.strokeStyle = theme.accent;
         sctx.stroke();
 
-        // Book Cover Bottom Titles
+        // Book Cover Bottom Titles — series from data, not Genie's label
         sctx.fillStyle = theme.accent;
         sctx.font = "700 8px monospace";
-        sctx.fillText("ALPHA GENERATION", bX + 18, bY + bH - 34);
+        sctx.fillText(seriesName.toUpperCase().slice(0, 24), bX + 18, bY + bH - 34);
         sctx.fillStyle = "#ffffff";
         sctx.font = "800 13px sans-serif";
         var titleWord = (data.title || "").split(":")[0];
-        sctx.fillText(titleWord.slice(0, 16), bX + 18, bY + bH - 18);
+        sctx.fillText(titleWord.slice(0, 18), bX + 18, bY + bH - 18);
 
         // Era Stamp under Artwork
         var eraY = startY + artCardH - 32;
