@@ -3312,9 +3312,19 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
    The two tokens this block needs are declared alongside it. They are
    intentionally NOT mapped onto this site's --accent/--muted: doing so
    is what produced the mismatch. --silver here is the demo's silver.
+
+   --black is the one deliberate deviation: the demo ships #0b0b0d,
+   which is almost exactly this site's page background (#090a0f), so
+   the section band was invisible -- 1.006:1 against the page. Dropped
+   to true black so the band reads and the cards' aurora wash has
+   something dark to sit on. At these luminances contrast ratios are
+   heavily compressed: even pure black only reaches 1.062:1 against the
+   page and 1.106:1 against the card. That is the full range available
+   from "darker background" alone -- further separation would need the
+   card base lifted, which would leave the verbatim colour block.
    ------------------------------------------------------------- */
 :root {
-  --black: #0b0b0d;
+  --black: #000000;
   --silver: #b3b3b3;
   --coal-2: #141416;
 }
