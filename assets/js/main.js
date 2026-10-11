@@ -934,6 +934,10 @@
       var ctx = canvas ? canvas.getContext("2d") : null;
       var activeAnimId = null;
       var isAnimating = false;
+      // Adaptive governor state (shared scope: resizeCanvas() lives here,
+      // outside animateGenie — a binding local to animateGenie would throw
+      // ReferenceError inside resizeCanvas and brick the opener mid-setup).
+      var renderScale = 1, govSlow = 0;
 
       var THEME_COLORS = {
         // LEVEL 01 — category volumes (must mirror .book-card--* in styles.css)
@@ -963,8 +967,9 @@
         if (!canvas) return;
         // Cap DPR at 1.75 for the transient morph canvas: halves backing
         // pixels vs 2x on retina with no visible difference over 480ms,
-        // roughly 30-40% faster slice blits.
-        var dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+        // roughly 30-40% faster slice blits. Multiplied by the governor's
+        // renderScale (1 until sustained slowness steps it down).
+        var dpr = Math.min(window.devicePixelRatio || 1, 1.75) * (renderScale || 1);
         var w = window.innerWidth;
         var h = window.innerHeight;
         canvas.width = Math.round(w * dpr);
@@ -1463,13 +1468,13 @@
 
       function animateGenie(isOpening, cardEl, overlay, containerEl, data, bookId, callback, prebuilt) {
         if (!canvas || !ctx) {
-          if (callback) callback();
+          if (callback) callback(false);
           return;
         }
 
         var prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         if (prefersReduced) {
-          if (callback) callback();
+          if (callback) callback(false);
           return;
         }
 
@@ -1482,6 +1487,10 @@
         // snapshot build below. Otherwise a close/open landing mid-build
         // sees a false idle and double-launches a second morph.
         isAnimating = true;
+        // Fresh run, full pixels: the governor steps down only on sustained
+        // slowness inside this run.
+        renderScale = 1;
+        govSlow = 0;
 
         resizeCanvas();
 
@@ -1513,8 +1522,11 @@
         var snapshot = prebuilt || createSnapshot(data, Mw, Mh, bookId);
         try { window.__lastSnapshotKind = prebuilt ? "raster" : "painted"; } catch (e) { /* ignore */ }
         if (!snapshot) {
+          // Texture failed (canvas 2d contexts exhaust under memory
+          // pressure, even on real devices): report failure so the caller
+          // presents instantly instead of stranding the UI invisible.
           isAnimating = false;
-          if (callback) callback();
+          if (callback) callback(false);
           return;
         }
 
@@ -1835,6 +1847,22 @@
             var ldt = timestamp - (perf._last || timestamp);
             perf._last = timestamp;
             if (perf.frames.length < 240) perf.frames.push(Math.round(ldt * 10) / 10);
+            // Adaptive governor: 6 straight slow frames (>26ms) steps the
+            // backing store down a notch (1 -> 0.75 -> 0.6). Output scale
+            // only — slice boundaries never re-seed, so no contour boil.
+            // Fast frames forgive twice as fast as slow ones accuse.
+            if (renderScale > 0.6) {
+              if (ldt > 26) { govSlow++; } else if (govSlow > 0) { govSlow -= 2; if (govSlow < 0) govSlow = 0; }
+              if (govSlow >= 6) {
+                govSlow = 0;
+                renderScale = renderScale > 0.75 ? 0.75 : 0.6;
+                try {
+                  resizeCanvas();
+                  perf.marks.govQuality = renderScale;
+                  perf.marks.govAt = Math.round(timestamp - startTime);
+                } catch (e) { /* keep flying at current pixels */ }
+              }
+            }
             // Auto-flag stalls so they can be reported straight from console.
             if (ldt > 250 && perf.frames.length > 2 && !perf.stallWarned) {
               perf.stallWarned = true;
@@ -2414,7 +2442,16 @@
           var key = CHAPTER_KEYS[idx];
           var data = CHAPTERS[key];
           if (genieCanvas) genieCanvas.classList.remove("is-fading");
-          GenieFX.open(cardEl, overlay, containerEl, data, key, function () {
+          GenieFX.open(cardEl, overlay, containerEl, data, key, function (ok) {
+            if (ok === false) {
+              // No texture (or no motion): present the preloaded modal
+              // instantly and release the opener — never strand the UI
+              // behind an invisible overlay or brick future opens.
+              openPending = false;
+              overlay.classList.remove("is-genie-active");
+              overlay.classList.add("genie-settled");
+              if (cardEl) cardEl.classList.remove("is-opening", "is-closing");
+            }
             if (pendingClose) {
               pendingClose = false;
               closeChapter();

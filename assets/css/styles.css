@@ -3139,6 +3139,14 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   -webkit-backdrop-filter: blur(10px);
 }
 
+/* Flight economy: that fullscreen blur is the top jank source while the
+   canvas churns, so it drops to zero for the flight (masked by motion)
+   and returns for the settled read. */
+.chapter-modal-overlay.is-genie-active:not(.genie-settled) .chapter-modal-backdrop {
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+}
+
 /* ============ macOS Catalina Style Genie Effect Canvas ============ */
 .genie-canvas {
   position: fixed;
