@@ -39,6 +39,7 @@
   // from darkness, so only shaft + landing read on screen.
   var beamSprite = null;   // baked volumetric shaft, drawn stretched
   var hotPoolSprite = null;// baked tungsten pool on the floor
+  var topKissSprite = null;// baked top-light wash, clipped to the disc
   var reduceSpotMotion = false;
   try {
     reduceSpotMotion = window.matchMedia &&
@@ -460,6 +461,18 @@
       [0.65, "rgba(255,200,142,0.15)"],
       [1.00, "rgba(255,200,142,0)"]
     ]);
+    // ---- Top-light kiss: soft overhead wash, clipped to the disc at
+    // draw time so the face (painted after) stays clean ----
+    topKissSprite = makeCanvas(256, 256);
+    var kctx = topKissSprite.getContext("2d");
+    if (kctx) {
+      var kiss = kctx.createRadialGradient(128, 84, 8, 128, 128, 150);
+      kiss.addColorStop(0.00, "rgba(255,244,222,0.85)");
+      kiss.addColorStop(0.45, "rgba(255,236,204,0.32)");
+      kiss.addColorStop(1.00, "rgba(255,236,204,0)");
+      kctx.fillStyle = kiss;
+      kctx.fillRect(0, 0, 256, 256);
+    }
   }
 
   // Debounced sprite re-bake. resize() itself must stay synchronous (the
@@ -1322,7 +1335,12 @@
     // barely-there air movement. Per-frame work is 1 drawImage.
     var spotSway = reduceSpotMotion ? 0 : Math.sin(elapsedSec * 0.35) * R * 0.05;
     var spotX = cx + spotSway;
-    var spotBreath = reduceSpotMotion ? 0.34 : 0.34 + Math.sin(elapsedSec * 0.9) * 0.04;
+    // Lights-up: the rig fades in over the entrance, then breathes.
+    // Swell follows hops and speech energy like a live follow-spot.
+    var spotFade = reduceSpotMotion ? 1 : Math.min(1, elapsedSec / 2.2);
+    spotFade = spotFade * spotFade * (3 - 2 * spotFade);
+    var spotSwell = Math.min(0.15, Math.abs(hopY) * 0.012 + (bubbleState === "speaking" ? 0.06 : 0));
+    var spotBreath = (reduceSpotMotion ? 0.34 : 0.34 + Math.sin(elapsedSec * 0.9) * 0.04) * spotFade + spotSwell * spotFade;
     if (beamSprite) {
       var beamW = R * 3.0;
       var beamTop = -H * 0.06;
@@ -1398,7 +1416,7 @@
       if (hotPoolSprite) {
         var hW = R * 3.0 * squashX, hH = R * 0.75 * squashY;
         ctx.globalCompositeOperation = "screen";
-        ctx.globalAlpha = Math.min(1, 0.45 + 0.45 * contact);
+        ctx.globalAlpha = Math.min(1, (0.45 + 0.45 * contact) * spotFade + spotSwell * spotFade);
         ctx.drawImage(hotPoolSprite, spotX - hW / 2, shadowFloorY - hH / 2, hW, hH);
         ctx.globalCompositeOperation = "source-over";
       }
@@ -1413,6 +1431,23 @@
     if (sphereSprite) {
       var dW = R * 2 * squashX, dH = R * 2 * squashY;
       ctx.drawImage(sphereSprite, cx - dW / 2, currentCy - dH / 2, dW, dH);
+      // Top-light kiss: overhead wash clipped to the body so the rig
+      // lights the porcelain; the face is painted next and stays clean.
+      if (topKissSprite && spotFade > 0.01) {
+        ctx.save();
+        ctx.beginPath();
+        if (ctx.ellipse) {
+          ctx.ellipse(cx, currentCy, Math.max(1, R * squashX * 0.99), Math.max(1, R * squashY * 0.99), 0, 0, Math.PI * 2);
+        } else {
+          ctx.arc(cx, currentCy, Math.max(1, R * 0.99), 0, Math.PI * 2);
+        }
+        ctx.clip();
+        ctx.globalCompositeOperation = "screen";
+        ctx.globalAlpha = Math.min(1, 0.55 * spotFade + spotSwell * spotFade);
+        var kW = R * 2.1 * squashX, kH = R * 2.1 * squashY;
+        ctx.drawImage(topKissSprite, cx - kW / 2, currentCy - kH / 2 - R * 0.18, kW, kH);
+        ctx.restore();
+      }
     } else {
       // Fallback (should never run): flat disc so the bot never vanishes
       ctx.save();
