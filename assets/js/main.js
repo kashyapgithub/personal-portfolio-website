@@ -1274,18 +1274,12 @@
           } catch (e) { /* ignore */ }
         }
 
-        var duration = isOpening ? 480 : 380; // snappy macOS timing (ms)
+        var duration = isOpening ? 520 : 400; // smooth macOS timing with ample frames
         var startTime = null;
-        // Adaptive slice density: 56 is visually identical to 80 for this
-        // curve (tested side-by-side) at ~30% lower blit cost; low-end
-        // and small screens drop to 40 and skip the flight shadow.
+        // High slice density for continuous deformation contour:
         var isLowEnd = (window.innerWidth < 640) ||
           ((navigator && navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4));
-        var N = isLowEnd ? 40 : 56;
-        // Overlapping dual-phase ranges: both j and k change simultaneously
-        // through the middle 50% of the animation for a single continuous sweep.
-        var jEnd  = 0.75;  // j completes at p = 0.75
-        var kStart = 0.25; // k begins   at p = 0.25
+        var N = isLowEnd ? 44 : 64;
         // Pre-rendered soft flight shadow (one drawImage per frame — the
         // old 3x ctx.shadowBlur contour fills were the top jank source;
         // shadowBlur forces a software raster of the full contour).
@@ -1433,13 +1427,18 @@
           var k, j;
 
           if (isOpening) {
-            // Opening (Unminimize): vertical flight and shape expansion overlap
-            j = 1 - smoothstep(0, jEnd, p);
-            k = 1 - smoothstep(kStart, 1, p);
+            // Opening (Unminimize): Top shoots up and expands first, bottom follows
+            // smoothly in one continuous wave with rich intermediate frames throughout.
+            var topProg = Math.sin(p * Math.PI * 0.5); // smoothly leads: 0 -> 1
+            var botProg = Math.pow(p, 1.5);            // smoothly follows: 0 -> 1
+            j = 1 - topProg; // 1 -> 0 (top moves from book to modal)
+            k = 1 - botProg; // 1 -> 0 (bottom expands from book to modal)
           } else {
-            // Closing (Minimize): shape narrowing and vertical collapse overlap
-            k = smoothstep(0, jEnd, p);
-            j = smoothstep(kStart, 1, p);
+            // Closing (Minimize): Bottom narrows into book first, top follows down smoothly
+            var botShrink = Math.sin(p * Math.PI * 0.5); // bottom leads into book
+            var topShrink = Math.pow(p, 1.5);            // top follows down
+            k = botShrink; // 0 -> 1
+            j = topShrink; // 0 -> 1
           }
 
           var fullHeight = Mh + (Hchimney - Mh) * k;
@@ -1597,7 +1596,7 @@
                   clearCanvas();
                   if (canvas) canvas.classList.remove("is-fading");
                   activeAnimId = null;
-                }, 220);
+                }, 160);
               }
               requestAnimationFrame(armFade);
             } else {
