@@ -2073,19 +2073,30 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   pointer-events: none;
 }
 
-/* Shelf Top Surface — worn oak, lighter where hands and books polish it */
+/* Shelf Top Surface — a horizontal oak plane seen from just above:
+   dark seam where it meets the back boards, hand-polished light
+   pooling toward the nosing, grain running the length of the board */
 .shelf-plank--neumorphic .shelf-surface {
   width: 100%;
   height: 26px;
   background:
-    linear-gradient(180deg, rgba(255, 236, 205, 0.55) 0%, rgba(255, 236, 205, 0) 35%),
+    radial-gradient(46% 130% at 38% 100%, rgba(255, 232, 190, 0.35) 0%, rgba(255, 232, 190, 0) 60%),
+    linear-gradient(180deg, rgba(24, 12, 4, 0.55) 0%, rgba(24, 12, 4, 0) 34%),
+    repeating-linear-gradient(89deg, rgba(58, 33, 13, 0.13) 0 1px, transparent 1px 9px),
+    repeating-linear-gradient(91deg, rgba(255, 228, 185, 0.07) 0 1px, transparent 1px 13px),
+    repeating-linear-gradient(88.5deg, rgba(40, 22, 8, 0.10) 0 2px, transparent 2px 23px),
     repeating-linear-gradient(180deg, rgba(62, 36, 14, 0.10) 0 1px, transparent 1px 5px),
-    linear-gradient(90deg, transparent 8%, rgba(70, 40, 16, 0.16) 42%, transparent 68%),
-    linear-gradient(180deg, #b3814d 0%, #96632f 55%, #7a4e24 100%);
-  border-top: 2px solid #e3bd85;
+    radial-gradient(150px 12px at 12% 62%, rgba(70, 40, 15, 0.20) 0%, transparent 70%),
+    radial-gradient(210px 10px at 47% 38%, rgba(70, 40, 15, 0.16) 0%, transparent 70%),
+    radial-gradient(130px 12px at 71% 66%, rgba(60, 34, 13, 0.20) 0%, transparent 70%),
+    radial-gradient(260px 14px at 90% 45%, rgba(255, 228, 185, 0.12) 0%, transparent 70%),
+    radial-gradient(9px 5px at 63% 58%, rgba(46, 24, 8, 0.55) 0%, rgba(46, 24, 8, 0.25) 45%, transparent 72%),
+    linear-gradient(90deg, rgba(52, 30, 12, 0.22) 0%, rgba(52, 30, 12, 0) 14%, rgba(255, 230, 185, 0.10) 50%, rgba(52, 30, 12, 0) 86%, rgba(52, 30, 12, 0.25) 100%),
+    linear-gradient(180deg, #6d4522 0%, #96632f 38%, #a9743b 72%, #bd8750 100%);
+  border-top: 1px solid rgba(28, 15, 5, 0.7);
   box-shadow:
-    inset 0 2px 3px rgba(255, 240, 214, 0.5),
-    inset 0 -3px 6px rgba(52, 30, 12, 0.45);
+    inset 0 3px 5px rgba(20, 10, 4, 0.5),
+    inset 0 -1px 0 rgba(255, 240, 214, 0.55);
   border-radius: 6px 6px 0 0;
   transform-origin: bottom center;
 }
@@ -2098,16 +2109,20 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   box-shadow: 0 1px 2px rgba(255, 240, 214, 0.55);
 }
 
-/* Shelf Front Edge — dark edge grain, shadowed belly */
+/* Shelf Front Edge — end-on board face, grain along its length */
 .shelf-plank--neumorphic .shelf-front {
   width: 100%;
   height: 30px;
   background:
+    repeating-linear-gradient(89deg, rgba(28, 15, 6, 0.12) 0 1px, transparent 1px 11px),
+    repeating-linear-gradient(90.5deg, rgba(255, 222, 175, 0.06) 0 1px, transparent 1px 17px),
+    radial-gradient(200px 16px at 30% 30%, rgba(30, 16, 6, 0.25) 0%, transparent 70%),
+    radial-gradient(260px 18px at 75% 65%, rgba(255, 220, 170, 0.10) 0%, transparent 70%),
     repeating-linear-gradient(180deg, rgba(30, 17, 6, 0.14) 0 1px, transparent 1px 4px),
     linear-gradient(180deg, #6f4525 0%, #59351b 55%, #422512 100%);
   border-bottom: 2px solid #2a1708;
   border-radius: 0 0 6px 6px;
-  box-shadow: 0 10px 18px rgba(90, 55, 25, 0.45);
+  box-shadow: 0 10px 18px rgba(90, 55, 25, 0.45), inset 0 1px 0 rgba(255, 235, 200, 0.25);
 }
 
 /* Cast Shadow beneath shelf — warm, deep, library air */
@@ -2946,7 +2961,8 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   background:
     linear-gradient(180deg, rgba(255, 222, 168, 0.10) 0%, rgba(255, 222, 168, 0) 24%),
     repeating-linear-gradient(90deg, rgba(12, 6, 2, 0.20) 0 2px, transparent 2px 9px),
-    repeating-linear-gradient(90deg, rgba(255, 220, 170, 0.05) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(89.4deg, rgba(255, 220, 170, 0.05) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(90.6deg, rgba(10, 5, 2, 0.12) 0 2px, transparent 2px 31px),
     linear-gradient(180deg, #4a2e17 0%, #3a2312 32%, #2b1a0d 72%, #221306 100%);
   border: 1px solid #180d04;
   border-radius: 14px;
@@ -3021,6 +3037,8 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 .bookshelf-stage .shelf-level::before,
 .bookshelf-stage .shelf-level::after {
   background:
+    radial-gradient(16px 130px at 50% 28%, rgba(18, 9, 3, 0.28) 0%, transparent 70%),
+    repeating-linear-gradient(90.5deg, rgba(255, 220, 170, 0.05) 0 1px, transparent 1px 12px),
     repeating-linear-gradient(90deg, rgba(12, 6, 2, 0.22) 0 2px, transparent 2px 7px),
     linear-gradient(90deg, #39220f 0%, #4f2d17 50%, #39220f 100%);
 }
@@ -3038,6 +3056,7 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.38) 0%, rgba(0, 0, 0, 0) 20%),
     linear-gradient(180deg, rgba(255, 214, 150, 0.09) 0%, rgba(255, 214, 150, 0) 28%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.35) 0 2px, transparent 2px 160px),
     repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.15) 0 2px, transparent 2px 11px),
     linear-gradient(180deg, #30200f 0%, #231606 60%, #180e04 100%);
   border: 1px solid rgba(0, 0, 0, 0.55);
