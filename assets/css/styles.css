@@ -258,191 +258,204 @@ body {
 }
 
 .nav-capsule {
+  --mx: 50%;
+  --my: 50%;
+  --tint: rgba(255, 255, 255, 0.12);
   position: relative;
   display: flex;
   align-items: center;
   list-style: none;
   gap: 2px;
-  padding: 2px;
+  padding: 3px;
   border-radius: 999px;
   overflow: hidden;
-  /* Dark glass pill with Holi powder suspended inside it. The base is
-     near-black glass; the colours are translucent washes (never opaque
-     pigment), so the pill stays dim and the powder reads as dye in
-     water rather than neon paint. Slow 14s drift keeps it calm. */
-  background-color: rgba(10, 12, 20, 0.62);
-  background-image:
-    radial-gradient(60% 140% at 8% 50%, rgba(255, 46, 136, 0.30), transparent 70%),
-    radial-gradient(55% 140% at 32% 50%, rgba(255, 154, 0, 0.26), transparent 70%),
-    radial-gradient(55% 140% at 52% 50%, rgba(255, 217, 26, 0.20), transparent 70%),
-    radial-gradient(55% 140% at 70% 50%, rgba(46, 224, 107, 0.24), transparent 70%),
-    radial-gradient(60% 140% at 90% 50%, rgba(46, 155, 255, 0.30), transparent 70%),
-    linear-gradient(100deg,
-      rgba(155, 48, 255, 0.16),
-      rgba(46, 155, 255, 0.10) 40%,
-      rgba(46, 224, 107, 0.08) 60%,
-      rgba(255, 46, 136, 0.16));
-  background-size: 220% 120%, 220% 120%, 220% 120%, 220% 120%, 220% 120%, 260% 100%;
-  background-position: 0% 50%, 20% 50%, 40% 50%, 60% 50%, 80% 50%, 0% 50%;
-  animation:
-    capsule-flow 10s linear infinite alternate,
-    holi-glow 9s linear infinite alternate;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  isolation: isolate;
+  /* Deep glass base. Colour comes from the aurora layer + cursor
+     spotlight, never from a flat pigment fill. */
+  background: rgba(7, 9, 16, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow:
-    0 8px 24px -10px rgba(0, 0, 0, 0.7),
-    0 0 18px -6px rgba(155, 48, 255, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.35);
-  transition: transform 0.25s ease, border-color 0.25s ease;
-  -webkit-backdrop-filter: saturate(160%) blur(22px);
-  backdrop-filter: saturate(160%) blur(22px);
+    0 10px 28px -12px rgba(0, 0, 0, 0.75),
+    0 0 22px -8px rgba(155, 48, 255, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.20),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.40);
+  -webkit-backdrop-filter: saturate(170%) blur(22px);
+  backdrop-filter: saturate(170%) blur(22px);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.3s ease;
+  animation: nav-glow-cycle 9s ease-in-out infinite alternate;
 }
 
-/* All six layers drift together like one liquid mass. */
-@keyframes capsule-flow {
-  from {
-    background-position: 0% 50%, 20% 50%, 40% 50%, 60% 50%, 80% 50%, 0% 50%;
-  }
-  to {
-    background-position: 100% 50%, 80% 50%, 60% 50%, 40% 50%, 20% 50%, 100% 50%;
-  }
-}
-
-/* Dim breathing glow. Never above 0.3 alpha so it never glares. */
-@keyframes holi-glow {
+/* Slow hue journey for the outer aura: pink -> gold -> green -> blue. */
+@keyframes nav-glow-cycle {
   0% {
     box-shadow:
-      0 8px 24px -10px rgba(0, 0, 0, 0.7),
-      0 0 18px -6px rgba(255, 46, 136, 0.30),
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+      0 10px 28px -12px rgba(0, 0, 0, 0.75),
+      0 0 22px -6px rgba(255, 46, 136, 0.38),
+      inset 0 1px 0 rgba(255, 255, 255, 0.20),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.40);
   }
   35% {
     box-shadow:
-      0 8px 24px -10px rgba(0, 0, 0, 0.7),
-      0 0 18px -6px rgba(255, 217, 26, 0.24),
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+      0 10px 28px -12px rgba(0, 0, 0, 0.75),
+      0 0 22px -6px rgba(255, 170, 26, 0.32),
+      inset 0 1px 0 rgba(255, 255, 255, 0.20),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.40);
   }
   70% {
     box-shadow:
-      0 8px 24px -10px rgba(0, 0, 0, 0.7),
-      0 0 18px -6px rgba(46, 224, 107, 0.26),
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+      0 10px 28px -12px rgba(0, 0, 0, 0.75),
+      0 0 22px -6px rgba(46, 224, 107, 0.30),
+      inset 0 1px 0 rgba(255, 255, 255, 0.20),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.40);
   }
   100% {
     box-shadow:
-      0 8px 24px -10px rgba(0, 0, 0, 0.7),
-      0 0 18px -6px rgba(46, 155, 255, 0.30),
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+      0 10px 28px -12px rgba(0, 0, 0, 0.75),
+      0 0 24px -6px rgba(46, 155, 255, 0.40),
+      inset 0 1px 0 rgba(255, 255, 255, 0.20),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.40);
   }
 }
 
-/* Trapped liquid: an oversized coloured mass sloshing inside the glass.
-   inset is wider than the pill so the transform has room to travel;
-   overflow:hidden on the capsule clips it, which is exactly what makes
-   it read as liquid sealed in glass. Blobs + meniscus + glint all ride
-   one layer so they move as a single body of water. */
+/* Aurora blobs: six uneven washes at deliberately irregular sizes and
+   anchors (nothing tiled, nothing evenly spaced). Each layer travels a
+   different distance and direction in the keyframes below, so the inside
+   never moves as one sheet. Blurred into dye-in-water. */
 .nav-capsule::before {
   content: "";
   position: absolute;
-  inset: -35% -12%;
+  inset: -45px -60px;
   border-radius: inherit;
   pointer-events: none;
+  z-index: 0;
   background-image:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 26%),
-    radial-gradient(45% 90% at 70% 30%, rgba(120, 40, 220, 0.28), transparent 70%),
-    radial-gradient(40% 85% at 30% 65%, rgba(255, 45, 150, 0.22), transparent 70%),
-    radial-gradient(35% 80% at 55% 40%, rgba(45, 200, 255, 0.18), transparent 70%),
-    radial-gradient(30% 60% at 48% 55%, rgba(0, 0, 0, 0.30), transparent 70%),
-    radial-gradient(18% 55% at 22% 60%, rgba(255, 46, 136, 0.50), transparent 70%),
-    radial-gradient(16% 55% at 42% 44%, rgba(255, 217, 26, 0.42), transparent 70%),
-    radial-gradient(16% 55% at 60% 62%, rgba(46, 224, 107, 0.45), transparent 70%),
-    radial-gradient(18% 55% at 80% 48%, rgba(46, 155, 255, 0.50), transparent 70%),
-    linear-gradient(100deg,
-      transparent 42%,
-      rgba(255, 255, 255, 0.14) 50%,
-      transparent 58%);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 220% 100%;
-  background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 150% 0;
+    radial-gradient(34% 52% at 10% 62%, rgba(255, 46, 136, 0.42), transparent 70%),
+    radial-gradient(22% 44% at 31% 38%, rgba(255, 140, 0, 0.36), transparent 70%),
+    radial-gradient(17% 34% at 45% 66%, rgba(255, 217, 26, 0.28), transparent 70%),
+    radial-gradient(24% 46% at 63% 36%, rgba(46, 224, 107, 0.32), transparent 70%),
+    radial-gradient(36% 58% at 85% 60%, rgba(46, 155, 255, 0.44), transparent 70%),
+    radial-gradient(50% 80% at 55% 110%, rgba(155, 48, 255, 0.30), transparent 72%);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+  background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
+  filter: blur(20px) saturate(135%);
+  opacity: 0.9;
   animation:
-    liquid-slosh 6s linear infinite alternate,
-    capsule-sheen 6.5s ease-in-out infinite;
+    aurora-drift 13s ease-in-out infinite alternate,
+    aurora-slosh 7.5s ease-in-out infinite alternate;
 }
 
-/* Slosh: the whole mass rocks side to side with a slight squash, like
-   water settling after the pill is nudged. translate % is of the
-   oversized pseudo, so ±2.5% stays inside the clip. */
-@keyframes liquid-slosh {
-  from { transform: translate3d(-2.5%, 1.5%, 0) rotate(-1.2deg) scale(1.02, 0.99); }
-  50%  { transform: translate3d(0%, -1.5%, 0) rotate(0.6deg) scale(1.03, 0.985); }
-  to   { transform: translate3d(2.5%, 1.5%, 0) rotate(1.2deg) scale(1.02, 0.99); }
+/* Every layer gets its own travel vector: some climb, some dive, some
+   barely move. That spread is what kills the old uniform look. */
+@keyframes aurora-drift {
+  from {
+    background-position:
+      -4% 12%,
+      6% -8%,
+      -6% 6%,
+      5% 10%,
+      -5% -10%,
+      0% 0%;
+  }
+  45% {
+    background-position:
+      7% -6%,
+      -5% 9%,
+      6% -7%,
+      -7% -4%,
+      6% 8%,
+      -4% -6%;
+  }
+  to {
+    background-position:
+      10% -10%,
+      -9% 12%,
+      9% 4%,
+      -4% -12%,
+      10% -6%,
+      6% 8%;
+  }
 }
 
-@keyframes capsule-sheen {
-  from { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 150% 0; }
-  to   { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, -60% 0; }
+@keyframes aurora-slosh {
+  from { transform: translate3d(-1.6%, 1%, 0) rotate(-1.4deg) scale(1.03, 0.98); }
+  50%  { transform: translate3d(0.6%, -1.2%, 0) rotate(0.5deg) scale(1.05, 0.97); }
+  to   { transform: translate3d(1.8%, 1.1%, 0) rotate(1.5deg) scale(1.02, 0.99); }
 }
 
-/* Shaking the pill agitates the liquid: slosh + glint both quicken. */
-.nav-capsule:hover::before {
-  animation-duration: 3.2s, 3s;
+/* Sliding glider pill: follows hover + active section via JS
+   (--gx / --gw set in px). Tinted per-link through --tint. */
+.nav-glider {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  width: 0;
+  border-radius: 999px;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.06)),
+    var(--tint);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 3px 12px rgba(0, 0, 0, 0.40),
+    inset 0 1px 0 rgba(255, 255, 255, 0.30);
+  transform: translate3d(var(--gx, 0px), 0, 0);
+  width: var(--gw, 0px);
+  transition:
+    transform 0.42s cubic-bezier(0.22, 1.35, 0.36, 1),
+    width 0.42s cubic-bezier(0.22, 1.35, 0.36, 1),
+    opacity 0.25s ease,
+    background 0.3s ease;
 }
 
-/* Powder grain + splash speckle over everything, under the links.
-   feTurbulence fractalNoise at low alpha: matte gulal dust, not dirt.
-   radial-gradient dots at 7px tile: sparse thrown specks. */
+.nav-capsule.has-glider .nav-glider {
+  opacity: 1;
+}
+
+/* Cursor spotlight + glass highlight + travelling sheen.
+   Deliberately NO feTurbulence grain and NO tiled dot grids. */
 .nav-capsule::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
+  z-index: 2;
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.24'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"),
-    radial-gradient(rgba(255, 255, 255, 0.20) 0.8px, transparent 1.2px),
-    radial-gradient(rgba(255, 217, 26, 0.20) 0.8px, transparent 1.2px),
-    radial-gradient(rgba(255, 46, 136, 0.20) 0.8px, transparent 1.2px),
-    radial-gradient(rgba(255, 255, 255, 0.85) 1px, transparent 1.4px);
-  background-size: 120px 120px, 26px 26px, 34px 34px, 42px 42px, 90px 90px;
-  background-position: 0 0, 4px 8px, 12px 3px, 7px 14px, 20px 30px;
-  opacity: 0.75;
+    radial-gradient(150px 80px at var(--mx) var(--my), rgba(255, 255, 255, 0.20), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 30%),
+    linear-gradient(105deg, transparent 44%, rgba(255, 255, 255, 0.15) 50%, transparent 56%);
+  background-size: auto, 100% 100%, 280% 100%;
+  background-position: 0 0, 0 0, 130% 0;
   mix-blend-mode: screen;
-  /* Bubbles rise: each dot layer shifts up by exactly one tile height,
-     so the loop is seamless. Grain (first layer) and stars (last layer)
-     stay pinned -- moving grain reads as shimmer, and stars should hang
-     in the nebula, not float up with the bubbles. */
-  animation: bubble-rise 9s linear infinite;
+  animation: nav-sheen 7s ease-in-out infinite;
 }
 
-@keyframes bubble-rise {
-  from { background-position: 0 0, 4px 8px, 12px 3px, 7px 14px, 20px 30px; }
-  to   { background-position: 0 0, 4px -18px, 12px -31px, 7px -28px, 20px 30px; }
+@keyframes nav-sheen {
+  from { background-position: 0 0, 0 0, 130% 0; }
+  to   { background-position: 0 0, 0 0, -70% 0; }
 }
 
-/* Links sit above grain, splash and sheen so text stays crisp. */
+/* Agitating the pill quickens liquid + sheen. */
+.nav-capsule:hover::before {
+  animation-duration: 8s, 3.4s;
+}
+.nav-capsule:hover::after {
+  animation-duration: 3.2s;
+}
+
+/* Links ride above blobs, glider, spotlight and sheen. */
 .nav-capsule > li {
   position: relative;
-  z-index: 1;
+  z-index: 3;
 }
 
-/* Hover: gentle lift only. No speed-up, no brightening. */
 .nav-capsule:hover {
   transform: translateY(-1px);
-  border-color: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.30);
 }
-/* NOTE: loop timing is linear (not eased) on purpose. Ease-in-out drops
-   velocity to zero at each turnaround, which reads as the water pausing
-   twice per cycle. Linear alternate keeps every layer at constant speed
-   so the inside never settles -- direction reverses, motion doesn't. */
-
-/* Each link tints dim gulal on hover -- readable, never neon. */
-.nav-capsule > li:nth-child(1) .nav-link:hover { background: rgba(255, 46, 136, 0.30); }
-.nav-capsule > li:nth-child(2) .nav-link:hover { background: rgba(255, 154, 0, 0.30); }
-.nav-capsule > li:nth-child(3) .nav-link:hover { background: rgba(46, 155, 255, 0.32); }
-.nav-capsule > li:nth-child(4) .nav-link:hover { background: rgba(46, 224, 107, 0.30); }
 
 @media (prefers-reduced-motion: reduce) {
   .nav-capsule,
@@ -450,37 +463,62 @@ body {
   .nav-capsule::after {
     animation: none;
   }
-  .nav-capsule {
-    background-position: 30% 50%, 35% 50%, 42% 50%, 55% 50%, 65% 50%, 30% 50%;
-  }
-  .nav-capsule::before,
-  .nav-capsule::after {
-    background-position: 0 0, 50% 0;
+  .nav-glider {
+    transition: none;
   }
 }
 
 .nav-link {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  padding: 4px 13px;
+  gap: 7px;
+  padding: 5px 14px;
   border-radius: 999px;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--fg);
+  color: rgba(255, 255, 255, 0.74);
   text-decoration: none;
   white-space: nowrap;
-  text-shadow: 0 1px 2px rgba(0, 40, 40, 0.45);
-  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  transition: color 0.2s ease, text-shadow 0.25s ease, transform 0.22s cubic-bezier(0.22, 1.3, 0.36, 1);
+}
+
+.nav-link::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.22, 1.4, 0.36, 1);
+  flex: none;
 }
 
 .nav-link:hover {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.16);
-  text-shadow: 0 1px 3px rgba(0, 40, 40, 0.55);
+  transform: translateY(-1px);
+}
+
+/* Per-link tinted glow on hover/active. Uses :nth-of-type so the
+   JS-injected .nav-glider span never shifts the indices. */
+.nav-capsule > li:nth-of-type(1) .nav-link:hover,
+.nav-capsule > li:nth-of-type(1) .nav-link.is-active { color: #ffd3e6; text-shadow: 0 0 14px rgba(255, 46, 136, 0.85), 0 1px 2px rgba(0,0,0,0.6); }
+.nav-capsule > li:nth-of-type(2) .nav-link:hover,
+.nav-capsule > li:nth-of-type(2) .nav-link.is-active { color: #ffe3bd; text-shadow: 0 0 14px rgba(255, 154, 0, 0.85), 0 1px 2px rgba(0,0,0,0.6); }
+.nav-capsule > li:nth-of-type(3) .nav-link:hover,
+.nav-capsule > li:nth-of-type(3) .nav-link.is-active { color: #cfe8ff; text-shadow: 0 0 14px rgba(46, 155, 255, 0.9), 0 1px 2px rgba(0,0,0,0.6); }
+.nav-capsule > li:nth-of-type(4) .nav-link:hover,
+.nav-capsule > li:nth-of-type(4) .nav-link.is-active { color: #d2f7e1; text-shadow: 0 0 14px rgba(46, 224, 107, 0.85), 0 1px 2px rgba(0,0,0,0.6); }
+
+.nav-link.is-active::before {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .nav-link:active {
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.98);
 }
 
 .nav-link:focus-visible {
@@ -2062,7 +2100,8 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   perspective-origin: 50% 60%;
 }
 
-/* Neumorphic 3D Floating Shelf Plank */
+/* Library Oak Shelf Plank — thick solid board, not a thin floating slab.
+   Total ~59px (26 top + 3 nosing + 30 front) vs the old ~34px. */
 .shelf-plank--neumorphic {
   position: relative;
   z-index: 1;
@@ -2072,45 +2111,89 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   pointer-events: none;
 }
 
-/* Shelf Top Surface */
+/* Shelf Top Surface — worn oak, lighter where hands and books polish it */
 .shelf-plank--neumorphic .shelf-surface {
   width: 100%;
-  height: 18px;
-  background: linear-gradient(180deg, #ffffff 0%, #edf1f7 65%, #dde4ef 100%);
-  border-top: 1.5px solid #ffffff;
-  box-shadow: 
-    inset 0 1px 3px #ffffff,
-    inset 0 -2px 5px rgba(166, 178, 195, 0.35);
-  border-radius: 4px 4px 0 0;
+  height: 26px;
+  background:
+    linear-gradient(180deg, rgba(255, 236, 205, 0.55) 0%, rgba(255, 236, 205, 0) 35%),
+    repeating-linear-gradient(180deg, rgba(62, 36, 14, 0.10) 0 1px, transparent 1px 5px),
+    linear-gradient(90deg, transparent 8%, rgba(70, 40, 16, 0.16) 42%, transparent 68%),
+    linear-gradient(180deg, #b3814d 0%, #96632f 55%, #7a4e24 100%);
+  border-top: 2px solid #e3bd85;
+  box-shadow:
+    inset 0 2px 3px rgba(255, 240, 214, 0.5),
+    inset 0 -3px 6px rgba(52, 30, 12, 0.45);
+  border-radius: 6px 6px 0 0;
   transform-origin: bottom center;
 }
 
-/* Shelf Bevel */
+/* Shelf Nosing — the rounded front arris catching the light */
 .shelf-plank--neumorphic .shelf-bevel {
   width: 100%;
-  height: 2px;
-  background: linear-gradient(90deg, #d3dae5 0%, #ffffff 35%, #ffffff 65%, #d3dae5 100%);
-  box-shadow: 0 1px 3px rgba(255, 255, 255, 0.8);
+  height: 3px;
+  background: linear-gradient(90deg, #8a5a30 0%, #eecf9a 30%, #f4dcaa 50%, #eecf9a 70%, #8a5a30 100%);
+  box-shadow: 0 1px 2px rgba(255, 240, 214, 0.55);
 }
 
-/* Shelf Front Edge */
+/* Shelf Front Edge — dark edge grain, shadowed belly */
 .shelf-plank--neumorphic .shelf-front {
   width: 100%;
-  height: 14px;
-  background: linear-gradient(180deg, #d8e0eb 0%, #bdc9d8 100%);
-  border-bottom: 1px solid rgba(140, 155, 175, 0.45);
-  border-radius: 0 0 3px 3px;
-  box-shadow: 0 4px 8px rgba(140, 155, 175, 0.35);
+  height: 30px;
+  background:
+    repeating-linear-gradient(180deg, rgba(30, 17, 6, 0.14) 0 1px, transparent 1px 4px),
+    linear-gradient(180deg, #6f4525 0%, #59351b 55%, #422512 100%);
+  border-bottom: 2px solid #2a1708;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 10px 18px rgba(90, 55, 25, 0.45);
 }
 
-/* Cast Shadow beneath shelf */
+/* Cast Shadow beneath shelf — warm, deep, library air */
 .shelf-plank--neumorphic .shelf-cast-shadow {
   width: 104%;
-  height: 48px;
+  height: 58px;
   margin-left: -2%;
   margin-top: -2px;
-  background: radial-gradient(ellipse 65% 100% at 50% 0%, rgba(130, 145, 168, 0.55) 0%, rgba(130, 145, 168, 0.25) 45%, rgba(130, 145, 168, 0.08) 65%, transparent 80%);
-  filter: blur(8px);
+  background: radial-gradient(ellipse 65% 100% at 50% 0%, rgba(96, 58, 26, 0.55) 0%, rgba(96, 58, 26, 0.26) 45%, rgba(96, 58, 26, 0.08) 65%, transparent 80%);
+  filter: blur(10px);
+}
+
+/* Bookcase side uprights — full-height oak sides flanking each level.
+   Books row (z-index 2) paints above them; the plank (z-index 1) covers
+   their feet so the joints read as housed, not floating. */
+.shelf-level::before,
+.shelf-level::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  background:
+    repeating-linear-gradient(90deg, rgba(40, 22, 8, 0.12) 0 2px, transparent 2px 7px),
+    linear-gradient(90deg, #5f3a1c 0%, #7d5027 35%, #8a5a30 50%, #7d5027 65%, #5f3a1c 100%);
+  border-radius: 5px;
+  pointer-events: none;
+}
+.shelf-level::before {
+  left: -6px;
+  box-shadow: inset -7px 0 10px rgba(20, 10, 4, 0.5), 6px 0 14px rgba(90, 55, 25, 0.25);
+  border-left: 2px solid #9c6c38;
+}
+.shelf-level::after {
+  right: -6px;
+  box-shadow: inset 7px 0 10px rgba(20, 10, 4, 0.5), -6px 0 14px rgba(90, 55, 25, 0.25);
+  border-right: 2px solid #9c6c38;
+}
+
+/* Bookcase back panel — dark wood recess behind the books so volumes
+   sit *in* the case instead of on an infinite slab. */
+.shelf-books-row {
+  background:
+    linear-gradient(180deg, rgba(255, 240, 214, 0.20) 0%, rgba(255, 240, 214, 0) 30%),
+    linear-gradient(180deg, #a97e4b 0%, #8f6234 60%, #755026 100%);
+  border-radius: 14px 14px 0 0;
+  box-shadow: inset 0 12px 26px rgba(48, 27, 10, 0.42), inset 0 -4px 10px rgba(48, 27, 10, 0.30);
+  padding-top: 20px;
 }
 
 /* ============================================================
@@ -3419,6 +3502,10 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
     width: 100%;
     max-width: 100%;
     overflow: hidden;
+  }
+  .shelf-level::before,
+  .shelf-level::after {
+    width: 24px;
   }
   .shelf-books-row {
     display: flex;

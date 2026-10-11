@@ -2572,4 +2572,139 @@
     }, { passive: true });
   })();
 
+  /* ------------------------------------------------------------
+     11. Capsule Nav: cursor spotlight + sliding glider + scrollspy
+     ------------------------------------------------------------ */
+  (function initCapsuleNav() {
+    var capsule = document.querySelector(".nav-capsule");
+    if (!capsule) return;
+    var reduceMotion = window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    var links = Array.prototype.slice.call(capsule.querySelectorAll(".nav-link"));
+    if (!links.length) return;
+
+    var TINTS = [
+      "rgba(255, 46, 136, 0.30)",
+      "rgba(255, 154, 0, 0.30)",
+      "rgba(46, 155, 255, 0.32)",
+      "rgba(46, 224, 107, 0.30)"
+    ];
+
+    var glider = document.createElement("span");
+    glider.className = "nav-glider";
+    glider.setAttribute("aria-hidden", "true");
+    capsule.insertBefore(glider, capsule.firstChild);
+
+    var activeLink = null;
+    var hoverLink = null;
+
+    function tintFor(link) {
+      var li = link.parentElement;
+      var idx = links.indexOf(link);
+      // nth-of-type index among li siblings (glider span excluded by type)
+      if (li && li.parentElement) {
+        var lis = Array.prototype.slice.call(li.parentElement.querySelectorAll("li"));
+        idx = lis.indexOf(li);
+      }
+      return TINTS[idx] || TINTS[0];
+    }
+
+    function focusLink(link) {
+      if (!link || reduceMotion) return;
+      capsule.style.setProperty("--tint", tintFor(link));
+      // Glider measures the <a> rect so it hugs the text pill exactly.
+      var capRect = capsule.getBoundingClientRect();
+      var r = link.getBoundingClientRect();
+      capsule.style.setProperty("--gx", Math.round(r.left - capRect.left) + "px");
+      capsule.style.setProperty("--gw", Math.round(r.width) + "px");
+      capsule.classList.add("has-glider");
+    }
+
+    function setActive(link) {
+      if (activeLink === link) return;
+      links.forEach(function (l) { l.classList.remove("is-active"); });
+      activeLink = link || null;
+      if (activeLink) activeLink.classList.add("is-active");
+      focusLink(hoverLink || activeLink || links[0]);
+    }
+
+    // Cursor spotlight (mouse + touch drag), GPU-cheap CSS vars only.
+    var raf = null;
+    var px = 50, py = 50;
+    function flushSpot() {
+      raf = null;
+      capsule.style.setProperty("--mx", px.toFixed(1) + "%");
+      capsule.style.setProperty("--my", py.toFixed(1) + "%");
+    }
+    capsule.addEventListener("pointermove", function (e) {
+      var r = capsule.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      px = ((e.clientX - r.left) / r.width) * 100;
+      py = ((e.clientY - r.top) / r.height) * 100;
+      if (!raf) raf = requestAnimationFrame(flushSpot);
+    });
+    capsule.addEventListener("pointerleave", function () {
+      px = 50; py = 50;
+      if (!raf) raf = requestAnimationFrame(flushSpot);
+      hoverLink = null;
+      focusLink(activeLink || links[0]);
+      if (!activeLink) capsule.classList.remove("has-glider");
+    });
+
+    links.forEach(function (link) {
+      link.addEventListener("pointerenter", function () {
+        hoverLink = link;
+        focusLink(link);
+      });
+      link.addEventListener("focus", function () {
+        hoverLink = link;
+        focusLink(link);
+      });
+      link.addEventListener("click", function () {
+        setActive(link);
+      });
+    });
+
+    window.addEventListener("resize", function () {
+      focusLink(hoverLink || activeLink || links[0]);
+    });
+
+    // Scrollspy: highlight the section currently in view. Missing
+    // targets (e.g. legacy anchors) are skipped silently.
+    var spyMap = [];
+    links.forEach(function (link) {
+      var href = link.getAttribute("href") || "";
+      if (href.charAt(0) !== "#") return;
+      var target = document.querySelector(href);
+      if (target) spyMap.push({ link: link, target: target });
+    });
+
+    function markInitial() {
+      if (spyMap.length) setActive(spyMap[0].link);
+      else focusLink(links[0]);
+    }
+
+    if (!("IntersectionObserver" in window) || !spyMap.length || reduceMotion) {
+      markInitial();
+      return;
+    }
+
+    var current = null;
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        for (var i = 0; i < spyMap.length; i++) {
+          if (spyMap[i].target === en.target) {
+            current = spyMap[i].link;
+            break;
+          }
+        }
+      });
+      if (current) setActive(current);
+    }, { rootMargin: "-38% 0px -52% 0px", threshold: 0 });
+    spyMap.forEach(function (s) { obs.observe(s.target); });
+    markInitial();
+  })();
+
 })();
