@@ -341,6 +341,10 @@ body {
   pointer-events: none;
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 26%),
+    radial-gradient(45% 90% at 70% 30%, rgba(120, 40, 220, 0.28), transparent 70%),
+    radial-gradient(40% 85% at 30% 65%, rgba(255, 45, 150, 0.22), transparent 70%),
+    radial-gradient(35% 80% at 55% 40%, rgba(45, 200, 255, 0.18), transparent 70%),
+    radial-gradient(30% 60% at 48% 55%, rgba(0, 0, 0, 0.30), transparent 70%),
     radial-gradient(18% 55% at 22% 60%, rgba(255, 46, 136, 0.50), transparent 70%),
     radial-gradient(16% 55% at 42% 44%, rgba(255, 217, 26, 0.42), transparent 70%),
     radial-gradient(16% 55% at 60% 62%, rgba(46, 224, 107, 0.45), transparent 70%),
@@ -349,8 +353,8 @@ body {
       transparent 42%,
       rgba(255, 255, 255, 0.14) 50%,
       transparent 58%);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 220% 100%;
-  background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 150% 0;
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 220% 100%;
+  background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 150% 0;
   animation:
     liquid-slosh 7s ease-in-out infinite alternate,
     capsule-sheen 6.5s ease-in-out infinite;
@@ -366,8 +370,8 @@ body {
 }
 
 @keyframes capsule-sheen {
-  from { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 150% 0; }
-  to   { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, -60% 0; }
+  from { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 150% 0; }
+  to   { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, -60% 0; }
 }
 
 /* Shaking the pill agitates the liquid: slosh + glint both quicken. */
@@ -388,20 +392,22 @@ body {
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.10'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"),
     radial-gradient(rgba(255, 255, 255, 0.20) 0.8px, transparent 1.2px),
     radial-gradient(rgba(255, 217, 26, 0.20) 0.8px, transparent 1.2px),
-    radial-gradient(rgba(255, 46, 136, 0.20) 0.8px, transparent 1.2px);
-  background-size: 120px 120px, 26px 26px, 34px 34px, 42px 42px;
-  background-position: 0 0, 4px 8px, 12px 3px, 7px 14px;
+    radial-gradient(rgba(255, 46, 136, 0.20) 0.8px, transparent 1.2px),
+    radial-gradient(rgba(255, 255, 255, 0.85) 1px, transparent 1.4px);
+  background-size: 120px 120px, 26px 26px, 34px 34px, 42px 42px, 90px 90px;
+  background-position: 0 0, 4px 8px, 12px 3px, 7px 14px, 20px 30px;
   opacity: 0.55;
   mix-blend-mode: screen;
   /* Bubbles rise: each dot layer shifts up by exactly one tile height,
-     so the loop is seamless. Grain (first layer) stays pinned -- moving
-     grain would read as shimmer, not liquid. */
+     so the loop is seamless. Grain (first layer) and stars (last layer)
+     stay pinned -- moving grain reads as shimmer, and stars should hang
+     in the nebula, not float up with the bubbles. */
   animation: bubble-rise 9s linear infinite;
 }
 
 @keyframes bubble-rise {
-  from { background-position: 0 0, 4px 8px, 12px 3px, 7px 14px; }
-  to   { background-position: 0 0, 4px -18px, 12px -31px, 7px -28px; }
+  from { background-position: 0 0, 4px 8px, 12px 3px, 7px 14px, 20px 30px; }
+  to   { background-position: 0 0, 4px -18px, 12px -31px, 7px -28px, 20px 30px; }
 }
 
 /* Links sit above grain, splash and sheen so text stays crisp. */
