@@ -59,10 +59,12 @@
   // frame at 60fps, churning GC and CPU raster time)
   // ---------------------------------------------------------------
   var sphereSprite = null;   // porcelain bot body, supersampled 2x
+  var batmanSphereSprite = null; // low-key chiaroscuro Batman body for semi-darkness
   var poolSprite = null;     // (retired) second floor light — see buildShadowSprites
   var contactSprite = null;  // layered AO contact shadow (the Pixar look)
   var bounceSprite = null;   // warm bounce glow under sphere
   var smoothContact = 1.0;   // temporally smoothed grounding (no popping)
+  var currentSpotIllumination = 0; // 0 = Batman semi-darkness, 1 = full spotlight
   var lastFrameNow = -1;
 
   function makeCanvas(w, h) {
@@ -412,6 +414,125 @@
     sctx.restore();
   }
 
+  // ===============================================================
+  // BATMAN LOW-KEY CHIAROSCURO SPHERE SPRITE (SEMI-DARKNESS)
+  // Mastercrafted for the dark hero stage: deep obsidian/slate body,
+  // cold Gotham moonlight rim light, sharp specular catchlight.
+  // Represents the character brooding / hiding in the shadows before
+  // the spotlight hits.
+  // ===============================================================
+  function buildBatmanSphereSprite() {
+    var SS = 2; // supersample for crisp limb edge
+    var S = Math.ceil(R * 2 * SS);
+    batmanSphereSprite = makeCanvas(S, S);
+    var sctx = batmanSphereSprite.getContext("2d");
+    if (!sctx) return;
+    var r = S / 2;
+    var kkx = r * 0.95, kky = r * 0.36; // cool high ambient key
+
+    // 1. Dark Knight Base Material: deep, rich midnight obsidian chiaroscuro
+    // Smooth transition from midnight slate highlight on top shoulder down to deep pitch black
+    var base = sctx.createRadialGradient(kkx, kky, r * 0.04, r, r, r * 1.02);
+    base.addColorStop(0.00, "#1e293b"); // slate-800 soft apex sheen
+    base.addColorStop(0.22, "#131c2b"); // deep midnight blue-gray
+    base.addColorStop(0.48, "#0c121e"); // dark navy shadow
+    base.addColorStop(0.72, "#060911"); // velvety pitch
+    base.addColorStop(0.92, "#030408"); // deep occlusion
+    base.addColorStop(1.00, "#020306");
+    sctx.fillStyle = base;
+    sctx.beginPath();
+    sctx.arc(r, r, r - 0.5, 0, Math.PI * 2);
+    sctx.fill();
+
+    // Clip internal passes to the disc
+    sctx.save();
+    sctx.beginPath();
+    sctx.arc(r, r, r - 0.5, 0, Math.PI * 2);
+    sctx.clip();
+
+    // 2. Micro-surface noise grain (matches white sphere texture)
+    var grain = makeNoiseTile(192, 2, 64, 4711, 96, 160);
+    if (grain) {
+      sctx.save();
+      sctx.globalCompositeOperation = "overlay";
+      sctx.globalAlpha = 0.06;
+      var pat = sctx.createPattern(grain, "repeat");
+      if (pat) {
+        sctx.fillStyle = pat;
+        sctx.fillRect(0, 0, S, S);
+      }
+      sctx.restore();
+    }
+
+    // 3. Cold Moonlight Specular Catchlight (subtle softbox)
+    sctx.save();
+    sctx.translate(r * 0.96, r * 0.38);
+    sctx.scale(1.2, 0.85);
+    var spec = sctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.32);
+    spec.addColorStop(0.00, "rgba(224,242,254,0.40)");
+    spec.addColorStop(0.40, "rgba(186,230,253,0.12)");
+    spec.addColorStop(1.00, "rgba(186,230,253,0)");
+    sctx.fillStyle = spec;
+    sctx.beginPath();
+    sctx.arc(0, 0, r * 0.32, 0, Math.PI * 2);
+    sctx.fill();
+    sctx.restore();
+
+    // 4. Sharp Specular Core Glint
+    var spec2 = sctx.createRadialGradient(r * 0.96, r * 0.38, 0, r * 0.96, r * 0.38, r * 0.10);
+    spec2.addColorStop(0.00, "rgba(255,255,255,0.72)");
+    spec2.addColorStop(0.40, "rgba(224,242,254,0.22)");
+    spec2.addColorStop(1.00, "rgba(224,242,254,0)");
+    sctx.fillStyle = spec2;
+    sctx.fillRect(0, 0, S, S);
+
+    // 5. Batman Gotham Moonlight Rim: dramatic cyan-silver rim wash on the upper hemisphere
+    var rimMoon = sctx.createRadialGradient(r * 0.96, r * 0.28, r * 0.65, r, r, r * 1.01);
+    rimMoon.addColorStop(0.00, "rgba(56,189,248,0)");
+    rimMoon.addColorStop(0.68, "rgba(56,189,248,0.04)");
+    rimMoon.addColorStop(0.88, "rgba(147,197,253,0.24)");
+    rimMoon.addColorStop(0.97, "rgba(224,242,254,0.52)");
+    rimMoon.addColorStop(1.00, "rgba(255,255,255,0.18)");
+    sctx.fillStyle = rimMoon;
+    sctx.fillRect(0, 0, S, S);
+
+    // 6. Deep bottom occlusion (grounds the sphere in shadow)
+    var bOcclusion = sctx.createLinearGradient(0, r * 1.15, 0, r * 2.0);
+    bOcclusion.addColorStop(0.00, "rgba(0,0,0,0)");
+    bOcclusion.addColorStop(0.70, "rgba(0,0,0,0.55)");
+    bOcclusion.addColorStop(1.00, "rgba(0,0,0,0.85)");
+    sctx.fillStyle = bOcclusion;
+    sctx.fillRect(0, 0, S, S);
+
+    sctx.restore();
+
+    // 7. Sharp Silhouette Rim Stroke
+    sctx.save();
+    // Subtle 360-degree contour so the sphere is 100% complete and never disappears
+    sctx.beginPath();
+    sctx.arc(r, r, r - 1.5, 0, Math.PI * 2);
+    sctx.strokeStyle = "rgba(71,85,105,0.26)";
+    sctx.lineWidth = Math.max(1.2, r * 0.010);
+    sctx.stroke();
+
+    // Chiaroscuro top moonlit edge arc (Batman rim light)
+    sctx.beginPath();
+    sctx.arc(r, r, r - 1.5, -Math.PI * 0.96, -Math.PI * 0.04);
+    sctx.strokeStyle = "rgba(186,230,253,0.58)";
+    sctx.lineWidth = Math.max(1.5, r * 0.014);
+    sctx.lineCap = "round";
+    sctx.stroke();
+
+    // Apex specular silver glint
+    sctx.beginPath();
+    sctx.arc(r, r, r - 1.5, -Math.PI * 0.68, -Math.PI * 0.32);
+    sctx.strokeStyle = "rgba(255,255,255,0.88)";
+    sctx.lineWidth = Math.max(1.2, r * 0.010);
+    sctx.lineCap = "round";
+    sctx.stroke();
+    sctx.restore();
+  }
+
   // Baked once per resize: narrow shaft with bright core + fast falloff,
   // plus the tungsten floor pool. Per-frame cost = 2 drawImages.
   function buildSpotSprites() {
@@ -508,6 +629,7 @@
       bakedR = R;
       buildShadowSprites();
       buildSphereSprite();
+      buildBatmanSphereSprite();
       buildSpotSprites();
     }, 140);
   }
@@ -1433,6 +1555,7 @@
       spotFade = 1.0;
       spotIllumination = 1.0;
     }
+    currentSpotIllumination = spotIllumination;
 
     var spinEnergy = (phase === "spinning" && elapsedSec >= 1.98 && elapsedSec < 3.08)
       ? Math.sin(((elapsedSec - 1.98) / 1.10) * Math.PI) * 0.15 : 0;
@@ -1522,34 +1645,34 @@
     }
 
     // -------------------------------------------------------------
-    // 5. PORCELAIN SPHERE — single pre-rendered sprite blit (was 2x
-    // radial gradients + 2x full-disc fills per frame). Squash &
-    // stretch preserved via draw dimensions.
+    // 5. PORCELAIN SPHERE / BATMAN CHIAROSCURO CROSSFADE
+    // In semi-darkness, the sphere renders as a rich obsidian/slate
+    // chiaroscuro body with cold Gotham moonlight rim light.
+    // When the spotlight arrives, it seamlessly crossfades into the
+    // radiant white porcelain Pixar character.
     // -------------------------------------------------------------
-    if (sphereSprite) {
+    if (sphereSprite && batmanSphereSprite) {
       var dW = R * 2 * squashX, dH = R * 2 * squashY;
       ctx.save();
       var sphereAlpha = (elapsedSec < 0.45) ? Math.min(1, elapsedSec / 0.45) : 1.0;
-      ctx.globalAlpha = sphereAlpha;
-      ctx.drawImage(sphereSprite, cx - dW / 2, currentCy - dH / 2, dW, dH);
 
-      // Dark ambient modulation: in phase 1 (before spotlight), sphere sits in atmospheric darkness
-      if (spotIllumination < 0.99) {
+      // A. Batman Chiaroscuro Sphere (Semi-Darkness)
+      if (spotIllumination < 0.999) {
         ctx.save();
-        ctx.beginPath();
-        if (ctx.ellipse) {
-          ctx.ellipse(cx, currentCy, Math.max(1, R * squashX * 0.995), Math.max(1, R * squashY * 0.995), 0, 0, Math.PI * 2);
-        } else {
-          ctx.arc(cx, currentCy, Math.max(1, R * 0.995), 0, Math.PI * 2);
-        }
-        ctx.clip();
-        ctx.fillStyle = "rgba(4, 7, 16, " + ((1 - spotIllumination) * 0.72).toFixed(3) + ")";
-        ctx.fillRect(cx - dW, currentCy - dH, dW * 2, dH * 2);
+        ctx.globalAlpha = sphereAlpha * (1.0 - spotIllumination);
+        ctx.drawImage(batmanSphereSprite, cx - dW / 2, currentCy - dH / 2, dW, dH);
         ctx.restore();
       }
 
-      // Top-light kiss: overhead wash clipped to the body so the rig
-      // lights the porcelain; the face is painted next and stays clean.
+      // B. Lit Porcelain Sphere (Spotlight)
+      if (spotIllumination > 0.001) {
+        ctx.save();
+        ctx.globalAlpha = sphereAlpha * spotIllumination;
+        ctx.drawImage(sphereSprite, cx - dW / 2, currentCy - dH / 2, dW, dH);
+        ctx.restore();
+      }
+
+      // C. Top-light kiss: overhead wash clipped to the body so the rig lights porcelain
       if (topKissSprite && spotFade > 0.01 && spotIllumination > 0.01) {
         ctx.save();
         ctx.beginPath();
@@ -1566,14 +1689,9 @@
         ctx.restore();
       }
       ctx.restore();
-    } else {
-      // Fallback (should never run): flat disc so the bot never vanishes
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(cx, currentCy, R, 0, Math.PI * 2);
-      ctx.fillStyle = "#e2e8f0";
-      ctx.fill();
-      ctx.restore();
+    } else if (sphereSprite) {
+      var dW = R * 2 * squashX, dH = R * 2 * squashY;
+      ctx.drawImage(sphereSprite, cx - dW / 2, currentCy - dH / 2, dW, dH);
     }
 
     // -------------------------------------------------------------
@@ -1617,45 +1735,96 @@
 
     var sm = smileProgress; // 0 (neutral) to 1 (full warm smiling gaze)
 
-    // 1. Wide open, glossy, soulful pupil (pure innocent Pixar/Eve aesthetic - no eyebrows)
-    ctx.fillStyle = "#07090e";
-    ctx.beginPath();
-    if (openFactor > 0.32) {
-      // Draw almond/round eye with smiling lower contour (Disney/Pixar warm cheek lift)
-      var topH = curEyeH;
-      var botH = curEyeH * (1.0 - sm * 0.32);
-      ctx.moveTo(-baseEyeW, 0);
-      ctx.bezierCurveTo(-baseEyeW, -topH * 1.25, baseEyeW, -topH * 1.25, baseEyeW, 0);
-      ctx.bezierCurveTo(baseEyeW, botH * 0.95, -baseEyeW, botH * 0.95, -baseEyeW, 0);
-      ctx.fill();
+    // =========================================================
+    // A. BATMAN OPTICS IN SEMI-DARKNESS (SHADOW FACTOR)
+    // When the sphere is in semi-darkness, the eyes are sharp, luminous
+    // cyan-white slits peering out of the cowl/shadows with soft bloom.
+    // =========================================================
+    var shadowFactor = Math.max(0, 1.0 - currentSpotIllumination);
+    if (shadowFactor > 0.01) {
+      ctx.save();
+      // Batman cowl eye angle: slight inward/downward focus tilt
+      var batmanAngle = (isRightEye ? -0.10 : 0.10) * shadowFactor;
+      ctx.rotate(batmanAngle);
 
-      // 3. Dual glossy Pixar catchlights (living liquid eye reflection)
-      // Primary specular catchlight (top-right highlight)
-      var spark1X = baseEyeW * 0.32;
-      var spark1Y = -curEyeH * 0.38;
-      var spark1R = Math.max(1.8, baseEyeW * 0.38);
-      ctx.fillStyle = "rgba(255, 255, 255, 0.98)";
-      ctx.beginPath();
-      ctx.arc(spark1X, spark1Y, spark1R, 0, Math.PI * 2);
-      ctx.fill();
+      var slitW = baseEyeW * (0.95 + 0.15 * shadowFactor);
+      var slitH = Math.max(2.0, R * 0.022 * normalForeshorten * (1.0 + 0.4 * eyeWiden));
 
-      // Secondary micro-sparkle (lower-left glossy reflection)
-      var spark2X = -baseEyeW * 0.30;
-      var spark2Y = curEyeH * 0.22;
-      var spark2R = Math.max(1.1, baseEyeW * 0.18);
-      ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
-      ctx.beginPath();
-      ctx.arc(spark2X, spark2Y, spark2R, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      // Fast natural blink line
-      ctx.strokeStyle = "#07090e";
-      ctx.lineWidth = Math.max(2.5, R * 0.034 * normalForeshorten);
+      // 1. Soft atmospheric cyan bloom in darkness
+      ctx.strokeStyle = "rgba(56, 189, 248, " + (0.45 * shadowFactor).toFixed(3) + ")";
+      ctx.lineWidth = Math.max(3.6, slitH + 4.2);
       ctx.lineCap = "round";
       ctx.beginPath();
-      ctx.moveTo(-baseEyeW, 0);
-      ctx.lineTo(baseEyeW, 0);
+      ctx.moveTo(-slitW * 0.85, 0);
+      ctx.lineTo(slitW * 0.85, 0);
       ctx.stroke();
+
+      // 2. Inner crisp glowing white/cyan Batman optical slit
+      ctx.strokeStyle = "rgba(224, 242, 254, " + (0.95 * shadowFactor).toFixed(3) + ")";
+      ctx.lineWidth = Math.max(1.8, slitH);
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(-slitW * 0.80, 0);
+      ctx.lineTo(slitW * 0.80, 0);
+      ctx.stroke();
+
+      // 3. Razor-bright silver-white core
+      ctx.strokeStyle = "rgba(255, 255, 255, " + (1.0 * shadowFactor).toFixed(3) + ")";
+      ctx.lineWidth = Math.max(1.0, slitH * 0.55);
+      ctx.beginPath();
+      ctx.moveTo(-slitW * 0.42, 0);
+      ctx.lineTo(slitW * 0.42, 0);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // =========================================================
+    // B. PIXAR CHARACTER EYE (FULLY LIT IN SPOTLIGHT)
+    // Fades in cleanly as spotlight illuminates the character
+    // =========================================================
+    var pixarAlpha = currentSpotIllumination;
+    if (pixarAlpha > 0.01) {
+      ctx.save();
+      ctx.globalAlpha = pixarAlpha;
+
+      ctx.fillStyle = "#07090e";
+      ctx.beginPath();
+      if (openFactor > 0.32) {
+        var topH = curEyeH;
+        var botH = curEyeH * (1.0 - sm * 0.32);
+        ctx.moveTo(-baseEyeW, 0);
+        ctx.bezierCurveTo(-baseEyeW, -topH * 1.25, baseEyeW, -topH * 1.25, baseEyeW, 0);
+        ctx.bezierCurveTo(baseEyeW, botH * 0.95, -baseEyeW, botH * 0.95, -baseEyeW, 0);
+        ctx.fill();
+
+        // Dual glossy catchlights
+        var spark1X = baseEyeW * 0.32;
+        var spark1Y = -curEyeH * 0.38;
+        var spark1R = Math.max(1.8, baseEyeW * 0.38);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.98)";
+        ctx.beginPath();
+        ctx.arc(spark1X, spark1Y, spark1R, 0, Math.PI * 2);
+        ctx.fill();
+
+        var spark2X = -baseEyeW * 0.30;
+        var spark2Y = curEyeH * 0.22;
+        var spark2R = Math.max(1.1, baseEyeW * 0.18);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
+        ctx.beginPath();
+        ctx.arc(spark2X, spark2Y, spark2R, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.strokeStyle = "#07090e";
+        ctx.lineWidth = Math.max(2.5, R * 0.034 * normalForeshorten);
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(-baseEyeW, 0);
+        ctx.lineTo(baseEyeW, 0);
+        ctx.stroke();
+      }
+
+      ctx.restore();
     }
 
     ctx.restore();
@@ -1711,6 +1880,7 @@
   bakedR = R;
   buildShadowSprites();
   buildSphereSprite();
+  buildBatmanSphereSprite();
   buildSpotSprites();
   window.addEventListener("resize", scheduleRebake);
   requestAnimationFrame(render);
