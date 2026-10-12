@@ -1,11 +1,11 @@
 /* ============================================================
    Grok-Inspired 3D Sphere Bot — Interactive Hero Engine
    - 1:1 circular aspect ratio with high-DPI Retina support
-   - Sphere loads first: calm atmospheric presence on dark stage (0.0s - 0.75s)
-   - Overhead follow-spot arrives: sweeps in, strikes on & illuminates sphere (0.75s - 1.75s)
-   - Dramatic 3D spin: anticipation coil, explosive 3D whirl & physical settle (1.75s - 3.40s)
-   - "Visitor detected" thinking effect: neural ripple waves + thought bubble (3.40s - 4.00s)
-   - Delighted recognition & speech: hops, smiles, dialogue card emerges from mouth (4.00s+)
+   - Sleeping Grok bot: resting in ambient dusk with floating Zzz (0.00s - 2.20s)
+   - Overhead follow-spot arrives: sweeps in, strikes on & bot wakes up (2.20s - 3.05s)
+   - Dramatic 3D spin: anticipation coil, explosive 3D whirl & physical settle (3.05s - 4.70s)
+   - "Visitor detected" thinking effect: neural ripple waves + thought bubble (4.70s - 6.00s)
+   - Delighted recognition & speech: hops, smiles, dialogue card emerges from mouth (6.00s+)
    - Real-time mouth lip-sync articulation while speaking
    - Web Speech Synthesis: muted by default with a speaker toggle below
    - Tap bubble to swallow back into mouth; click sphere to hop and speak
@@ -885,14 +885,14 @@
   // =============================================================
   // HERO AUTO-SCROLL COUNTDOWN CHIP (bottom corner, hero-pinned)
   // Driven by the REAL scroll schedule, not a fake timer:
-  //  - muted path: speech opens ~4.08s, fallback resolves at 8.3s,
-  //    scroll fires ~10.54s after load (estimate until corrected)
+  //  - muted path: speech opens ~6.08s, fallback resolves at 10.3s,
+  //    scroll fires ~12.52s after load (estimate until corrected)
   //  - corrected to exact fire time inside markFinishedSaying()
   //  - unmuted audio: indeterminate ("playing") until audio ends
   // Updates are throttled (text ~4Hz, ring ~10Hz) so the chip adds
   // zero measurable cost to the 60fps bot loop.
   // =============================================================
-  var SCROLL_TOTAL_MS = 10540;
+  var SCROLL_TOTAL_MS = 12520;
   var RING_CIRC = 72.26;
   var scrollDeadline = -1; // performance.now() ms of scroll fire; -2 = indeterminate
   var lastShownSec = -1;
@@ -1118,7 +1118,7 @@
 
   // Mouse / Pointer Eye Contact Tracking
   function onPointerMove(clientX, clientY) {
-    if (phase === "sleeping" || phase === "awakening" || phase === "spinning" || phase === "entrance" || phase === "spotlight") return;
+    if (phase !== "active") return;
     var rect = canvas.getBoundingClientRect();
     var mouseX = clientX - rect.left;
     var mouseY = clientY - rect.top;
@@ -1142,7 +1142,7 @@
 
   // Click Interaction: Playful bounce & speak
   canvas.addEventListener("click", function () {
-    if (phase === "sleeping" || phase === "awakening" || phase === "spinning" || phase === "entrance" || phase === "spotlight") return;
+    if (phase !== "active") return;
     triggerPlayfulHop();
     if (bubbleState === "swallowed" || !bubbleEl.classList.contains("is-open")) {
       openSpeechBubble();
@@ -1211,14 +1211,15 @@
   var startTime = performance.now();
 
   function render(now) {
-    var elapsedSec = (debugTime !== null) ? debugTime : (now - startTime) / 1000;
+    var nowMs = (typeof now === "number") ? now : performance.now();
+    var elapsedSec = (debugTime !== null) ? debugTime : (nowMs - startTime) / 1000;
 
     // -------------------------------------------------------------
     // 1. TIMELINE & CHOREOGRAPHY
     // -------------------------------------------------------------
 
-    // --- PHASE 1: CUTE GROK BOT SLEEPING WITH ZZZ (0.0s - 0.95s) ---
-    if (elapsedSec < 0.95) {
+    // --- PHASE 1: CUTE GROK BOT SLEEPING WITH ZZZ (0.00s - 2.20s) ---
+    if (elapsedSec < 2.20) {
       phase = "sleeping";
       curY = targetCy;
       sleepProgress = 1.0;
@@ -1239,20 +1240,20 @@
       eyeWiden = 1.0;
       smileProgress = 0;
     }
-    // --- PHASE 2: SPOTLIGHT ARRIVES & GROK BOT WAKES UP (0.95s - 1.70s) ---
-    else if (elapsedSec < 1.70) {
+    // --- PHASE 2: SPOTLIGHT ARRIVES & GROK BOT WAKES UP (2.20s - 3.05s) ---
+    else if (elapsedSec < 3.05) {
       phase = "awakening";
       curY = targetCy;
 
-      var tWake = elapsedSec - 0.95; // 0 to 0.75s
-      var wakeProg = Math.min(1, tWake / 0.75);
+      var tWake = elapsedSec - 2.20; // 0 to 0.85s
+      var wakeProg = Math.min(1, tWake / 0.85);
 
       // Floating Zzz snoozes dissolve as he awakens
-      sleepProgress = Math.max(0, 1.0 - (tWake / 0.38));
+      sleepProgress = Math.max(0, 1.0 - (tWake / 0.40));
 
       // Cute startle / nudge awake as the overhead beam warms him
-      if (tWake < 0.28) {
-        var pNudge = tWake / 0.28;
+      if (tWake < 0.30) {
+        var pNudge = tWake / 0.30;
         var nudgeHop = Math.sin(pNudge * Math.PI);
         hopY = -nudgeHop * 7.5;
         scaleY = 1.0 + nudgeHop * 0.06;
@@ -1269,35 +1270,35 @@
       yaw = 0.020 * (1.0 - wakeProg);
 
       // Adorable eye flutter and waking surprise/wonder
-      if (tWake < 0.16) {
+      if (tWake < 0.18) {
         // Sleepy eyes crack open
-        blink = Math.max(0, 1.0 - (tWake / 0.16));
+        blink = Math.max(0, 1.0 - (tWake / 0.18));
         eyeWiden = 1.0;
-      } else if (tWake < 0.40) {
+      } else if (tWake < 0.44) {
         // Quick surprised flutter blink
-        var pFlutter = (tWake - 0.16) / 0.24;
+        var pFlutter = (tWake - 0.18) / 0.26;
         blink = Math.sin(pFlutter * Math.PI);
         eyeWiden = 1.0 + 0.10 * (1.0 - blink);
       } else {
         // Eyes pop wide open in wonder and delight as bot sees the audience
         blink = 0;
-        var pOpen = Math.min(1, (tWake - 0.40) / 0.30);
+        var pOpen = Math.min(1, (tWake - 0.44) / 0.32);
         eyeWiden = 1.0 + 0.24 * Math.sin(pOpen * Math.PI * 0.5);
       }
 
       smileProgress = 0;
     }
-    // --- PHASE 3: DRAMATIC 3D SPIN (1.70s - 3.35s) ---
-    else if (elapsedSec < 3.35) {
+    // --- PHASE 3: DRAMATIC 3D SPIN (3.05s - 4.70s) ---
+    else if (elapsedSec < 4.70) {
       phase = "spinning";
       curY = targetCy;
       sleepProgress = 0;
       smileProgress = 0;
       blink = 0;
 
-      var tSpinTotal = elapsedSec - 1.70; // 0 to 1.65s
+      var tSpinTotal = elapsedSec - 3.05; // 0 to 1.65s
 
-      // 3A. Anticipation wind-up coil (1.70s - 1.93s, 0.23s)
+      // 3A. Anticipation wind-up coil (3.05s - 3.28s, 0.23s)
       if (tSpinTotal < 0.23) {
         var pCoil = tSpinTotal / 0.23;
         var sinCoil = Math.sin(pCoil * Math.PI * 0.5);
@@ -1311,7 +1312,7 @@
         roll = 0;
         eyeWiden = 1.0 - sinCoil * 0.12;
       }
-      // 3B. Explosive multi-turn 3D whirl (1.93s - 3.03s, 1.10s)
+      // 3B. Explosive multi-turn 3D whirl (3.28s - 4.38s, 1.10s)
       else if (tSpinTotal < 1.33) {
         var pSpin = (tSpinTotal - 0.23) / 1.10; // 0 to 1
         var spinEased = 1 - Math.pow(1 - pSpin, 2.7);
@@ -1334,7 +1335,7 @@
 
         eyeWiden = 1.0 + liftArc * 0.18;
       }
-      // 3C. Deceleration, overshoot & physical inertia settle (3.03s - 3.35s, 0.32s)
+      // 3C. Deceleration, overshoot & physical inertia settle (4.38s - 4.70s, 0.32s)
       else {
         var pSettle = (tSpinTotal - 1.33) / 0.32; // 0 to 1
         // Inertial overshoot past 0 with elastic snap to 0
@@ -1350,17 +1351,17 @@
         eyeWiden += (1.0 - eyeWiden) * 0.16;
       }
     }
-    // --- PHASE 4: THINKING EFFECT / VISITOR DETECTED (3.35s - 3.95s) ---
-    else if (elapsedSec < 3.95) {
+    // --- PHASE 4: THINKING EFFECT / VISITOR DETECTED (4.70s - 6.00s) ---
+    else if (elapsedSec < 6.00) {
       phase = "thinking";
       curY = targetCy;
       scaleX = 1; scaleY = 1;
       sleepProgress = 0;
 
-      var tThink = elapsedSec - 3.35; // 0 to 0.60s
+      var tThink = elapsedSec - 4.70; // 0 to 1.30s
       var pThink = Math.min(1, tThink / 0.45);
 
-      // Cocks head inquisitively (+9 deg roll, looking slightly up)
+      // Cocks head inquisitively (+9 deg roll, looking slightly up at visitor)
       roll = Math.sin(pThink * Math.PI * 0.5) * 0.15;
       pitch = -0.06 * Math.sin(pThink * Math.PI * 0.5);
       yaw = -0.04 * Math.sin(pThink * Math.PI * 0.5);
@@ -1369,8 +1370,8 @@
       eyeWiden = 1.0 + Math.sin(pThink * Math.PI * 0.5) * 0.28;
 
       // Thinking blink
-      if (tThink > 0.12 && tThink < 0.32) {
-        var bP = (tThink - 0.12) / 0.20;
+      if (tThink > 0.15 && tThink < 0.38) {
+        var bP = (tThink - 0.15) / 0.23;
         blink = Math.sin(bP * Math.PI);
       } else {
         blink = 0;
@@ -1378,18 +1379,19 @@
 
       smileProgress = 0;
 
-      if (elapsedSec < 3.90) {
+      // "Visitor detected" thought bubble is clearly displayed before speaking
+      if (tThink < 1.15) {
         showThinkingBubble();
       } else {
         retractThinkingBubble();
       }
     }
-    // --- PHASE 5: DELIGHTED RECOGNITION & SMILE (3.95s - 4.45s) ---
-    else if (elapsedSec < 4.45) {
+    // --- PHASE 5: DELIGHTED RECOGNITION & SMILE (6.00s - 6.50s) ---
+    else if (elapsedSec < 6.50) {
       phase = "smile";
       curY = targetCy;
       sleepProgress = 0;
-      var tSm = elapsedSec - 3.95; // 0 to 0.50s
+      var tSm = elapsedSec - 6.00; // 0 to 0.50s
 
       roll += (0 - roll) * 0.12;
       pitch += (0.02 - pitch) * 0.12;
@@ -1404,7 +1406,8 @@
         hopY = 0;
       }
 
-      if (elapsedSec >= 4.02 && bubbleState !== "speaking" && speechFlowState === "idle") {
+      // Speech bubble opens after Visitor Detected scan completes
+      if (elapsedSec >= 6.08 && bubbleState !== "speaking" && speechFlowState === "idle") {
         openSpeechBubble();
         if (!speechTriggered && !isMuted) {
           speechTriggered = true;
@@ -1412,7 +1415,7 @@
         }
       }
     }
-    // --- PHASE 6: LIVING INTERACTIVE EYE CONTACT (4.50s+) ---
+    // --- PHASE 6: LIVING INTERACTIVE EYE CONTACT (6.50s+) ---
     else {
       phase = "active";
       curY = targetCy;
@@ -1424,7 +1427,7 @@
       }
 
       // Check if finished saying when muted (or as speech timeout fallback)
-      if (speechFlowState === "speaking" && elapsedSec >= 8.3) {
+      if (speechFlowState === "speaking" && elapsedSec >= 10.3) {
         var isActivelySpeaking = ("speechSynthesis" in window) && window.speechSynthesis.speaking;
         if (!isActivelySpeaking) {
           markFinishedSaying();
@@ -1447,7 +1450,7 @@
       }
     }
 
-    var floatY = (elapsedSec >= 3.35) ? Math.sin((elapsedSec - 3.35) * 1.8) * 5.5 : 0;
+    var floatY = (elapsedSec >= 4.70) ? Math.sin((elapsedSec - 4.70) * 1.8) * 5.5 : 0;
     var currentCy = curY + floatY + hopY;
 
     // -------------------------------------------------------------
@@ -1478,24 +1481,24 @@
     var spotFade = 0;
     var spotIllumination = 0; // 0 = dark ambient silhouette, 1 = fully illuminated in spotlight
 
-    if (elapsedSec < 0.95) {
+    if (elapsedSec < 2.20) {
       // Phase 1: Grok bot sleeps peacefully in soft ambient room lighting
       spotFade = 0;
       spotIllumination = 0;
       spotX = cx;
-    } else if (elapsedSec < 1.70) {
+    } else if (elapsedSec < 3.05) {
       // Phase 2: Overhead spotlight sweeps in, strikes lamp, illuminates bot as he wakes up
-      var tSpot = elapsedSec - 0.95; // 0 to 0.75s
-      var sweepProg = Math.min(1, tSpot / 0.65);
+      var tSpot = elapsedSec - 2.20; // 0 to 0.85s
+      var sweepProg = Math.min(1, tSpot / 0.70);
       var easedSweep = 1 - Math.pow(1 - sweepProg, 3);
       var spotSweepX = (cx - R * 1.5) * (1 - easedSweep) + cx * easedSweep;
       var spotSway = reduceSpotMotion ? 0 : Math.sin(elapsedSec * 0.35) * R * 0.05;
       spotX = spotSweepX + spotSway * easedSweep;
 
       // Lamp power strike: filament surge & flare settling into full beam
-      var strikeProg = Math.min(1, tSpot / 0.30);
+      var strikeProg = Math.min(1, tSpot / 0.35);
       var lampIgnite = Math.sin(strikeProg * Math.PI * 0.5);
-      var lampFlare = (tSpot > 0.10 && tSpot < 0.38) ? Math.sin((tSpot - 0.10) / 0.28 * Math.PI) * 0.22 : 0;
+      var lampFlare = (tSpot > 0.12 && tSpot < 0.44) ? Math.sin((tSpot - 0.12) / 0.32 * Math.PI) * 0.22 : 0;
       spotFade = reduceSpotMotion ? 1 : Math.min(1, lampIgnite + lampFlare);
 
       // Illumination scales as beam converges on sphere
@@ -1510,8 +1513,8 @@
       spotIllumination = 1.0;
     }
 
-    var spinEnergy = (phase === "spinning" && elapsedSec >= 1.93 && elapsedSec < 3.03)
-      ? Math.sin(((elapsedSec - 1.93) / 1.10) * Math.PI) * 0.15 : 0;
+    var spinEnergy = (phase === "spinning" && elapsedSec >= 3.28 && elapsedSec < 4.38)
+      ? Math.sin(((elapsedSec - 3.28) / 1.10) * Math.PI) * 0.15 : 0;
     var spotSwell = Math.min(0.20, Math.abs(hopY) * 0.012 + spinEnergy + (bubbleState === "speaking" ? 0.06 : 0));
     var spotBreath = (reduceSpotMotion ? 0.42 : 0.42 + Math.sin(elapsedSec * 0.9) * 0.045) * spotFade;
     if (beamSprite && spotFade > 0.001) {
@@ -1529,7 +1532,7 @@
     // 3. THINKING NEURAL RIPPLE WAVES (EMITS AROUND HEAD)
     // -------------------------------------------------------------
     if (phase === "thinking") {
-      var thinkT = (elapsedSec - 3.35);
+      var thinkT = (elapsedSec - 4.70);
       for (var w = 0; w < 3; w++) {
         var waveProg = ((thinkT * 2.2 + w * 0.33) % 1.0);
         var waveRadius = R * (1.06 + waveProg * 0.42);
@@ -1641,7 +1644,7 @@
     // 6. 3D PROJECTED EYES & REAL-TIME LIP-SYNC MOUTH
     // -------------------------------------------------------------
     var isSpeakingNow = (botAudio && !botAudio.paused && !botAudio.ended) ||
-      (speechFlowState === "speaking" && elapsedSec >= 4.08 && elapsedSec < 9.0) ||
+      (speechFlowState === "speaking" && elapsedSec >= 6.08 && elapsedSec < 10.5) ||
       ("speechSynthesis" in window && window.speechSynthesis.speaking);
 
     renderEye(EYE_LEFT, currentCy, false, isSpeakingNow);
@@ -1779,7 +1782,7 @@
     // Dynamic lip-sync speech oscillation
     var isSpeakingNow = (isSpeakingNowArg !== undefined) ? isSpeakingNowArg :
       ((botAudio && !botAudio.paused && !botAudio.ended) ||
-       (speechFlowState === "speaking" && elapsedSec >= 4.08 && elapsedSec < 9.0) ||
+       (speechFlowState === "speaking" && elapsedSec >= 6.08 && elapsedSec < 10.5) ||
        ("speechSynthesis" in window && window.speechSynthesis.speaking));
     var talkVibe = isSpeakingNow ? Math.sin(elapsedSec * 22) * 0.38 : 0;
     var mouthTalkDepth = isSpeakingNow ? (Math.sin(elapsedSec * 20) * 0.5 + 0.5) * R * 0.022 : 0;
