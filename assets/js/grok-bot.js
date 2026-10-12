@@ -827,9 +827,7 @@
     if (bubbleInner) {
       bubbleInner.innerHTML =
         '<div class="thinking-text">' +
-        '<span class="thinking-radar-beacon" aria-hidden="true"></span>' +
         '<span>Visitor detected</span>' +
-        '<span class="thinking-dots" aria-hidden="true"><span></span><span></span><span></span></span>' +
         '</div>';
     }
   }
