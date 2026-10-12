@@ -827,8 +827,9 @@
     if (bubbleInner) {
       bubbleInner.innerHTML =
         '<div class="thinking-text">' +
-        '<span>💭 Visitor detected</span>' +
-        '<span class="thinking-dots"><span></span><span></span><span></span></span>' +
+        '<span class="thinking-radar-beacon" aria-hidden="true"></span>' +
+        '<span>Visitor detected</span>' +
+        '<span class="thinking-dots" aria-hidden="true"><span></span><span></span><span></span></span>' +
         '</div>';
     }
   }
@@ -1463,9 +1464,13 @@
 
     if (bubbleEl) {
       var bubbleTop = currentCy + R + 18;
+      var thinkX = cx + R * 0.75;
+      var thinkY = currentCy - R * 0.70;
       bubbleEl.style.setProperty("--mouth-x", screenMouthX.toFixed(1) + "px");
       bubbleEl.style.setProperty("--mouth-y", screenMouthY.toFixed(1) + "px");
       bubbleEl.style.setProperty("--bubble-y", bubbleTop.toFixed(1) + "px");
+      bubbleEl.style.setProperty("--think-x", thinkX.toFixed(1) + "px");
+      bubbleEl.style.setProperty("--think-y", thinkY.toFixed(1) + "px");
     }
 
     // Hero auto-scroll countdown chip (throttled internally, ~zero cost).
@@ -1538,7 +1543,7 @@
         var waveRadius = R * (1.06 + waveProg * 0.42);
         var waveAlpha = (1.0 - waveProg) * 0.40;
 
-        ctx.strokeStyle = "rgba(165, 180, 252, " + waveAlpha.toFixed(3) + ")";
+        ctx.strokeStyle = "rgba(52, 211, 153, " + waveAlpha.toFixed(3) + ")";
         ctx.lineWidth = Math.max(1.5, 3.2 * (1.0 - waveProg));
         ctx.beginPath();
         ctx.arc(cx, currentCy - R * 0.12, waveRadius, -Math.PI * 0.88, -Math.PI * 0.12);
