@@ -59,12 +59,11 @@
   // frame at 60fps, churning GC and CPU raster time)
   // ---------------------------------------------------------------
   var sphereSprite = null;   // porcelain bot body, supersampled 2x
-  var batmanSphereSprite = null; // low-key chiaroscuro Batman body for semi-darkness
   var poolSprite = null;     // (retired) second floor light — see buildShadowSprites
   var contactSprite = null;  // layered AO contact shadow (the Pixar look)
   var bounceSprite = null;   // warm bounce glow under sphere
   var smoothContact = 1.0;   // temporally smoothed grounding (no popping)
-  var currentSpotIllumination = 0; // 0 = Batman semi-darkness, 1 = full spotlight
+  var sleepProgress = 1.0;   // 1.0 = sleeping in dim light, 0.0 = fully awake in spotlight
   var lastFrameNow = -1;
 
   function makeCanvas(w, h) {
@@ -415,122 +414,42 @@
   }
 
   // ===============================================================
-  // BATMAN LOW-KEY CHIAROSCURO SPHERE SPRITE (SEMI-DARKNESS)
-  // Mastercrafted for the dark hero stage: deep obsidian/slate body,
-  // cold Gotham moonlight rim light, sharp specular catchlight.
-  // Represents the character brooding / hiding in the shadows before
-  // the spotlight hits.
+  // FLOATING "Zzz" SLEEP SNOOZE PARTICLES
+  // Gentle stylized snoozes drifting up while the Grok bot sleeps.
+  // Dissolves seamlessly as the spotlight strikes and he wakes up.
   // ===============================================================
-  function buildBatmanSphereSprite() {
-    var SS = 2; // supersample for crisp limb edge
-    var S = Math.ceil(R * 2 * SS);
-    batmanSphereSprite = makeCanvas(S, S);
-    var sctx = batmanSphereSprite.getContext("2d");
-    if (!sctx) return;
-    var r = S / 2;
-    var kkx = r * 0.95, kky = r * 0.36; // cool high ambient key
+  function renderZzz(cx, currentCy, elapsedSec, sleepProg) {
+    if (sleepProg <= 0.01) return;
 
-    // 1. Dark Knight Base Material: deep, rich midnight obsidian chiaroscuro
-    // Smooth transition from midnight slate highlight on top shoulder down to deep pitch black
-    var base = sctx.createRadialGradient(kkx, kky, r * 0.04, r, r, r * 1.02);
-    base.addColorStop(0.00, "#1e293b"); // slate-800 soft apex sheen
-    base.addColorStop(0.22, "#131c2b"); // deep midnight blue-gray
-    base.addColorStop(0.48, "#0c121e"); // dark navy shadow
-    base.addColorStop(0.72, "#060911"); // velvety pitch
-    base.addColorStop(0.92, "#030408"); // deep occlusion
-    base.addColorStop(1.00, "#020306");
-    sctx.fillStyle = base;
-    sctx.beginPath();
-    sctx.arc(r, r, r - 0.5, 0, Math.PI * 2);
-    sctx.fill();
+    var startX = cx + R * 0.44;
+    var startY = currentCy - R * 0.55;
 
-    // Clip internal passes to the disc
-    sctx.save();
-    sctx.beginPath();
-    sctx.arc(r, r, r - 0.5, 0, Math.PI * 2);
-    sctx.clip();
+    for (var i = 0; i < 3; i++) {
+      var zPeriod = 2.2;
+      var zTime = (elapsedSec + i * 0.72) % zPeriod;
+      var p = zTime / zPeriod; // 0 to 1 lifetime
 
-    // 2. Micro-surface noise grain (matches white sphere texture)
-    var grain = makeNoiseTile(192, 2, 64, 4711, 96, 160);
-    if (grain) {
-      sctx.save();
-      sctx.globalCompositeOperation = "overlay";
-      sctx.globalAlpha = 0.06;
-      var pat = sctx.createPattern(grain, "repeat");
-      if (pat) {
-        sctx.fillStyle = pat;
-        sctx.fillRect(0, 0, S, S);
-      }
-      sctx.restore();
+      var driftY = startY - p * (R * 0.85) - (i * 10);
+      var driftX = startX + Math.sin(p * Math.PI * 2.2 + i * 1.5) * (R * 0.14) + p * (R * 0.38);
+
+      var lifeAlpha = Math.sin(p * Math.PI);
+      var alpha = lifeAlpha * sleepProg * 0.88;
+      if (alpha <= 0.01) continue;
+
+      var zSize = Math.round(R * (0.13 + i * 0.045));
+
+      ctx.save();
+      ctx.font = "bold " + zSize + "px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      ctx.shadowColor = "rgba(165, 180, 252, " + (alpha * 0.80).toFixed(3) + ")";
+      ctx.shadowBlur = 8;
+
+      ctx.fillStyle = "rgba(224, 231, 255, " + alpha.toFixed(3) + ")";
+      ctx.fillText(i === 2 ? "Z" : "z", driftX, driftY);
+      ctx.restore();
     }
-
-    // 3. Cold Moonlight Specular Catchlight (subtle softbox)
-    sctx.save();
-    sctx.translate(r * 0.96, r * 0.38);
-    sctx.scale(1.2, 0.85);
-    var spec = sctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.32);
-    spec.addColorStop(0.00, "rgba(224,242,254,0.40)");
-    spec.addColorStop(0.40, "rgba(186,230,253,0.12)");
-    spec.addColorStop(1.00, "rgba(186,230,253,0)");
-    sctx.fillStyle = spec;
-    sctx.beginPath();
-    sctx.arc(0, 0, r * 0.32, 0, Math.PI * 2);
-    sctx.fill();
-    sctx.restore();
-
-    // 4. Sharp Specular Core Glint
-    var spec2 = sctx.createRadialGradient(r * 0.96, r * 0.38, 0, r * 0.96, r * 0.38, r * 0.10);
-    spec2.addColorStop(0.00, "rgba(255,255,255,0.72)");
-    spec2.addColorStop(0.40, "rgba(224,242,254,0.22)");
-    spec2.addColorStop(1.00, "rgba(224,242,254,0)");
-    sctx.fillStyle = spec2;
-    sctx.fillRect(0, 0, S, S);
-
-    // 5. Batman Gotham Moonlight Rim: dramatic cyan-silver rim wash on the upper hemisphere
-    var rimMoon = sctx.createRadialGradient(r * 0.96, r * 0.28, r * 0.65, r, r, r * 1.01);
-    rimMoon.addColorStop(0.00, "rgba(56,189,248,0)");
-    rimMoon.addColorStop(0.68, "rgba(56,189,248,0.04)");
-    rimMoon.addColorStop(0.88, "rgba(147,197,253,0.24)");
-    rimMoon.addColorStop(0.97, "rgba(224,242,254,0.52)");
-    rimMoon.addColorStop(1.00, "rgba(255,255,255,0.18)");
-    sctx.fillStyle = rimMoon;
-    sctx.fillRect(0, 0, S, S);
-
-    // 6. Deep bottom occlusion (grounds the sphere in shadow)
-    var bOcclusion = sctx.createLinearGradient(0, r * 1.15, 0, r * 2.0);
-    bOcclusion.addColorStop(0.00, "rgba(0,0,0,0)");
-    bOcclusion.addColorStop(0.70, "rgba(0,0,0,0.55)");
-    bOcclusion.addColorStop(1.00, "rgba(0,0,0,0.85)");
-    sctx.fillStyle = bOcclusion;
-    sctx.fillRect(0, 0, S, S);
-
-    sctx.restore();
-
-    // 7. Sharp Silhouette Rim Stroke
-    sctx.save();
-    // Subtle 360-degree contour so the sphere is 100% complete and never disappears
-    sctx.beginPath();
-    sctx.arc(r, r, r - 1.5, 0, Math.PI * 2);
-    sctx.strokeStyle = "rgba(71,85,105,0.26)";
-    sctx.lineWidth = Math.max(1.2, r * 0.010);
-    sctx.stroke();
-
-    // Chiaroscuro top moonlit edge arc (Batman rim light)
-    sctx.beginPath();
-    sctx.arc(r, r, r - 1.5, -Math.PI * 0.96, -Math.PI * 0.04);
-    sctx.strokeStyle = "rgba(186,230,253,0.58)";
-    sctx.lineWidth = Math.max(1.5, r * 0.014);
-    sctx.lineCap = "round";
-    sctx.stroke();
-
-    // Apex specular silver glint
-    sctx.beginPath();
-    sctx.arc(r, r, r - 1.5, -Math.PI * 0.68, -Math.PI * 0.32);
-    sctx.strokeStyle = "rgba(255,255,255,0.88)";
-    sctx.lineWidth = Math.max(1.2, r * 0.010);
-    sctx.lineCap = "round";
-    sctx.stroke();
-    sctx.restore();
   }
 
   // Baked once per resize: narrow shaft with bright core + fast falloff,
@@ -629,7 +548,6 @@
       bakedR = R;
       buildShadowSprites();
       buildSphereSprite();
-      buildBatmanSphereSprite();
       buildSpotSprites();
     }, 140);
   }
@@ -1200,7 +1118,7 @@
 
   // Mouse / Pointer Eye Contact Tracking
   function onPointerMove(clientX, clientY) {
-    if (phase === "entrance" || phase === "spotlight" || phase === "spinning") return;
+    if (phase === "sleeping" || phase === "awakening" || phase === "spinning" || phase === "entrance" || phase === "spotlight") return;
     var rect = canvas.getBoundingClientRect();
     var mouseX = clientX - rect.left;
     var mouseY = clientY - rect.top;
@@ -1224,7 +1142,7 @@
 
   // Click Interaction: Playful bounce & speak
   canvas.addEventListener("click", function () {
-    if (phase === "entrance" || phase === "spotlight" || phase === "spinning") return;
+    if (phase === "sleeping" || phase === "awakening" || phase === "spinning" || phase === "entrance" || phase === "spotlight") return;
     triggerPlayfulHop();
     if (bubbleState === "swallowed" || !bubbleEl.classList.contains("is-open")) {
       openSpeechBubble();
@@ -1299,53 +1217,87 @@
     // 1. TIMELINE & CHOREOGRAPHY
     // -------------------------------------------------------------
 
-    // --- PHASE 1: SPHERE LOADS FIRST (0.0s - 0.75s) ---
-    if (elapsedSec < 0.75) {
-      phase = "entrance";
+    // --- PHASE 1: CUTE GROK BOT SLEEPING WITH ZZZ (0.0s - 0.95s) ---
+    if (elapsedSec < 0.95) {
+      phase = "sleeping";
       curY = targetCy;
-      hopY = 0;
-      yaw = 0;
-      pitch = 0;
-      roll = 0;
+      sleepProgress = 1.0;
 
-      // Gentle materialization & micro-settle onto canvas
-      var pLoad = Math.min(1, elapsedSec / 0.45);
-      var easedLoad = pLoad * pLoad * (3 - 2 * pLoad);
-      scaleX = 0.95 + 0.05 * easedLoad;
-      scaleY = 0.95 + 0.05 * easedLoad;
+      // Gentle rhythmic sleeping breathing motion
+      var sleepBreath = Math.sin(elapsedSec * 2.8);
+      hopY = sleepBreath * 2.2;
+      scaleY = 1.0 + sleepBreath * 0.024;
+      scaleX = 1.0 - sleepBreath * 0.020;
 
-      smileProgress = 0;
-      blink = 0;
+      // Peaceful cute sleeping head tilt & forward nod
+      roll = 0.075 + Math.sin(elapsedSec * 1.4) * 0.015;
+      pitch = 0.050 + sleepBreath * 0.018;
+      yaw = 0.020;
+
+      // Eyelids peacefully closed
+      blink = 1.0;
       eyeWiden = 1.0;
-    }
-    // --- PHASE 2: SPOTLIGHT EFFECT COMES TO IT (0.75s - 1.75s) ---
-    else if (elapsedSec < 1.75) {
-      phase = "spotlight";
-      curY = targetCy;
-      hopY = 0;
-      scaleX = 1;
-      scaleY = 1;
-      yaw = 0;
-      pitch = 0;
-      roll = 0;
-
-      var tSpot = elapsedSec - 0.75; // 0 to 1.0s
       smileProgress = 0;
-      blink = 0;
-      // Eyes widen slightly with subtle excitement as beam lands
-      var pGleam = Math.min(1, Math.max(0, (tSpot - 0.35) / 0.55));
-      eyeWiden = 1.0 + 0.12 * Math.sin(pGleam * Math.PI * 0.5);
     }
-    // --- PHASE 3: DRAMATIC 3D SPIN (1.75s - 3.40s) ---
-    else if (elapsedSec < 3.40) {
+    // --- PHASE 2: SPOTLIGHT ARRIVES & GROK BOT WAKES UP (0.95s - 1.70s) ---
+    else if (elapsedSec < 1.70) {
+      phase = "awakening";
+      curY = targetCy;
+
+      var tWake = elapsedSec - 0.95; // 0 to 0.75s
+      var wakeProg = Math.min(1, tWake / 0.75);
+
+      // Floating Zzz snoozes dissolve as he awakens
+      sleepProgress = Math.max(0, 1.0 - (tWake / 0.38));
+
+      // Cute startle / nudge awake as the overhead beam warms him
+      if (tWake < 0.28) {
+        var pNudge = tWake / 0.28;
+        var nudgeHop = Math.sin(pNudge * Math.PI);
+        hopY = -nudgeHop * 7.5;
+        scaleY = 1.0 + nudgeHop * 0.06;
+        scaleX = 1.0 - nudgeHop * 0.04;
+      } else {
+        hopY = 0;
+        scaleY = 1.0;
+        scaleX = 1.0;
+      }
+
+      // Head rights itself upright from the sleepy tilt
+      roll = 0.075 * (1.0 - wakeProg);
+      pitch = 0.050 * (1.0 - wakeProg);
+      yaw = 0.020 * (1.0 - wakeProg);
+
+      // Adorable eye flutter and waking surprise/wonder
+      if (tWake < 0.16) {
+        // Sleepy eyes crack open
+        blink = Math.max(0, 1.0 - (tWake / 0.16));
+        eyeWiden = 1.0;
+      } else if (tWake < 0.40) {
+        // Quick surprised flutter blink
+        var pFlutter = (tWake - 0.16) / 0.24;
+        blink = Math.sin(pFlutter * Math.PI);
+        eyeWiden = 1.0 + 0.10 * (1.0 - blink);
+      } else {
+        // Eyes pop wide open in wonder and delight as bot sees the audience
+        blink = 0;
+        var pOpen = Math.min(1, (tWake - 0.40) / 0.30);
+        eyeWiden = 1.0 + 0.24 * Math.sin(pOpen * Math.PI * 0.5);
+      }
+
+      smileProgress = 0;
+    }
+    // --- PHASE 3: DRAMATIC 3D SPIN (1.70s - 3.35s) ---
+    else if (elapsedSec < 3.35) {
       phase = "spinning";
       curY = targetCy;
+      sleepProgress = 0;
       smileProgress = 0;
       blink = 0;
 
-      var tSpinTotal = elapsedSec - 1.75; // 0 to 1.65s
+      var tSpinTotal = elapsedSec - 1.70; // 0 to 1.65s
 
-      // 3A. Anticipation wind-up coil (1.75s - 1.98s, 0.23s)
+      // 3A. Anticipation wind-up coil (1.70s - 1.93s, 0.23s)
       if (tSpinTotal < 0.23) {
         var pCoil = tSpinTotal / 0.23;
         var sinCoil = Math.sin(pCoil * Math.PI * 0.5);
@@ -1359,7 +1311,7 @@
         roll = 0;
         eyeWiden = 1.0 - sinCoil * 0.12;
       }
-      // 3B. Explosive multi-turn 3D whirl (1.98s - 3.08s, 1.10s)
+      // 3B. Explosive multi-turn 3D whirl (1.93s - 3.03s, 1.10s)
       else if (tSpinTotal < 1.33) {
         var pSpin = (tSpinTotal - 0.23) / 1.10; // 0 to 1
         var spinEased = 1 - Math.pow(1 - pSpin, 2.7);
@@ -1382,7 +1334,7 @@
 
         eyeWiden = 1.0 + liftArc * 0.18;
       }
-      // 3C. Deceleration, overshoot & physical inertia settle (3.08s - 3.40s, 0.32s)
+      // 3C. Deceleration, overshoot & physical inertia settle (3.03s - 3.35s, 0.32s)
       else {
         var pSettle = (tSpinTotal - 1.33) / 0.32; // 0 to 1
         // Inertial overshoot past 0 with elastic snap to 0
@@ -1398,13 +1350,14 @@
         eyeWiden += (1.0 - eyeWiden) * 0.16;
       }
     }
-    // --- PHASE 4: THINKING EFFECT / VISITOR DETECTED (3.40s - 4.00s) ---
-    else if (elapsedSec < 4.00) {
+    // --- PHASE 4: THINKING EFFECT / VISITOR DETECTED (3.35s - 3.95s) ---
+    else if (elapsedSec < 3.95) {
       phase = "thinking";
       curY = targetCy;
       scaleX = 1; scaleY = 1;
+      sleepProgress = 0;
 
-      var tThink = elapsedSec - 3.40; // 0 to 0.60s
+      var tThink = elapsedSec - 3.35; // 0 to 0.60s
       var pThink = Math.min(1, tThink / 0.45);
 
       // Cocks head inquisitively (+9 deg roll, looking slightly up)
@@ -1425,23 +1378,24 @@
 
       smileProgress = 0;
 
-      if (elapsedSec < 3.92) {
+      if (elapsedSec < 3.90) {
         showThinkingBubble();
       } else {
         retractThinkingBubble();
       }
     }
-    // --- PHASE 5: DELIGHTED RECOGNITION & SMILE (4.00s - 4.50s) ---
-    else if (elapsedSec < 4.50) {
+    // --- PHASE 5: DELIGHTED RECOGNITION & SMILE (3.95s - 4.45s) ---
+    else if (elapsedSec < 4.45) {
       phase = "smile";
       curY = targetCy;
-      var tSm = elapsedSec - 4.00; // 0 to 0.50s
+      sleepProgress = 0;
+      var tSm = elapsedSec - 3.95; // 0 to 0.50s
 
       roll += (0 - roll) * 0.12;
       pitch += (0.02 - pitch) * 0.12;
       eyeWiden += (1.0 - eyeWiden) * 0.10;
 
-      smileProgress = Math.min(1, tSm / 0.32);
+      smileProgress = Math.min(1, tSm / 0.30);
 
       // Happy recognition hop
       if (tSm < 0.36) {
@@ -1450,7 +1404,7 @@
         hopY = 0;
       }
 
-      if (elapsedSec >= 4.08 && bubbleState !== "speaking" && speechFlowState === "idle") {
+      if (elapsedSec >= 4.02 && bubbleState !== "speaking" && speechFlowState === "idle") {
         openSpeechBubble();
         if (!speechTriggered && !isMuted) {
           speechTriggered = true;
@@ -1493,7 +1447,7 @@
       }
     }
 
-    var floatY = (elapsedSec >= 3.40) ? Math.sin((elapsedSec - 3.40) * 1.8) * 5.5 : 0;
+    var floatY = (elapsedSec >= 3.35) ? Math.sin((elapsedSec - 3.35) * 1.8) * 5.5 : 0;
     var currentCy = curY + floatY + hopY;
 
     // -------------------------------------------------------------
@@ -1524,24 +1478,24 @@
     var spotFade = 0;
     var spotIllumination = 0; // 0 = dark ambient silhouette, 1 = fully illuminated in spotlight
 
-    if (elapsedSec < 0.75) {
-      // Phase 1: Sphere loads first, stage is dark ambient
+    if (elapsedSec < 0.95) {
+      // Phase 1: Grok bot sleeps peacefully in soft ambient room lighting
       spotFade = 0;
       spotIllumination = 0;
       spotX = cx;
-    } else if (elapsedSec < 1.75) {
-      // Phase 2: Spotlight sweeps in from off-center, lamp ignites and locks onto sphere
-      var tSpot = elapsedSec - 0.75; // 0 to 1.0s
-      var sweepProg = Math.min(1, tSpot / 0.85);
+    } else if (elapsedSec < 1.70) {
+      // Phase 2: Overhead spotlight sweeps in, strikes lamp, illuminates bot as he wakes up
+      var tSpot = elapsedSec - 0.95; // 0 to 0.75s
+      var sweepProg = Math.min(1, tSpot / 0.65);
       var easedSweep = 1 - Math.pow(1 - sweepProg, 3);
       var spotSweepX = (cx - R * 1.5) * (1 - easedSweep) + cx * easedSweep;
       var spotSway = reduceSpotMotion ? 0 : Math.sin(elapsedSec * 0.35) * R * 0.05;
       spotX = spotSweepX + spotSway * easedSweep;
 
       // Lamp power strike: filament surge & flare settling into full beam
-      var strikeProg = Math.min(1, tSpot / 0.35);
+      var strikeProg = Math.min(1, tSpot / 0.30);
       var lampIgnite = Math.sin(strikeProg * Math.PI * 0.5);
-      var lampFlare = (tSpot > 0.12 && tSpot < 0.42) ? Math.sin((tSpot - 0.12) / 0.30 * Math.PI) * 0.22 : 0;
+      var lampFlare = (tSpot > 0.10 && tSpot < 0.38) ? Math.sin((tSpot - 0.10) / 0.28 * Math.PI) * 0.22 : 0;
       spotFade = reduceSpotMotion ? 1 : Math.min(1, lampIgnite + lampFlare);
 
       // Illumination scales as beam converges on sphere
@@ -1555,10 +1509,9 @@
       spotFade = 1.0;
       spotIllumination = 1.0;
     }
-    currentSpotIllumination = spotIllumination;
 
-    var spinEnergy = (phase === "spinning" && elapsedSec >= 1.98 && elapsedSec < 3.08)
-      ? Math.sin(((elapsedSec - 1.98) / 1.10) * Math.PI) * 0.15 : 0;
+    var spinEnergy = (phase === "spinning" && elapsedSec >= 1.93 && elapsedSec < 3.03)
+      ? Math.sin(((elapsedSec - 1.93) / 1.10) * Math.PI) * 0.15 : 0;
     var spotSwell = Math.min(0.20, Math.abs(hopY) * 0.012 + spinEnergy + (bubbleState === "speaking" ? 0.06 : 0));
     var spotBreath = (reduceSpotMotion ? 0.42 : 0.42 + Math.sin(elapsedSec * 0.9) * 0.045) * spotFade;
     if (beamSprite && spotFade > 0.001) {
@@ -1576,7 +1529,7 @@
     // 3. THINKING NEURAL RIPPLE WAVES (EMITS AROUND HEAD)
     // -------------------------------------------------------------
     if (phase === "thinking") {
-      var thinkT = (elapsedSec - 3.40);
+      var thinkT = (elapsedSec - 3.35);
       for (var w = 0; w < 3; w++) {
         var waveProg = ((thinkT * 2.2 + w * 0.33) % 1.0);
         var waveRadius = R * (1.06 + waveProg * 0.42);
@@ -1645,34 +1598,24 @@
     }
 
     // -------------------------------------------------------------
-    // 5. PORCELAIN SPHERE / BATMAN CHIAROSCURO CROSSFADE
-    // In semi-darkness, the sphere renders as a rich obsidian/slate
-    // chiaroscuro body with cold Gotham moonlight rim light.
-    // When the spotlight arrives, it seamlessly crossfades into the
-    // radiant white porcelain Pixar character.
+    // 5. PORCELAIN SPHERE IN STAGE LIGHTING & FLOATING "Zzz"
+    // The bot is the beloved cute white porcelain Grok bot.
+    // In semi-ambient lighting before the spotlight, he rests
+    // peacefully with gentle breathing and floating "Zzz" snoozes.
+    // When the overhead spotlight strikes, he illuminates radiantly
+    // and catches the crisp top-light kiss across his crown.
     // -------------------------------------------------------------
-    if (sphereSprite && batmanSphereSprite) {
+    if (sphereSprite) {
       var dW = R * 2 * squashX, dH = R * 2 * squashY;
       ctx.save();
-      var sphereAlpha = (elapsedSec < 0.45) ? Math.min(1, elapsedSec / 0.45) : 1.0;
+      var sphereAlpha = (elapsedSec < 0.35) ? Math.min(1, elapsedSec / 0.35) : 1.0;
 
-      // A. Batman Chiaroscuro Sphere (Semi-Darkness)
-      if (spotIllumination < 0.999) {
-        ctx.save();
-        ctx.globalAlpha = sphereAlpha * (1.0 - spotIllumination);
-        ctx.drawImage(batmanSphereSprite, cx - dW / 2, currentCy - dH / 2, dW, dH);
-        ctx.restore();
-      }
+      // Soft ambient room tone when resting -> full brilliant stage light in spotlight
+      var ambientLight = 0.55 + 0.45 * spotIllumination;
+      ctx.globalAlpha = Math.min(1, sphereAlpha * ambientLight);
+      ctx.drawImage(sphereSprite, cx - dW / 2, currentCy - dH / 2, dW, dH);
 
-      // B. Lit Porcelain Sphere (Spotlight)
-      if (spotIllumination > 0.001) {
-        ctx.save();
-        ctx.globalAlpha = sphereAlpha * spotIllumination;
-        ctx.drawImage(sphereSprite, cx - dW / 2, currentCy - dH / 2, dW, dH);
-        ctx.restore();
-      }
-
-      // C. Top-light kiss: overhead wash clipped to the body so the rig lights porcelain
+      // Top-light kiss: overhead wash clipped to the body so the rig lights porcelain
       if (topKissSprite && spotFade > 0.01 && spotIllumination > 0.01) {
         ctx.save();
         ctx.beginPath();
@@ -1689,9 +1632,9 @@
         ctx.restore();
       }
       ctx.restore();
-    } else if (sphereSprite) {
-      var dW = R * 2 * squashX, dH = R * 2 * squashY;
-      ctx.drawImage(sphereSprite, cx - dW / 2, currentCy - dH / 2, dW, dH);
+
+      // Floating "Zzz" snooze particles drifting upward while sleeping
+      renderZzz(cx, currentCy, elapsedSec, sleepProgress);
     }
 
     // -------------------------------------------------------------
@@ -1736,57 +1679,45 @@
     var sm = smileProgress; // 0 (neutral) to 1 (full warm smiling gaze)
 
     // =========================================================
-    // A. BATMAN OPTICS IN SEMI-DARKNESS (SHADOW FACTOR)
-    // When the sphere is in semi-darkness, the eyes are sharp, luminous
-    // cyan-white slits peering out of the cowl/shadows with soft bloom.
+    // A. CUTE PEACEFUL SLEEPING EYE CURVES (⌣ ⌣)
+    // Sweet curved snooze arcs while Grok bot sleeps peacefully.
+    // Crossfades into open Pixar character eyes as bot wakes up.
     // =========================================================
-    var shadowFactor = Math.max(0, 1.0 - currentSpotIllumination);
-    if (shadowFactor > 0.01) {
+    if (sleepProgress > 0.005) {
       ctx.save();
-      // Batman cowl eye angle: slight inward/downward focus tilt
-      var batmanAngle = (isRightEye ? -0.10 : 0.10) * shadowFactor;
-      ctx.rotate(batmanAngle);
-
-      var slitW = baseEyeW * (0.95 + 0.15 * shadowFactor);
-      var slitH = Math.max(2.0, R * 0.022 * normalForeshorten * (1.0 + 0.4 * eyeWiden));
-
-      // 1. Soft atmospheric cyan bloom in darkness
-      ctx.strokeStyle = "rgba(56, 189, 248, " + (0.45 * shadowFactor).toFixed(3) + ")";
-      ctx.lineWidth = Math.max(3.6, slitH + 4.2);
+      ctx.globalAlpha = sleepProgress;
+      ctx.strokeStyle = "#1e2230";
+      ctx.lineWidth = Math.max(2.6, R * 0.034 * normalForeshorten);
       ctx.lineCap = "round";
+
+      var arcW = baseEyeW * 0.85;
+      var arcDrop = baseEyeH * 0.45;
+
       ctx.beginPath();
-      ctx.moveTo(-slitW * 0.85, 0);
-      ctx.lineTo(slitW * 0.85, 0);
+      ctx.moveTo(-arcW, -arcDrop * 0.30);
+      ctx.quadraticCurveTo(0, arcDrop, arcW, -arcDrop * 0.30);
       ctx.stroke();
 
-      // 2. Inner crisp glowing white/cyan Batman optical slit
-      ctx.strokeStyle = "rgba(224, 242, 254, " + (0.95 * shadowFactor).toFixed(3) + ")";
-      ctx.lineWidth = Math.max(1.8, slitH);
-      ctx.lineCap = "round";
+      // Cute sleeping eyelash accent on outer corner
+      var outerX = isRightEye ? arcW : -arcW;
+      var lashDir = isRightEye ? 1 : -1;
+      ctx.lineWidth = Math.max(1.8, R * 0.022 * normalForeshorten);
       ctx.beginPath();
-      ctx.moveTo(-slitW * 0.80, 0);
-      ctx.lineTo(slitW * 0.80, 0);
-      ctx.stroke();
-
-      // 3. Razor-bright silver-white core
-      ctx.strokeStyle = "rgba(255, 255, 255, " + (1.0 * shadowFactor).toFixed(3) + ")";
-      ctx.lineWidth = Math.max(1.0, slitH * 0.55);
-      ctx.beginPath();
-      ctx.moveTo(-slitW * 0.42, 0);
-      ctx.lineTo(slitW * 0.42, 0);
+      ctx.moveTo(outerX, -arcDrop * 0.30);
+      ctx.lineTo(outerX + lashDir * arcW * 0.26, -arcDrop * 0.70);
       ctx.stroke();
 
       ctx.restore();
     }
 
     // =========================================================
-    // B. PIXAR CHARACTER EYE (FULLY LIT IN SPOTLIGHT)
-    // Fades in cleanly as spotlight illuminates the character
+    // B. PIXAR CHARACTER EYE (AWAKE IN SPOTLIGHT)
+    // Fades in cleanly as the bot wakes up and spotlight shines
     // =========================================================
-    var pixarAlpha = currentSpotIllumination;
-    if (pixarAlpha > 0.01) {
+    var awakeAlpha = Math.max(0, 1.0 - sleepProgress);
+    if (awakeAlpha > 0.005) {
       ctx.save();
-      ctx.globalAlpha = pixarAlpha;
+      ctx.globalAlpha = awakeAlpha;
 
       ctx.fillStyle = "#07090e";
       ctx.beginPath();
@@ -1834,6 +1765,7 @@
   // REAL-TIME LIP-SYNC SMILE MOUTH RENDERING
   // =============================================================
   function renderSmile(sphereY, elapsedSec, isSpeakingNowArg) {
+    if (smileProgress <= 0.01) return;
     var p0 = sphericalTo3D(MOUTH_CENTER.phi, MOUTH_CENTER.theta);
     var pRot = rotate3D(p0, yaw, pitch, roll);
 
@@ -1880,7 +1812,6 @@
   bakedR = R;
   buildShadowSprites();
   buildSphereSprite();
-  buildBatmanSphereSprite();
   buildSpotSprites();
   window.addEventListener("resize", scheduleRebake);
   requestAnimationFrame(render);
