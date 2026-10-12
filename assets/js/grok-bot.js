@@ -1,10 +1,11 @@
 /* ============================================================
    Grok-Inspired 3D Sphere Bot — Interactive Hero Engine
    - 1:1 circular aspect ratio with high-DPI Retina support
-   - Snappy physical entrance: drops and bounces into view (0.0s - 0.85s)
-   - Rotates on loading for ~2.3s with 3D spherical eye mapping (0.85s - 3.2s)
-   - "Visitor detected" thinking effect: neural ripple waves + thought bubble (3.2s - 3.8s)
-   - Delighted recognition & speech: hops, smiles, dialogue card emerges from mouth (3.8s+)
+   - Sphere loads first: calm atmospheric presence on dark stage (0.0s - 0.75s)
+   - Overhead follow-spot arrives: sweeps in, strikes on & illuminates sphere (0.75s - 1.75s)
+   - Dramatic 3D spin: anticipation coil, explosive 3D whirl & physical settle (1.75s - 3.40s)
+   - "Visitor detected" thinking effect: neural ripple waves + thought bubble (3.40s - 4.00s)
+   - Delighted recognition & speech: hops, smiles, dialogue card emerges from mouth (4.00s+)
    - Real-time mouth lip-sync articulation while speaking
    - Web Speech Synthesis: muted by default with a speaker toggle below
    - Tap bubble to swallow back into mouth; click sphere to hop and speak
@@ -538,6 +539,9 @@
     var dockH = 65;
     var availableH = Math.max(260, H - headerH - dockH);
     targetCy = Math.round(headerH + availableH * 0.38);
+    if (curY === 0 || curY === -180) {
+      curY = targetCy;
+    }
 
     // Re-bake supersampled sprites for the new radius.
     // Deferred by scheduleRebake() -- see the note there. During a drag
@@ -562,7 +566,7 @@
   var targetYaw = 0;
   var targetPitch = 0;
 
-  var curY = -180;
+  var curY = 0;
   var scaleX = 1;
   var scaleY = 1;
 
@@ -571,7 +575,7 @@
   var smileProgress = 0;
   var hopY = 0;
 
-  var phase = "entrance"; // entrance -> spinning -> thinking -> smile -> active
+  var phase = "entrance"; // entrance -> spotlight -> spinning -> thinking -> smile -> active
   var lastBlinkTime = 0;
   var nextBlinkInterval = 4.2;
 
@@ -841,14 +845,14 @@
   // =============================================================
   // HERO AUTO-SCROLL COUNTDOWN CHIP (bottom corner, hero-pinned)
   // Driven by the REAL scroll schedule, not a fake timer:
-  //  - muted path: speech opens ~3.88s, fallback resolves at 8.1s,
-  //    scroll fires ~10.34s after load (estimate until corrected)
+  //  - muted path: speech opens ~4.08s, fallback resolves at 8.3s,
+  //    scroll fires ~10.54s after load (estimate until corrected)
   //  - corrected to exact fire time inside markFinishedSaying()
   //  - unmuted audio: indeterminate ("playing") until audio ends
   // Updates are throttled (text ~4Hz, ring ~10Hz) so the chip adds
   // zero measurable cost to the 60fps bot loop.
   // =============================================================
-  var SCROLL_TOTAL_MS = 10340;
+  var SCROLL_TOTAL_MS = 10540;
   var RING_CIRC = 72.26;
   var scrollDeadline = -1; // performance.now() ms of scroll fire; -2 = indeterminate
   var lastShownSec = -1;
@@ -1074,7 +1078,7 @@
 
   // Mouse / Pointer Eye Contact Tracking
   function onPointerMove(clientX, clientY) {
-    if (phase === "entrance" || phase === "spinning") return;
+    if (phase === "entrance" || phase === "spotlight" || phase === "spinning") return;
     var rect = canvas.getBoundingClientRect();
     var mouseX = clientX - rect.left;
     var mouseY = clientY - rect.top;
@@ -1098,7 +1102,7 @@
 
   // Click Interaction: Playful bounce & speak
   canvas.addEventListener("click", function () {
-    if (phase === "entrance") return;
+    if (phase === "entrance" || phase === "spotlight" || phase === "spinning") return;
     triggerPlayfulHop();
     if (bubbleState === "swallowed" || !bubbleEl.classList.contains("is-open")) {
       openSpeechBubble();
@@ -1173,65 +1177,112 @@
     // 1. TIMELINE & CHOREOGRAPHY
     // -------------------------------------------------------------
 
-    // --- PHASE 1: PHYSICAL ENTRANCE (0.0s - 0.85s) ---
-    if (elapsedSec < 0.85) {
+    // --- PHASE 1: SPHERE LOADS FIRST (0.0s - 0.75s) ---
+    if (elapsedSec < 0.75) {
       phase = "entrance";
-      var t = elapsedSec;
-      var floorY = targetCy;
+      curY = targetCy;
+      hopY = 0;
+      yaw = 0;
+      pitch = 0;
+      roll = 0;
 
-      if (t < 0.44) {
-        var pFall = t / 0.44;
-        curY = -R - 80 + (floorY - (-R - 80)) * (pFall * pFall);
-        scaleX = 0.94; scaleY = 1.08;
-        yaw = -Math.PI * 4.0;
-      } else if (t < 0.58) {
-        var pSq = (t - 0.44) / 0.14;
-        curY = floorY;
-        var sq = Math.sin(pSq * Math.PI);
-        scaleX = 1.0 + sq * 0.18;
-        scaleY = 1.0 - sq * 0.18;
-        yaw = -Math.PI * 4.0;
-      } else if (t < 0.76) {
-        var pRb = (t - 0.58) / 0.18;
-        curY = floorY - Math.sin(pRb * Math.PI) * 22;
-        scaleX = 0.96; scaleY = 1.05;
-        yaw = -Math.PI * 4.0;
-      } else {
-        var pSet = (t - 0.76) / 0.09;
-        curY = floorY + Math.sin(pSet * Math.PI) * 4;
-        scaleX = 1.0; scaleY = 1.0;
-        yaw = -Math.PI * 4.0;
-      }
+      // Gentle materialization & micro-settle onto canvas
+      var pLoad = Math.min(1, elapsedSec / 0.45);
+      var easedLoad = pLoad * pLoad * (3 - 2 * pLoad);
+      scaleX = 0.95 + 0.05 * easedLoad;
+      scaleY = 0.95 + 0.05 * easedLoad;
 
       smileProgress = 0;
       blink = 0;
       eyeWiden = 1.0;
     }
-    // --- PHASE 2: ROTATING ON LOADING (0.85s - 3.2s) ---
-    else if (elapsedSec < 3.2) {
+    // --- PHASE 2: SPOTLIGHT EFFECT COMES TO IT (0.75s - 1.75s) ---
+    else if (elapsedSec < 1.75) {
+      phase = "spotlight";
+      curY = targetCy;
+      hopY = 0;
+      scaleX = 1;
+      scaleY = 1;
+      yaw = 0;
+      pitch = 0;
+      roll = 0;
+
+      var tSpot = elapsedSec - 0.75; // 0 to 1.0s
+      smileProgress = 0;
+      blink = 0;
+      // Eyes widen slightly with subtle excitement as beam lands
+      var pGleam = Math.min(1, Math.max(0, (tSpot - 0.35) / 0.55));
+      eyeWiden = 1.0 + 0.12 * Math.sin(pGleam * Math.PI * 0.5);
+    }
+    // --- PHASE 3: DRAMATIC 3D SPIN (1.75s - 3.40s) ---
+    else if (elapsedSec < 3.40) {
       phase = "spinning";
       curY = targetCy;
-      scaleX = 1; scaleY = 1;
-
-      var tSpin = elapsedSec - 0.85; // 0 to 2.35s
-      var spinProg = tSpin / 2.35;
-      var easedSpin = 1 - Math.pow(1 - spinProg, 2.5);
-
-      yaw = -Math.PI * 4.0 * (1 - easedSpin);
-      pitch = Math.sin(tSpin * 3.5) * 0.04 * (1 - spinProg);
-      roll = Math.sin(tSpin * 4.0) * 0.03 * (1 - spinProg);
-
       smileProgress = 0;
       blink = 0;
-      eyeWiden = 1.0;
+
+      var tSpinTotal = elapsedSec - 1.75; // 0 to 1.65s
+
+      // 3A. Anticipation wind-up coil (1.75s - 1.98s, 0.23s)
+      if (tSpinTotal < 0.23) {
+        var pCoil = tSpinTotal / 0.23;
+        var sinCoil = Math.sin(pCoil * Math.PI * 0.5);
+        // Micro-crouch into floor
+        hopY = sinCoil * 3.5;
+        scaleY = 1.0 - sinCoil * 0.07;
+        scaleX = 1.0 + sinCoil * 0.05;
+        // Counter-rotation wind-up (+18 degrees)
+        yaw = sinCoil * (Math.PI * 0.10);
+        pitch = -sinCoil * 0.05;
+        roll = 0;
+        eyeWiden = 1.0 - sinCoil * 0.12;
+      }
+      // 3B. Explosive multi-turn 3D whirl (1.98s - 3.08s, 1.10s)
+      else if (tSpinTotal < 1.33) {
+        var pSpin = (tSpinTotal - 0.23) / 1.10; // 0 to 1
+        var spinEased = 1 - Math.pow(1 - pSpin, 2.7);
+        // 3 full 360-deg revolutions (-1080 deg / -6*PI rad) starting from wind-up angle
+        var coilAngle = Math.PI * 0.10;
+        yaw = coilAngle * (1 - pSpin) - (Math.PI * 6.0) * spinEased;
+
+        // Upward float into beam core
+        var liftArc = Math.sin(pSpin * Math.PI);
+        hopY = -liftArc * 18.0;
+
+        // Centrifugal elongation
+        scaleY = 1.0 + liftArc * 0.07;
+        scaleX = 1.0 - liftArc * 0.05;
+
+        // Gyroscopic 3D banking (tilt on pitch & roll)
+        var gyroDamp = Math.sin(pSpin * Math.PI);
+        roll = Math.sin(pSpin * Math.PI * 6.0) * 0.16 * gyroDamp;
+        pitch = Math.cos(pSpin * Math.PI * 5.0) * 0.09 * gyroDamp;
+
+        eyeWiden = 1.0 + liftArc * 0.18;
+      }
+      // 3C. Deceleration, overshoot & physical inertia settle (3.08s - 3.40s, 0.32s)
+      else {
+        var pSettle = (tSpinTotal - 1.33) / 0.32; // 0 to 1
+        // Inertial overshoot past 0 with elastic snap to 0
+        yaw = Math.sin(pSettle * Math.PI) * 0.06 * (1 - pSettle);
+        roll += (0 - roll) * 0.22;
+        pitch += (0 - pitch) * 0.22;
+
+        // Touchdown landing bounce
+        hopY = Math.sin(pSettle * Math.PI) * 2.5 * (1 - pSettle);
+        scaleY = 1.0 - Math.sin(pSettle * Math.PI) * 0.04;
+        scaleX = 1.0 + Math.sin(pSettle * Math.PI) * 0.04;
+
+        eyeWiden += (1.0 - eyeWiden) * 0.16;
+      }
     }
-    // --- PHASE 3: THINKING EFFECT / VISITOR DETECTED (3.2s - 3.8s) ---
-    else if (elapsedSec < 3.8) {
+    // --- PHASE 4: THINKING EFFECT / VISITOR DETECTED (3.40s - 4.00s) ---
+    else if (elapsedSec < 4.00) {
       phase = "thinking";
       curY = targetCy;
       scaleX = 1; scaleY = 1;
 
-      var tThink = elapsedSec - 3.2; // 0 to 0.6s
+      var tThink = elapsedSec - 3.40; // 0 to 0.60s
       var pThink = Math.min(1, tThink / 0.45);
 
       // Cocks head inquisitively (+9 deg roll, looking slightly up)
@@ -1252,17 +1303,17 @@
 
       smileProgress = 0;
 
-      if (elapsedSec < 3.72) {
+      if (elapsedSec < 3.92) {
         showThinkingBubble();
       } else {
         retractThinkingBubble();
       }
     }
-    // --- PHASE 4: DELIGHTED RECOGNITION & SMILE (3.8s - 4.3s) ---
-    else if (elapsedSec < 4.3) {
+    // --- PHASE 5: DELIGHTED RECOGNITION & SMILE (4.00s - 4.50s) ---
+    else if (elapsedSec < 4.50) {
       phase = "smile";
       curY = targetCy;
-      var tSm = elapsedSec - 3.8; // 0 to 0.5s
+      var tSm = elapsedSec - 4.00; // 0 to 0.50s
 
       roll += (0 - roll) * 0.12;
       pitch += (0.02 - pitch) * 0.12;
@@ -1277,7 +1328,7 @@
         hopY = 0;
       }
 
-      if (elapsedSec >= 3.88 && bubbleState !== "speaking" && speechFlowState === "idle") {
+      if (elapsedSec >= 4.08 && bubbleState !== "speaking" && speechFlowState === "idle") {
         openSpeechBubble();
         if (!speechTriggered && !isMuted) {
           speechTriggered = true;
@@ -1285,7 +1336,7 @@
         }
       }
     }
-    // --- PHASE 5: LIVING INTERACTIVE EYE CONTACT (4.3s+) ---
+    // --- PHASE 6: LIVING INTERACTIVE EYE CONTACT (4.50s+) ---
     else {
       phase = "active";
       curY = targetCy;
@@ -1297,7 +1348,7 @@
       }
 
       // Check if finished saying when muted (or as speech timeout fallback)
-      if (speechFlowState === "speaking" && elapsedSec >= 8.1) {
+      if (speechFlowState === "speaking" && elapsedSec >= 8.3) {
         var isActivelySpeaking = ("speechSynthesis" in window) && window.speechSynthesis.speaking;
         if (!isActivelySpeaking) {
           markFinishedSaying();
@@ -1320,7 +1371,7 @@
       }
     }
 
-    var floatY = (elapsedSec >= 0.85) ? Math.sin(elapsedSec * 1.8) * 5.5 : 0;
+    var floatY = (elapsedSec >= 3.40) ? Math.sin((elapsedSec - 3.40) * 1.8) * 5.5 : 0;
     var currentCy = curY + floatY + hopY;
 
     // -------------------------------------------------------------
@@ -1346,23 +1397,54 @@
     // -------------------------------------------------------------
     ctx.clearRect(0, 0, W, H);
 
-    // Narrow shaft from the dark; a real rig hangs still, so drift is
-    // barely-there air movement. Per-frame work is 1 drawImage.
-    var spotSway = reduceSpotMotion ? 0 : Math.sin(elapsedSec * 0.35) * R * 0.05;
-    var spotX = cx + spotSway;
-    // Lights-up: the rig fades in over the entrance, then breathes.
-    // Swell follows hops and speech energy like a live follow-spot.
-    var spotFade = reduceSpotMotion ? 1 : Math.min(1, elapsedSec / 2.2);
-    spotFade = spotFade * spotFade * (3 - 2 * spotFade);
-    var spotSwell = Math.min(0.15, Math.abs(hopY) * 0.012 + (bubbleState === "speaking" ? 0.06 : 0));
+    // Spotlight arrival & intensity choreography:
+    var spotX = cx;
+    var spotFade = 0;
+    var spotIllumination = 0; // 0 = dark ambient silhouette, 1 = fully illuminated in spotlight
+
+    if (elapsedSec < 0.75) {
+      // Phase 1: Sphere loads first, stage is dark ambient
+      spotFade = 0;
+      spotIllumination = 0;
+      spotX = cx;
+    } else if (elapsedSec < 1.75) {
+      // Phase 2: Spotlight sweeps in from off-center, lamp ignites and locks onto sphere
+      var tSpot = elapsedSec - 0.75; // 0 to 1.0s
+      var sweepProg = Math.min(1, tSpot / 0.85);
+      var easedSweep = 1 - Math.pow(1 - sweepProg, 3);
+      var spotSweepX = (cx - R * 1.5) * (1 - easedSweep) + cx * easedSweep;
+      var spotSway = reduceSpotMotion ? 0 : Math.sin(elapsedSec * 0.35) * R * 0.05;
+      spotX = spotSweepX + spotSway * easedSweep;
+
+      // Lamp power strike: filament surge & flare settling into full beam
+      var strikeProg = Math.min(1, tSpot / 0.35);
+      var lampIgnite = Math.sin(strikeProg * Math.PI * 0.5);
+      var lampFlare = (tSpot > 0.12 && tSpot < 0.42) ? Math.sin((tSpot - 0.12) / 0.30 * Math.PI) * 0.22 : 0;
+      spotFade = reduceSpotMotion ? 1 : Math.min(1, lampIgnite + lampFlare);
+
+      // Illumination scales as beam converges on sphere
+      var distToSphere = Math.abs(spotX - cx);
+      var sphereInBeam = Math.max(0, 1 - distToSphere / (R * 1.8));
+      spotIllumination = spotFade * sphereInBeam;
+    } else {
+      // Phase 3+: Full steady spotlight with live breathing & sway
+      var spotSway = reduceSpotMotion ? 0 : Math.sin(elapsedSec * 0.35) * R * 0.05;
+      spotX = cx + spotSway;
+      spotFade = 1.0;
+      spotIllumination = 1.0;
+    }
+
+    var spinEnergy = (phase === "spinning" && elapsedSec >= 1.98 && elapsedSec < 3.08)
+      ? Math.sin(((elapsedSec - 1.98) / 1.10) * Math.PI) * 0.15 : 0;
+    var spotSwell = Math.min(0.20, Math.abs(hopY) * 0.012 + spinEnergy + (bubbleState === "speaking" ? 0.06 : 0));
     var spotBreath = (reduceSpotMotion ? 0.42 : 0.42 + Math.sin(elapsedSec * 0.9) * 0.045) * spotFade;
-    if (beamSprite) {
+    if (beamSprite && spotFade > 0.001) {
       var beamW = R * 3.0 * (0.85 + SPOT_WATTS * 0.15);
       var beamTop = -H * 0.06;
       var beamH = (targetCy + R + 44) - beamTop;
       ctx.save();
       ctx.globalCompositeOperation = "screen";
-      ctx.globalAlpha = spotBreath;
+      ctx.globalAlpha = Math.min(1, spotBreath + spotSwell);
       ctx.drawImage(beamSprite, spotX - beamW / 2, beamTop, beamW, beamH);
       ctx.restore();
     }
@@ -1371,7 +1453,7 @@
     // 3. THINKING NEURAL RIPPLE WAVES (EMITS AROUND HEAD)
     // -------------------------------------------------------------
     if (phase === "thinking") {
-      var thinkT = (elapsedSec - 3.2);
+      var thinkT = (elapsedSec - 3.40);
       for (var w = 0; w < 3; w++) {
         var waveProg = ((thinkT * 2.2 + w * 0.33) % 1.0);
         var waveRadius = R * (1.06 + waveProg * 0.42);
@@ -1420,16 +1502,21 @@
       // exact area the shadow occupies and turned the occlusion grey.
       var hW = R * 3.0 * SPOT_WATTS * squashX, hH = R * 0.75 * squashY;
       ctx.globalCompositeOperation = "screen";
-      ctx.globalAlpha = Math.min(1, ((0.45 + 0.45 * contact) + spotSwell) * spotFade * SPOT_WATTS);
-      ctx.drawImage(hotPoolSprite, spotX - hW / 2, shadowFloorY - hH / 2, hW, hH);
+      var poolAlpha = Math.min(1, ((0.45 + 0.45 * contact) + spotSwell) * spotFade * SPOT_WATTS);
+      if (poolAlpha > 0.005) {
+        ctx.globalAlpha = poolAlpha;
+        ctx.drawImage(hotPoolSprite, spotX - hW / 2, shadowFloorY - hH / 2, hW, hH);
+      }
       ctx.globalCompositeOperation = "source-over";
       // B. Porcelain bounce off the body (a reflection, not a lamp)
       var bW = R * 1.9 * squashX, bH = R * 0.48 * squashY;
-      ctx.globalAlpha = Math.min(1, 0.45 + 0.55 * contact);
+      var bounceAlpha = Math.min(1, (0.45 + 0.55 * contact) * Math.max(0.25, spotIllumination));
+      ctx.globalAlpha = bounceAlpha;
       ctx.drawImage(bounceSprite, shadowX - bW / 2, shadowFloorY - 2 - bH / 2, bW, bH);
       // C. Layered AO contact shadow — always last, so occlusion wins.
       var cW = R * 2.9 * cScale * squashX, cH = R * 0.88 * cScale * squashY;
-      ctx.globalAlpha = Math.min(1, Math.max(0, cAlpha));
+      var ambientContactFactor = 0.55 + 0.45 * spotIllumination;
+      ctx.globalAlpha = Math.min(1, Math.max(0, cAlpha * ambientContactFactor));
       ctx.drawImage(contactSprite, shadowX - cW / 2, shadowFloorY - cH / 2, cW, cH);
       ctx.restore();
     }
@@ -1441,10 +1528,29 @@
     // -------------------------------------------------------------
     if (sphereSprite) {
       var dW = R * 2 * squashX, dH = R * 2 * squashY;
+      ctx.save();
+      var sphereAlpha = (elapsedSec < 0.45) ? Math.min(1, elapsedSec / 0.45) : 1.0;
+      ctx.globalAlpha = sphereAlpha;
       ctx.drawImage(sphereSprite, cx - dW / 2, currentCy - dH / 2, dW, dH);
+
+      // Dark ambient modulation: in phase 1 (before spotlight), sphere sits in atmospheric darkness
+      if (spotIllumination < 0.99) {
+        ctx.save();
+        ctx.beginPath();
+        if (ctx.ellipse) {
+          ctx.ellipse(cx, currentCy, Math.max(1, R * squashX * 0.995), Math.max(1, R * squashY * 0.995), 0, 0, Math.PI * 2);
+        } else {
+          ctx.arc(cx, currentCy, Math.max(1, R * 0.995), 0, Math.PI * 2);
+        }
+        ctx.clip();
+        ctx.fillStyle = "rgba(4, 7, 16, " + ((1 - spotIllumination) * 0.72).toFixed(3) + ")";
+        ctx.fillRect(cx - dW, currentCy - dH, dW * 2, dH * 2);
+        ctx.restore();
+      }
+
       // Top-light kiss: overhead wash clipped to the body so the rig
       // lights the porcelain; the face is painted next and stays clean.
-      if (topKissSprite && spotFade > 0.01) {
+      if (topKissSprite && spotFade > 0.01 && spotIllumination > 0.01) {
         ctx.save();
         ctx.beginPath();
         if (ctx.ellipse) {
@@ -1454,11 +1560,12 @@
         }
         ctx.clip();
         ctx.globalCompositeOperation = "screen";
-        ctx.globalAlpha = Math.min(1, 0.62 * spotFade * SPOT_WATTS + spotSwell * spotFade);
+        ctx.globalAlpha = Math.min(1, (0.62 * spotFade * SPOT_WATTS + spotSwell * spotFade) * spotIllumination);
         var kW = R * 2.1 * squashX, kH = R * 2.1 * squashY;
         ctx.drawImage(topKissSprite, cx - kW / 2, currentCy - kH / 2 - R * 0.18, kW, kH);
         ctx.restore();
       }
+      ctx.restore();
     } else {
       // Fallback (should never run): flat disc so the bot never vanishes
       ctx.save();
@@ -1473,7 +1580,7 @@
     // 6. 3D PROJECTED EYES & REAL-TIME LIP-SYNC MOUTH
     // -------------------------------------------------------------
     var isSpeakingNow = (botAudio && !botAudio.paused && !botAudio.ended) ||
-      (speechFlowState === "speaking" && elapsedSec >= 3.88 && elapsedSec < 9.0) ||
+      (speechFlowState === "speaking" && elapsedSec >= 4.08 && elapsedSec < 9.0) ||
       ("speechSynthesis" in window && window.speechSynthesis.speaking);
 
     renderEye(EYE_LEFT, currentCy, false, isSpeakingNow);
@@ -1571,7 +1678,7 @@
     // Dynamic lip-sync speech oscillation
     var isSpeakingNow = (isSpeakingNowArg !== undefined) ? isSpeakingNowArg :
       ((botAudio && !botAudio.paused && !botAudio.ended) ||
-       (speechFlowState === "speaking" && elapsedSec >= 3.88 && elapsedSec < 9.0) ||
+       (speechFlowState === "speaking" && elapsedSec >= 4.08 && elapsedSec < 9.0) ||
        ("speechSynthesis" in window && window.speechSynthesis.speaking));
     var talkVibe = isSpeakingNow ? Math.sin(elapsedSec * 22) * 0.38 : 0;
     var mouthTalkDepth = isSpeakingNow ? (Math.sin(elapsedSec * 20) * 0.5 + 0.5) * R * 0.022 : 0;
