@@ -241,10 +241,11 @@ body {
 }
 
 /* -------------------------------------------------------------
-   CAPSULE NAVIGATION — DEEP SPACE NEBULA ENGINE
+   CAPSULE NAVIGATION — MULTI-SPECTRAL COSMIC NEBULA ENGINE
    Floating cosmic glass pill with multi-layered interstellar gas
-   clouds (ultraviolet, deep purple, cosmic magenta, and stellar cyan)
-   with organic non-grid stardust and twinkling celestial stars.
+   clouds featuring rich Red (H-alpha), Orange (Sulfur/Stellar Fire),
+   Green (Aurora/Oxygen), and Blue (Oxygen-III/Deep Space) mixes
+   with organic non-grid stardust and shimmering celestial stars.
    ------------------------------------------------------------- */
 .site-nav {
   display: flex;
@@ -261,73 +262,84 @@ body {
   padding: 3px 4px;
   border-radius: 999px;
   overflow: hidden;
-  /* Deep Space Nebula Glass: Obsidian glass core with flowing interstellar gas clouds
-     (electric purple, deep ultraviolet, cosmic magenta, stellar cyan, and deep space indigo) */
-  background-color: rgba(6, 8, 18, 0.70);
+  /* Deep Space Nebula Glass: Obsidian glass core with flowing multi-color interstellar gas clouds
+     (vibrant red, solar orange/amber, aurora emerald green, and deep electric sapphire blue) */
+  background-color: rgba(6, 9, 20, 0.72);
   background-image:
-    radial-gradient(75% 150% at 10% 45%, rgba(139, 92, 246, 0.45), transparent 72%),
-    radial-gradient(70% 140% at 34% 58%, rgba(217, 70, 239, 0.38), transparent 70%),
-    radial-gradient(65% 135% at 56% 42%, rgba(14, 165, 233, 0.35), transparent 68%),
-    radial-gradient(70% 145% at 76% 56%, rgba(99, 102, 241, 0.40), transparent 72%),
-    radial-gradient(75% 150% at 92% 45%, rgba(6, 182, 212, 0.42), transparent 72%),
-    linear-gradient(105deg,
-      rgba(168, 85, 247, 0.22) 0%,
-      rgba(236, 72, 153, 0.18) 30%,
-      rgba(6, 182, 212, 0.16) 65%,
-      rgba(99, 102, 241, 0.22) 100%);
-  background-size: 220% 120%, 220% 120%, 220% 120%, 220% 120%, 220% 120%, 260% 100%;
-  background-position: 0% 50%, 25% 50%, 50% 50%, 75% 50%, 100% 50%, 0% 50%;
+    /* Red: Ionized hydrogen-alpha cloud */
+    radial-gradient(72% 150% at 12% 46%, rgba(239, 68, 68, 0.48), transparent 72%),
+    /* Orange: Solar furnace & warm sulfur dust */
+    radial-gradient(74% 145% at 36% 54%, rgba(249, 115, 22, 0.46), transparent 70%),
+    /* Green: Aurora emerald & ionized oxygen */
+    radial-gradient(70% 140% at 64% 44%, rgba(16, 185, 129, 0.44), transparent 70%),
+    /* Blue: Deep electric sapphire & stellar oxygen-III */
+    radial-gradient(74% 150% at 88% 52%, rgba(14, 165, 233, 0.50), transparent 72%),
+    /* Ambient cosmic flow weaving red, orange, green, and blue */
+    linear-gradient(115deg,
+      rgba(239, 68, 68, 0.28) 0%,
+      rgba(249, 115, 22, 0.26) 30%,
+      rgba(16, 185, 129, 0.24) 62%,
+      rgba(14, 165, 233, 0.28) 100%);
+  background-size: 200% 120%, 200% 120%, 200% 120%, 200% 120%, 240% 100%;
+  background-position: 0% 50%, 25% 50%, 65% 50%, 100% 50%, 0% 50%;
   animation:
-    capsule-nebula-flow 12s linear infinite alternate,
-    nebula-halo-breathe 8s ease-in-out infinite alternate;
-  border: 1px solid rgba(192, 132, 252, 0.26);
+    capsule-nebula-flow 14s linear infinite alternate,
+    nebula-halo-breathe 9s ease-in-out infinite alternate;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow:
     0 8px 28px -8px rgba(0, 0, 0, 0.8),
-    0 0 22px -4px rgba(139, 92, 246, 0.35),
-    inset 0 1px 1px rgba(255, 255, 255, 0.28),
+    0 0 22px -3px rgba(249, 115, 22, 0.35),
+    inset 0 1px 1px rgba(255, 255, 255, 0.30),
     inset 0 -1px 2px rgba(0, 0, 0, 0.50);
   transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-  -webkit-backdrop-filter: saturate(180%) blur(22px);
-  backdrop-filter: saturate(180%) blur(22px);
+  -webkit-backdrop-filter: saturate(190%) blur(22px);
+  backdrop-filter: saturate(190%) blur(22px);
 }
 
 /* Interstellar gas layers drift continuously like a living nebula. */
 @keyframes capsule-nebula-flow {
   from {
-    background-position: 0% 50%, 25% 50%, 50% 50%, 75% 50%, 100% 50%, 0% 50%;
+    background-position: 0% 50%, 25% 50%, 65% 50%, 100% 50%, 0% 50%;
   }
   to {
-    background-position: 100% 50%, 75% 50%, 50% 50%, 25% 50%, 0% 50%, 100% 50%;
+    background-position: 100% 50%, 75% 50%, 35% 50%, 0% 50%, 100% 50%;
   }
 }
 
-/* Cosmic breathing aura between ultraviolet, magenta and ionized cyan. */
+/* Cosmic breathing aura cycling through the Red, Orange, Green, and Blue spectra. */
 @keyframes nebula-halo-breathe {
   0% {
     box-shadow:
       0 8px 28px -8px rgba(0, 0, 0, 0.8),
-      0 0 20px -4px rgba(139, 92, 246, 0.35),
-      inset 0 1px 1px rgba(255, 255, 255, 0.28),
+      0 0 22px -3px rgba(239, 68, 68, 0.38),
+      inset 0 1px 1px rgba(255, 255, 255, 0.30),
       inset 0 -1px 2px rgba(0, 0, 0, 0.50);
   }
-  50% {
+  33% {
     box-shadow:
       0 8px 28px -8px rgba(0, 0, 0, 0.8),
-      0 0 26px -3px rgba(217, 70, 239, 0.38),
+      0 0 24px -3px rgba(249, 115, 22, 0.38),
+      inset 0 1px 1px rgba(255, 255, 255, 0.32),
+      inset 0 -1px 2px rgba(0, 0, 0, 0.50);
+  }
+  66% {
+    box-shadow:
+      0 8px 28px -8px rgba(0, 0, 0, 0.8),
+      0 0 24px -3px rgba(16, 185, 129, 0.38),
       inset 0 1px 1px rgba(255, 255, 255, 0.32),
       inset 0 -1px 2px rgba(0, 0, 0, 0.50);
   }
   100% {
     box-shadow:
       0 8px 28px -8px rgba(0, 0, 0, 0.8),
-      0 0 22px -4px rgba(6, 182, 212, 0.36),
-      inset 0 1px 1px rgba(255, 255, 255, 0.28),
+      0 0 24px -3px rgba(14, 165, 233, 0.40),
+      inset 0 1px 1px rgba(255, 255, 255, 0.30),
       inset 0 -1px 2px rgba(0, 0, 0, 0.50);
   }
 }
 
 /* Swirling interstellar dust & ionized gas veil:
-   Volumetric gas clouds + dark absorption rift + stellar light sweep. */
+   Volumetric gas clouds (Red, Orange, Green, Blue) + dark absorption rift + stellar light sweep. */
 .nav-capsule::before {
   content: "";
   position: absolute;
@@ -335,20 +347,26 @@ body {
   border-radius: inherit;
   pointer-events: none;
   background-image:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 28%),
-    radial-gradient(48% 95% at 24% 38%, rgba(236, 72, 153, 0.34), transparent 70%),
-    radial-gradient(52% 105% at 72% 62%, rgba(139, 92, 246, 0.40), transparent 72%),
-    radial-gradient(42% 85% at 50% 32%, rgba(6, 182, 212, 0.30), transparent 68%),
-    radial-gradient(35% 65% at 40% 55%, rgba(3, 4, 12, 0.60), transparent 70%),
-    radial-gradient(22% 60% at 16% 62%, rgba(244, 63, 94, 0.40), transparent 70%),
-    radial-gradient(20% 58% at 38% 40%, rgba(168, 85, 247, 0.42), transparent 70%),
-    radial-gradient(20% 58% at 62% 64%, rgba(20, 184, 166, 0.38), transparent 70%),
-    radial-gradient(22% 60% at 84% 46%, rgba(59, 130, 246, 0.42), transparent 70%),
+    /* Top rim reflection */
+    linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 28%),
+    /* Vibrant volumetric clouds: Red, Orange, Green, Blue */
+    radial-gradient(46% 92% at 18% 36%, rgba(239, 68, 68, 0.44), transparent 68%),
+    radial-gradient(48% 90% at 38% 66%, rgba(249, 115, 22, 0.42), transparent 68%),
+    radial-gradient(46% 92% at 62% 34%, rgba(16, 185, 129, 0.40), transparent 68%),
+    radial-gradient(50% 96% at 84% 64%, rgba(14, 165, 233, 0.46), transparent 70%),
+    /* High contrast dark interstellar absorption rift */
+    radial-gradient(35% 65% at 48% 50%, rgba(4, 6, 18, 0.65), transparent 72%),
+    /* Micro-filament flares */
+    radial-gradient(22% 55% at 28% 52%, rgba(251, 146, 60, 0.38), transparent 70%),
+    radial-gradient(22% 55% at 74% 48%, rgba(52, 211, 153, 0.36), transparent 70%),
+    radial-gradient(24% 58% at 92% 38%, rgba(59, 130, 246, 0.40), transparent 70%),
+    /* Specular energy sheen sweeping across */
     linear-gradient(105deg,
-      transparent 40%,
-      rgba(255, 255, 255, 0.16) 49%,
-      rgba(192, 132, 252, 0.22) 53%,
-      transparent 62%);
+      transparent 38%,
+      rgba(255, 255, 255, 0.18) 48%,
+      rgba(254, 215, 170, 0.22) 51%,
+      rgba(147, 197, 253, 0.22) 54%,
+      transparent 64%);
   background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 220% 100%;
   background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 150% 0;
   animation:
@@ -371,9 +389,9 @@ body {
   animation-duration: 4.5s, 3.5s;
 }
 
-/* Organic Cosmic Stardust & Twinkling Stars:
+/* Organic Cosmic Stardust & Twinkling Multi-Color Stars:
    Completely non-grid, non-row natural star distribution across the 440px capsule width.
-   Varied star altitudes, sizes, halos, and cosmic tints (never regular rows). */
+   Varied star altitudes, sizes, halos, and cosmic tints in Red, Orange, Green, Blue, and White (never regular rows). */
 .nav-capsule::after {
   content: "";
   position: absolute;
@@ -382,19 +400,19 @@ body {
   pointer-events: none;
   background-image:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='dust'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.16'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23dust)'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 44' width='440' height='44'%3E%3Cdefs%3E%3CradialGradient id='h1' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='25%25' stop-color='%23c084fc' stop-opacity='0.65'/%3E%3Cstop offset='100%25' stop-color='%23c084fc' stop-opacity='0'/%3E%3C/radialGradient%3E%3CradialGradient id='h2' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='25%25' stop-color='%2338bdf8' stop-opacity='0.65'/%3E%3Cstop offset='100%25' stop-color='%2338bdf8' stop-opacity='0'/%3E%3C/radialGradient%3E%3CradialGradient id='h3' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='25%25' stop-color='%23f472b6' stop-opacity='0.65'/%3E%3Cstop offset='100%25' stop-color='%23f472b6' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='64' cy='13' r='3.2' fill='url(%23h1)'/%3E%3Ccircle cx='64' cy='13' r='0.9' fill='%23ffffff'/%3E%3Ccircle cx='176' cy='31' r='3.4' fill='url(%23h2)'/%3E%3Ccircle cx='176' cy='31' r='0.95' fill='%23ffffff'/%3E%3Ccircle cx='292' cy='15' r='3.2' fill='url(%23h3)'/%3E%3Ccircle cx='292' cy='15' r='0.9' fill='%23ffffff'/%3E%3Ccircle cx='378' cy='28' r='2.8' fill='url(%23h1)'/%3E%3Ccircle cx='378' cy='28' r='0.85' fill='%23ffffff'/%3E%3Ccircle cx='12' cy='26' r='0.65' fill='%23e0e7ff' opacity='0.75'/%3E%3Ccircle cx='24' cy='11' r='0.50' fill='%23a5f3fc' opacity='0.65'/%3E%3Ccircle cx='36' cy='34' r='0.70' fill='%23ffffff' opacity='0.85'/%3E%3Ccircle cx='48' cy='19' r='0.55' fill='%23fbcfe8' opacity='0.60'/%3E%3Ccircle cx='82' cy='33' r='0.60' fill='%23c4b5fd' opacity='0.70'/%3E%3Ccircle cx='95' cy='12' r='0.75' fill='%23ffffff' opacity='0.80'/%3E%3Ccircle cx='108' cy='25' r='0.50' fill='%2367e8f9' opacity='0.60'/%3E%3Ccircle cx='126' cy='36' r='0.70' fill='%23fbcfe8' opacity='0.75'/%3E%3Ccircle cx='138' cy='16' r='0.55' fill='%23ffffff' opacity='0.65'/%3E%3Ccircle cx='152' cy='27' r='0.65' fill='%23c4b5fd' opacity='0.70'/%3E%3Ccircle cx='165' cy='10' r='0.50' fill='%23a5f3fc' opacity='0.55'/%3E%3Ccircle cx='198' cy='22' r='0.70' fill='%23ffffff' opacity='0.85'/%3E%3Ccircle cx='212' cy='35' r='0.55' fill='%23fbcfe8' opacity='0.60'/%3E%3Ccircle cx='226' cy='14' r='0.65' fill='%23bae6fd' opacity='0.70'/%3E%3Ccircle cx='241' cy='28' r='0.75' fill='%23ffffff' opacity='0.90'/%3E%3Ccircle cx='258' cy='11' r='0.50' fill='%23c4b5fd' opacity='0.60'/%3E%3Ccircle cx='272' cy='34' r='0.65' fill='%23fbcfe8' opacity='0.70'/%3E%3Ccircle cx='284' cy='22' r='0.55' fill='%23a5f3fc' opacity='0.65'/%3E%3Ccircle cx='316' cy='33' r='0.70' fill='%23ffffff' opacity='0.80'/%3E%3Ccircle cx='331' cy='12' r='0.50' fill='%23e0e7ff' opacity='0.55'/%3E%3Ccircle cx='344' cy='26' r='0.65' fill='%23c4b5fd' opacity='0.75'/%3E%3Ccircle cx='358' cy='16' r='0.55' fill='%23fbcfe8' opacity='0.65'/%3E%3Ccircle cx='392' cy='13' r='0.60' fill='%23bae6fd' opacity='0.70'/%3E%3Ccircle cx='406' cy='32' r='0.50' fill='%23ffffff' opacity='0.60'/%3E%3Ccircle cx='422' cy='21' r='0.55' fill='%23c4b5fd' opacity='0.65'/%3E%3C/svg%3E");
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 44' width='440' height='44'%3E%3Cdefs%3E%3CradialGradient id='h-red' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='30%25' stop-color='%23f43f5e' stop-opacity='0.80'/%3E%3Cstop offset='100%25' stop-color='%23ef4444' stop-opacity='0'/%3E%3C/radialGradient%3E%3CradialGradient id='h-orange' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='30%25' stop-color='%23fb923c' stop-opacity='0.85'/%3E%3Cstop offset='100%25' stop-color='%23f97316' stop-opacity='0'/%3E%3C/radialGradient%3E%3CradialGradient id='h-green' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='30%25' stop-color='%2334d399' stop-opacity='0.80'/%3E%3Cstop offset='100%25' stop-color='%2310b981' stop-opacity='0'/%3E%3C/radialGradient%3E%3CradialGradient id='h-blue' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='30%25' stop-color='%2338bdf8' stop-opacity='0.85'/%3E%3Cstop offset='100%25' stop-color='%230284c7' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='62' cy='14' r='3.5' fill='url(%23h-red)'/%3E%3Ccircle cx='62' cy='14' r='1.0' fill='%23ffffff'/%3E%3Ccircle cx='172' cy='31' r='3.6' fill='url(%23h-orange)'/%3E%3Ccircle cx='172' cy='31' r='1.0' fill='%23ffffff'/%3E%3Ccircle cx='286' cy='13' r='3.4' fill='url(%23h-green)'/%3E%3Ccircle cx='286' cy='13' r='0.95' fill='%23ffffff'/%3E%3Ccircle cx='382' cy='29' r='3.6' fill='url(%23h-blue)'/%3E%3Ccircle cx='382' cy='29' r='1.0' fill='%23ffffff'/%3E%3Ccircle cx='14' cy='25' r='0.65' fill='%23fca5a5' opacity='0.75'/%3E%3Ccircle cx='26' cy='12' r='0.55' fill='%2393c5fd' opacity='0.70'/%3E%3Ccircle cx='38' cy='33' r='0.70' fill='%2386efac' opacity='0.80'/%3E%3Ccircle cx='52' cy='20' r='0.60' fill='%23fed7aa' opacity='0.70'/%3E%3Ccircle cx='80' cy='32' r='0.75' fill='%23ffffff' opacity='0.85'/%3E%3Ccircle cx='96' cy='11' r='0.65' fill='%23f87171' opacity='0.75'/%3E%3Ccircle cx='110' cy='27' r='0.55' fill='%23fdba74' opacity='0.75'/%3E%3Ccircle cx='128' cy='35' r='0.70' fill='%236ee7b7' opacity='0.75'/%3E%3Ccircle cx='142' cy='15' r='0.60' fill='%237dd3fc' opacity='0.70'/%3E%3Ccircle cx='156' cy='26' r='0.75' fill='%23ffffff' opacity='0.90'/%3E%3Ccircle cx='194' cy='12' r='0.55' fill='%23fca5a5' opacity='0.70'/%3E%3Ccircle cx='208' cy='24' r='0.70' fill='%23fed7aa' opacity='0.75'/%3E%3Ccircle cx='222' cy='36' r='0.60' fill='%2386efac' opacity='0.75'/%3E%3Ccircle cx='238' cy='13' r='0.65' fill='%2393c5fd' opacity='0.75'/%3E%3Ccircle cx='254' cy='27' r='0.75' fill='%23ffffff' opacity='0.85'/%3E%3Ccircle cx='270' cy='11' r='0.55' fill='%23f87171' opacity='0.70'/%3E%3Ccircle cx='302' cy='34' r='0.70' fill='%23fdba74' opacity='0.75'/%3E%3Ccircle cx='318' cy='22' r='0.60' fill='%236ee7b7' opacity='0.75'/%3E%3Ccircle cx='334' cy='11' r='0.65' fill='%237dd3fc' opacity='0.75'/%3E%3Ccircle cx='348' cy='33' r='0.75' fill='%23ffffff' opacity='0.90'/%3E%3Ccircle cx='364' cy='16' r='0.55' fill='%23fca5a5' opacity='0.70'/%3E%3Ccircle cx='398' cy='12' r='0.65' fill='%23fed7aa' opacity='0.75'/%3E%3Ccircle cx='412' cy='31' r='0.60' fill='%2386efac' opacity='0.75'/%3E%3Ccircle cx='426' cy='19' r='0.65' fill='%2393c5fd' opacity='0.75'/%3E%3C/svg%3E");
   background-size: 160px 160px, 440px 44px;
   background-position: 0 0, center center;
   background-repeat: repeat, no-repeat;
-  opacity: 0.82;
+  opacity: 0.85;
   mix-blend-mode: screen;
   animation: star-shimmer 5s ease-in-out infinite alternate;
 }
 
 @keyframes star-shimmer {
   0%   { opacity: 0.72; filter: brightness(0.95); }
-  50%  { opacity: 0.92; filter: brightness(1.20); }
-  100% { opacity: 0.78; filter: brightness(1.04); }
+  50%  { opacity: 0.95; filter: brightness(1.22); }
+  100% { opacity: 0.80; filter: brightness(1.05); }
 }
 
 /* Links sit above grain, splash and sheen so text stays crisp. */
@@ -403,22 +421,23 @@ body {
   z-index: 1;
 }
 
-/* Hover: gentle lift with enhanced nebula bloom. */
+/* Hover: gentle lift with multi-spectral nebula bloom. */
 .nav-capsule:hover {
   transform: translateY(-1px);
-  border-color: rgba(216, 180, 254, 0.45);
+  border-color: rgba(255, 255, 255, 0.35);
   box-shadow:
     0 10px 32px -6px rgba(0, 0, 0, 0.85),
-    0 0 28px -2px rgba(168, 85, 247, 0.45),
-    inset 0 1px 1px rgba(255, 255, 255, 0.35),
+    0 0 28px -2px rgba(249, 115, 22, 0.35),
+    0 0 32px 0px rgba(14, 165, 233, 0.30),
+    inset 0 1px 1px rgba(255, 255, 255, 0.38),
     inset 0 -1px 2px rgba(0, 0, 0, 0.55);
 }
 
-/* Each link glows with celestial nebula tints on hover */
-.nav-capsule > li:nth-child(1) .nav-link:hover { background: rgba(236, 72, 153, 0.28); }
-.nav-capsule > li:nth-child(2) .nav-link:hover { background: rgba(168, 85, 247, 0.30); }
-.nav-capsule > li:nth-child(3) .nav-link:hover { background: rgba(6, 182, 212, 0.28); }
-.nav-capsule > li:nth-child(4) .nav-link:hover { background: rgba(16, 185, 129, 0.28); }
+/* Each link glows with corresponding celestial nebula tints on hover: Red, Orange, Green, Blue */
+.nav-capsule > li:nth-child(1) .nav-link:hover { background: rgba(239, 68, 68, 0.34); }
+.nav-capsule > li:nth-child(2) .nav-link:hover { background: rgba(249, 115, 22, 0.34); }
+.nav-capsule > li:nth-child(3) .nav-link:hover { background: rgba(16, 185, 129, 0.32); }
+.nav-capsule > li:nth-child(4) .nav-link:hover { background: rgba(14, 165, 233, 0.34); }
 
 @media (prefers-reduced-motion: reduce) {
   .nav-capsule,
@@ -427,7 +446,7 @@ body {
     animation: none;
   }
   .nav-capsule {
-    background-position: 30% 50%, 35% 50%, 42% 50%, 55% 50%, 65% 50%, 30% 50%;
+    background-position: 30% 50%, 35% 50%, 42% 50%, 55% 50%, 65% 50%;
   }
   .nav-capsule::before,
   .nav-capsule::after {
@@ -445,7 +464,7 @@ body {
   color: var(--fg);
   text-decoration: none;
   white-space: nowrap;
-  text-shadow: 0 1px 2px rgba(0, 40, 40, 0.45);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.7);
   transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
