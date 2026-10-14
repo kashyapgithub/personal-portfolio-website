@@ -241,15 +241,10 @@ body {
 }
 
 /* -------------------------------------------------------------
-   CAPSULE NAVIGATION
-   Ported from the demo-website header. The capsule is the hero of
-   that nav: a floating gradient pill with an inner glow, each link a
-   white sub-pill that lifts on hover.
-
-   Recoloured from the demo's --blue (#3f7cc9) to this site's teal
-   accent, because the portfolio header is dark obsidian and the
-   demo's blue read as a foreign brand colour against it. Structure,
-   radii, blur and shadows are unchanged.
+   CAPSULE NAVIGATION — DEEP SPACE NEBULA ENGINE
+   Floating cosmic glass pill with multi-layered interstellar gas
+   clouds (ultraviolet, deep purple, cosmic magenta, and stellar cyan)
+   with organic non-grid stardust and twinkling celestial stars.
    ------------------------------------------------------------- */
 .site-nav {
   display: flex;
@@ -263,88 +258,76 @@ body {
   align-items: center;
   list-style: none;
   gap: 2px;
-  padding: 2px;
+  padding: 3px 4px;
   border-radius: 999px;
   overflow: hidden;
-  /* Dark glass pill with Holi powder suspended inside it. The base is
-     near-black glass; the colours are translucent washes (never opaque
-     pigment), so the pill stays dim and the powder reads as dye in
-     water rather than neon paint. Slow 14s drift keeps it calm. */
-  background-color: rgba(10, 12, 20, 0.62);
+  /* Deep Space Nebula Glass: Obsidian glass core with flowing interstellar gas clouds
+     (electric purple, deep ultraviolet, cosmic magenta, stellar cyan, and deep space indigo) */
+  background-color: rgba(6, 8, 18, 0.70);
   background-image:
-    radial-gradient(60% 140% at 8% 50%, rgba(255, 46, 136, 0.30), transparent 70%),
-    radial-gradient(55% 140% at 32% 50%, rgba(255, 154, 0, 0.26), transparent 70%),
-    radial-gradient(55% 140% at 52% 50%, rgba(255, 217, 26, 0.20), transparent 70%),
-    radial-gradient(55% 140% at 70% 50%, rgba(46, 224, 107, 0.24), transparent 70%),
-    radial-gradient(60% 140% at 90% 50%, rgba(46, 155, 255, 0.30), transparent 70%),
-    linear-gradient(100deg,
-      rgba(155, 48, 255, 0.16),
-      rgba(46, 155, 255, 0.10) 40%,
-      rgba(46, 224, 107, 0.08) 60%,
-      rgba(255, 46, 136, 0.16));
+    radial-gradient(75% 150% at 10% 45%, rgba(139, 92, 246, 0.45), transparent 72%),
+    radial-gradient(70% 140% at 34% 58%, rgba(217, 70, 239, 0.38), transparent 70%),
+    radial-gradient(65% 135% at 56% 42%, rgba(14, 165, 233, 0.35), transparent 68%),
+    radial-gradient(70% 145% at 76% 56%, rgba(99, 102, 241, 0.40), transparent 72%),
+    radial-gradient(75% 150% at 92% 45%, rgba(6, 182, 212, 0.42), transparent 72%),
+    linear-gradient(105deg,
+      rgba(168, 85, 247, 0.22) 0%,
+      rgba(236, 72, 153, 0.18) 30%,
+      rgba(6, 182, 212, 0.16) 65%,
+      rgba(99, 102, 241, 0.22) 100%);
   background-size: 220% 120%, 220% 120%, 220% 120%, 220% 120%, 220% 120%, 260% 100%;
-  background-position: 0% 50%, 20% 50%, 40% 50%, 60% 50%, 80% 50%, 0% 50%;
+  background-position: 0% 50%, 25% 50%, 50% 50%, 75% 50%, 100% 50%, 0% 50%;
   animation:
-    capsule-flow 10s linear infinite alternate,
-    holi-glow 9s linear infinite alternate;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+    capsule-nebula-flow 12s linear infinite alternate,
+    nebula-halo-breathe 8s ease-in-out infinite alternate;
+  border: 1px solid rgba(192, 132, 252, 0.26);
   box-shadow:
-    0 8px 24px -10px rgba(0, 0, 0, 0.7),
-    0 0 18px -6px rgba(155, 48, 255, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.35);
-  transition: transform 0.25s ease, border-color 0.25s ease;
-  -webkit-backdrop-filter: saturate(160%) blur(22px);
-  backdrop-filter: saturate(160%) blur(22px);
+    0 8px 28px -8px rgba(0, 0, 0, 0.8),
+    0 0 22px -4px rgba(139, 92, 246, 0.35),
+    inset 0 1px 1px rgba(255, 255, 255, 0.28),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.50);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+  backdrop-filter: saturate(180%) blur(22px);
 }
 
-/* All six layers drift together like one liquid mass. */
-@keyframes capsule-flow {
+/* Interstellar gas layers drift continuously like a living nebula. */
+@keyframes capsule-nebula-flow {
   from {
-    background-position: 0% 50%, 20% 50%, 40% 50%, 60% 50%, 80% 50%, 0% 50%;
+    background-position: 0% 50%, 25% 50%, 50% 50%, 75% 50%, 100% 50%, 0% 50%;
   }
   to {
-    background-position: 100% 50%, 80% 50%, 60% 50%, 40% 50%, 20% 50%, 100% 50%;
+    background-position: 100% 50%, 75% 50%, 50% 50%, 25% 50%, 0% 50%, 100% 50%;
   }
 }
 
-/* Dim breathing glow. Never above 0.3 alpha so it never glares. */
-@keyframes holi-glow {
+/* Cosmic breathing aura between ultraviolet, magenta and ionized cyan. */
+@keyframes nebula-halo-breathe {
   0% {
     box-shadow:
-      0 8px 24px -10px rgba(0, 0, 0, 0.7),
-      0 0 18px -6px rgba(255, 46, 136, 0.30),
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+      0 8px 28px -8px rgba(0, 0, 0, 0.8),
+      0 0 20px -4px rgba(139, 92, 246, 0.35),
+      inset 0 1px 1px rgba(255, 255, 255, 0.28),
+      inset 0 -1px 2px rgba(0, 0, 0, 0.50);
   }
-  35% {
+  50% {
     box-shadow:
-      0 8px 24px -10px rgba(0, 0, 0, 0.7),
-      0 0 18px -6px rgba(255, 217, 26, 0.24),
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.35);
-  }
-  70% {
-    box-shadow:
-      0 8px 24px -10px rgba(0, 0, 0, 0.7),
-      0 0 18px -6px rgba(46, 224, 107, 0.26),
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+      0 8px 28px -8px rgba(0, 0, 0, 0.8),
+      0 0 26px -3px rgba(217, 70, 239, 0.38),
+      inset 0 1px 1px rgba(255, 255, 255, 0.32),
+      inset 0 -1px 2px rgba(0, 0, 0, 0.50);
   }
   100% {
     box-shadow:
-      0 8px 24px -10px rgba(0, 0, 0, 0.7),
-      0 0 18px -6px rgba(46, 155, 255, 0.30),
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+      0 8px 28px -8px rgba(0, 0, 0, 0.8),
+      0 0 22px -4px rgba(6, 182, 212, 0.36),
+      inset 0 1px 1px rgba(255, 255, 255, 0.28),
+      inset 0 -1px 2px rgba(0, 0, 0, 0.50);
   }
 }
 
-/* Trapped liquid: an oversized coloured mass sloshing inside the glass.
-   inset is wider than the pill so the transform has room to travel;
-   overflow:hidden on the capsule clips it, which is exactly what makes
-   it read as liquid sealed in glass. Blobs + meniscus + glint all ride
-   one layer so they move as a single body of water. */
+/* Swirling interstellar dust & ionized gas veil:
+   Volumetric gas clouds + dark absorption rift + stellar light sweep. */
 .nav-capsule::before {
   content: "";
   position: absolute;
@@ -352,33 +335,31 @@ body {
   border-radius: inherit;
   pointer-events: none;
   background-image:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 26%),
-    radial-gradient(45% 90% at 70% 30%, rgba(120, 40, 220, 0.28), transparent 70%),
-    radial-gradient(40% 85% at 30% 65%, rgba(255, 45, 150, 0.22), transparent 70%),
-    radial-gradient(35% 80% at 55% 40%, rgba(45, 200, 255, 0.18), transparent 70%),
-    radial-gradient(30% 60% at 48% 55%, rgba(0, 0, 0, 0.30), transparent 70%),
-    radial-gradient(18% 55% at 22% 60%, rgba(255, 46, 136, 0.50), transparent 70%),
-    radial-gradient(16% 55% at 42% 44%, rgba(255, 217, 26, 0.42), transparent 70%),
-    radial-gradient(16% 55% at 60% 62%, rgba(46, 224, 107, 0.45), transparent 70%),
-    radial-gradient(18% 55% at 80% 48%, rgba(46, 155, 255, 0.50), transparent 70%),
-    linear-gradient(100deg,
-      transparent 42%,
-      rgba(255, 255, 255, 0.14) 50%,
-      transparent 58%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 28%),
+    radial-gradient(48% 95% at 24% 38%, rgba(236, 72, 153, 0.34), transparent 70%),
+    radial-gradient(52% 105% at 72% 62%, rgba(139, 92, 246, 0.40), transparent 72%),
+    radial-gradient(42% 85% at 50% 32%, rgba(6, 182, 212, 0.30), transparent 68%),
+    radial-gradient(35% 65% at 40% 55%, rgba(3, 4, 12, 0.60), transparent 70%),
+    radial-gradient(22% 60% at 16% 62%, rgba(244, 63, 94, 0.40), transparent 70%),
+    radial-gradient(20% 58% at 38% 40%, rgba(168, 85, 247, 0.42), transparent 70%),
+    radial-gradient(20% 58% at 62% 64%, rgba(20, 184, 166, 0.38), transparent 70%),
+    radial-gradient(22% 60% at 84% 46%, rgba(59, 130, 246, 0.42), transparent 70%),
+    linear-gradient(105deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.16) 49%,
+      rgba(192, 132, 252, 0.22) 53%,
+      transparent 62%);
   background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 220% 100%;
   background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 150% 0;
   animation:
-    liquid-slosh 6s linear infinite alternate,
+    nebula-gas-drift 8s linear infinite alternate,
     capsule-sheen 6.5s ease-in-out infinite;
 }
 
-/* Slosh: the whole mass rocks side to side with a slight squash, like
-   water settling after the pill is nudged. translate % is of the
-   oversized pseudo, so ±2.5% stays inside the clip. */
-@keyframes liquid-slosh {
-  from { transform: translate3d(-2.5%, 1.5%, 0) rotate(-1.2deg) scale(1.02, 0.99); }
-  50%  { transform: translate3d(0%, -1.5%, 0) rotate(0.6deg) scale(1.03, 0.985); }
-  to   { transform: translate3d(2.5%, 1.5%, 0) rotate(1.2deg) scale(1.02, 0.99); }
+@keyframes nebula-gas-drift {
+  from { transform: translate3d(-3%, 1.8%, 0) rotate(-1.4deg) scale(1.03, 0.985); }
+  50%  { transform: translate3d(0%, -1.8%, 0) rotate(0.8deg) scale(1.04, 0.98); }
+  to   { transform: translate3d(3%, 1.8%, 0) rotate(1.4deg) scale(1.03, 0.985); }
 }
 
 @keyframes capsule-sheen {
@@ -386,14 +367,13 @@ body {
   to   { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, -60% 0; }
 }
 
-/* Shaking the pill agitates the liquid: slosh + glint both quicken. */
 .nav-capsule:hover::before {
-  animation-duration: 3.2s, 3s;
+  animation-duration: 4.5s, 3.5s;
 }
 
-/* Powder grain + splash speckle over everything, under the links.
-   feTurbulence fractalNoise at low alpha: matte gulal dust, not dirt.
-   radial-gradient dots at 7px tile: sparse thrown specks. */
+/* Organic Cosmic Stardust & Twinkling Stars:
+   Completely non-grid, non-row natural star distribution across the 440px capsule width.
+   Varied star altitudes, sizes, halos, and cosmic tints (never regular rows). */
 .nav-capsule::after {
   content: "";
   position: absolute;
@@ -401,25 +381,20 @@ body {
   border-radius: inherit;
   pointer-events: none;
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.24'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"),
-    radial-gradient(rgba(255, 255, 255, 0.20) 0.8px, transparent 1.2px),
-    radial-gradient(rgba(255, 217, 26, 0.20) 0.8px, transparent 1.2px),
-    radial-gradient(rgba(255, 46, 136, 0.20) 0.8px, transparent 1.2px),
-    radial-gradient(rgba(255, 255, 255, 0.85) 1px, transparent 1.4px);
-  background-size: 120px 120px, 26px 26px, 34px 34px, 42px 42px, 90px 90px;
-  background-position: 0 0, 4px 8px, 12px 3px, 7px 14px, 20px 30px;
-  opacity: 0.75;
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='dust'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.16'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23dust)'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 44' width='440' height='44'%3E%3Cdefs%3E%3CradialGradient id='h1' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='25%25' stop-color='%23c084fc' stop-opacity='0.65'/%3E%3Cstop offset='100%25' stop-color='%23c084fc' stop-opacity='0'/%3E%3C/radialGradient%3E%3CradialGradient id='h2' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='25%25' stop-color='%2338bdf8' stop-opacity='0.65'/%3E%3Cstop offset='100%25' stop-color='%2338bdf8' stop-opacity='0'/%3E%3C/radialGradient%3E%3CradialGradient id='h3' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='25%25' stop-color='%23f472b6' stop-opacity='0.65'/%3E%3Cstop offset='100%25' stop-color='%23f472b6' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='64' cy='13' r='3.2' fill='url(%23h1)'/%3E%3Ccircle cx='64' cy='13' r='0.9' fill='%23ffffff'/%3E%3Ccircle cx='176' cy='31' r='3.4' fill='url(%23h2)'/%3E%3Ccircle cx='176' cy='31' r='0.95' fill='%23ffffff'/%3E%3Ccircle cx='292' cy='15' r='3.2' fill='url(%23h3)'/%3E%3Ccircle cx='292' cy='15' r='0.9' fill='%23ffffff'/%3E%3Ccircle cx='378' cy='28' r='2.8' fill='url(%23h1)'/%3E%3Ccircle cx='378' cy='28' r='0.85' fill='%23ffffff'/%3E%3Ccircle cx='12' cy='26' r='0.65' fill='%23e0e7ff' opacity='0.75'/%3E%3Ccircle cx='24' cy='11' r='0.50' fill='%23a5f3fc' opacity='0.65'/%3E%3Ccircle cx='36' cy='34' r='0.70' fill='%23ffffff' opacity='0.85'/%3E%3Ccircle cx='48' cy='19' r='0.55' fill='%23fbcfe8' opacity='0.60'/%3E%3Ccircle cx='82' cy='33' r='0.60' fill='%23c4b5fd' opacity='0.70'/%3E%3Ccircle cx='95' cy='12' r='0.75' fill='%23ffffff' opacity='0.80'/%3E%3Ccircle cx='108' cy='25' r='0.50' fill='%2367e8f9' opacity='0.60'/%3E%3Ccircle cx='126' cy='36' r='0.70' fill='%23fbcfe8' opacity='0.75'/%3E%3Ccircle cx='138' cy='16' r='0.55' fill='%23ffffff' opacity='0.65'/%3E%3Ccircle cx='152' cy='27' r='0.65' fill='%23c4b5fd' opacity='0.70'/%3E%3Ccircle cx='165' cy='10' r='0.50' fill='%23a5f3fc' opacity='0.55'/%3E%3Ccircle cx='198' cy='22' r='0.70' fill='%23ffffff' opacity='0.85'/%3E%3Ccircle cx='212' cy='35' r='0.55' fill='%23fbcfe8' opacity='0.60'/%3E%3Ccircle cx='226' cy='14' r='0.65' fill='%23bae6fd' opacity='0.70'/%3E%3Ccircle cx='241' cy='28' r='0.75' fill='%23ffffff' opacity='0.90'/%3E%3Ccircle cx='258' cy='11' r='0.50' fill='%23c4b5fd' opacity='0.60'/%3E%3Ccircle cx='272' cy='34' r='0.65' fill='%23fbcfe8' opacity='0.70'/%3E%3Ccircle cx='284' cy='22' r='0.55' fill='%23a5f3fc' opacity='0.65'/%3E%3Ccircle cx='316' cy='33' r='0.70' fill='%23ffffff' opacity='0.80'/%3E%3Ccircle cx='331' cy='12' r='0.50' fill='%23e0e7ff' opacity='0.55'/%3E%3Ccircle cx='344' cy='26' r='0.65' fill='%23c4b5fd' opacity='0.75'/%3E%3Ccircle cx='358' cy='16' r='0.55' fill='%23fbcfe8' opacity='0.65'/%3E%3Ccircle cx='392' cy='13' r='0.60' fill='%23bae6fd' opacity='0.70'/%3E%3Ccircle cx='406' cy='32' r='0.50' fill='%23ffffff' opacity='0.60'/%3E%3Ccircle cx='422' cy='21' r='0.55' fill='%23c4b5fd' opacity='0.65'/%3E%3C/svg%3E");
+  background-size: 160px 160px, 440px 44px;
+  background-position: 0 0, center center;
+  background-repeat: repeat, no-repeat;
+  opacity: 0.82;
   mix-blend-mode: screen;
-  /* Bubbles rise: each dot layer shifts up by exactly one tile height,
-     so the loop is seamless. Grain (first layer) and stars (last layer)
-     stay pinned -- moving grain reads as shimmer, and stars should hang
-     in the nebula, not float up with the bubbles. */
-  animation: bubble-rise 9s linear infinite;
+  animation: star-shimmer 5s ease-in-out infinite alternate;
 }
 
-@keyframes bubble-rise {
-  from { background-position: 0 0, 4px 8px, 12px 3px, 7px 14px, 20px 30px; }
-  to   { background-position: 0 0, 4px -18px, 12px -31px, 7px -28px, 20px 30px; }
+@keyframes star-shimmer {
+  0%   { opacity: 0.72; filter: brightness(0.95); }
+  50%  { opacity: 0.92; filter: brightness(1.20); }
+  100% { opacity: 0.78; filter: brightness(1.04); }
 }
 
 /* Links sit above grain, splash and sheen so text stays crisp. */
@@ -428,21 +403,22 @@ body {
   z-index: 1;
 }
 
-/* Hover: gentle lift only. No speed-up, no brightening. */
+/* Hover: gentle lift with enhanced nebula bloom. */
 .nav-capsule:hover {
   transform: translateY(-1px);
-  border-color: rgba(255, 255, 255, 0.28);
+  border-color: rgba(216, 180, 254, 0.45);
+  box-shadow:
+    0 10px 32px -6px rgba(0, 0, 0, 0.85),
+    0 0 28px -2px rgba(168, 85, 247, 0.45),
+    inset 0 1px 1px rgba(255, 255, 255, 0.35),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.55);
 }
-/* NOTE: loop timing is linear (not eased) on purpose. Ease-in-out drops
-   velocity to zero at each turnaround, which reads as the water pausing
-   twice per cycle. Linear alternate keeps every layer at constant speed
-   so the inside never settles -- direction reverses, motion doesn't. */
 
-/* Each link tints dim gulal on hover -- readable, never neon. */
-.nav-capsule > li:nth-child(1) .nav-link:hover { background: rgba(255, 46, 136, 0.30); }
-.nav-capsule > li:nth-child(2) .nav-link:hover { background: rgba(255, 154, 0, 0.30); }
-.nav-capsule > li:nth-child(3) .nav-link:hover { background: rgba(46, 155, 255, 0.32); }
-.nav-capsule > li:nth-child(4) .nav-link:hover { background: rgba(46, 224, 107, 0.30); }
+/* Each link glows with celestial nebula tints on hover */
+.nav-capsule > li:nth-child(1) .nav-link:hover { background: rgba(236, 72, 153, 0.28); }
+.nav-capsule > li:nth-child(2) .nav-link:hover { background: rgba(168, 85, 247, 0.30); }
+.nav-capsule > li:nth-child(3) .nav-link:hover { background: rgba(6, 182, 212, 0.28); }
+.nav-capsule > li:nth-child(4) .nav-link:hover { background: rgba(16, 185, 129, 0.28); }
 
 @media (prefers-reduced-motion: reduce) {
   .nav-capsule,
