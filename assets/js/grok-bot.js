@@ -517,8 +517,8 @@
       }
 
       var pWorldY = beamTop + p.yRel * beamH;
-      // Beam expands from wide theatrical aperture at top to floor pool landing
-      var coneRadius = R * (1.30 + p.yRel * 0.64);
+      // Majestic conical spread: focused studio aperture at top expanding outward to floor landing
+      var coneRadius = R * (0.19 + p.yRel * 1.87);
       var pWorldX = spotX + p.relX * coneRadius;
 
       var absDist = Math.abs(pWorldX - spotX);
@@ -572,7 +572,10 @@
     var bctx = beamSprite.getContext("2d");
     if (bctx) {
       var xc = BW / 2;
-      var apexY = -2048; // Virtual apex matching natural theatrical cone spread
+      var rTop = 22;
+      var rFloor = 240;
+      var m = (rFloor - rTop) / BH;
+      var apexY = -rTop / m; // Virtual apex: ~-103.3px, pure linear conical expansion
       try {
         var imgData = bctx.createImageData(BW, BH);
         var data = imgData.data;
@@ -580,16 +583,15 @@
         for (var y = 0; y < BH; y++) {
           var yRel = y / BH;
           var invDy = 1.0 / (y - apexY);
-          // Conical half-widths: wide majestic aperture at top (r=160) expanding
-          // smoothly to 1-to-1 match the floor pool landing ellipse (r=240)
-          var rOuter = 160 + yRel * 80;
-          var rBody  = 115 + yRel * 60;
-          var rCore  = 70 + yRel * 35;
+          // Conical half-widths: starts at focused fixture aperture (r=22) and fans out
+          // over 10.9x to majestic stage floor landing (r=240), eliminating cylinder look.
+          var rOuter = rTop + yRel * (rFloor - rTop);
+          var rBody  = rOuter * 0.62;
+          var rCore  = rOuter * 0.28;
 
-          // Vertical atmospheric extinction:
-          // Sustains full volumetric radiance through the air column, then smoothly
-          // transitions right at the floor plane where hotPoolSprite lands.
-          var vertDecay = (1.0 - yRel * 0.20) * Math.max(0, 1.0 - Math.pow(yRel, 4.5));
+          // Vertical atmospheric extinction: sustains volumetric radiance through air column,
+          // then smoothly transitions at floor plane where hotPoolSprite lands.
+          var vertDecay = (1.0 - yRel * 0.15) * Math.max(0, 1.0 - Math.pow(yRel, 5.0));
           var rowOffset = y * BW * 4;
 
           var xMin = Math.max(0, Math.floor(xc - rOuter));
@@ -601,21 +603,21 @@
             if (absDx >= rOuter) continue;
 
             var angleRatio = dx * invDy;
-            // Optical Fresnel lens striations (subtle radial god-ray caustics)
-            var caustic = 1.0 + 0.10 * Math.sin(32 * angleRatio) + 0.07 * Math.sin(64 * angleRatio + 1.2) + 0.04 * Math.sin(108 * angleRatio + 2.5);
+            // Theatrical Fresnel lens rays fanning outward along cone diagonals
+            var caustic = 1.0 + 0.14 * Math.sin(20 * angleRatio) + 0.10 * Math.sin(42 * angleRatio + 1.2) + 0.06 * Math.sin(76 * angleRatio + 2.5);
 
-            // Outer Gaussian penumbra: derivative is smoothly zero at rOuter (NO 2D LINES)
-            var uOuter = absDx / rOuter;
-            var penumbra = (1 - uOuter * uOuter) * (1 - uOuter * uOuter);
+            // Volumetric depth (3D cylinder slice / chord length) with C1-smooth boundary
+            var u = absDx / rOuter;
+            var penumbra = Math.pow(1 - u * u, 1.5);
 
-            // Body lobe (theatrical beam volume)
+            // Radiant volumetric haze body
             var body = 0;
             if (absDx < rBody) {
               var uBody = absDx / rBody;
               body = (1 - uBody * uBody) * (1 - uBody * uBody);
             }
 
-            // Core lobe (bright filament spine)
+            // Brilliant filament core spine
             var core = 0;
             if (absDx < rCore) {
               var uCore = absDx / rCore;
@@ -623,8 +625,8 @@
               core = c1 * c1 * c1;
             }
 
-            // Total volumetric density
-            var totalDensity = (penumbra * 0.40 + body * 0.45 + core * 0.65) * vertDecay * caustic;
+            // Total volumetric density across the cone
+            var totalDensity = (penumbra * 0.58 + body * 0.44 + core * 0.60) * vertDecay * caustic;
             var alpha = Math.min(255, Math.max(0, Math.round(totalDensity * 255)));
 
             // Color temperature shift (hot white core -> warm golden amber penumbra)
@@ -651,18 +653,18 @@
         bctx.fillRect(0, 0, BW, BH);
       }
 
-      // Overhead fixture aperture bloom: radiant corona where the beam originates
+      // Overhead fixture aperture bloom: radiant corona right at the lamp fixture
       bctx.save();
       bctx.globalCompositeOperation = "screen";
-      var flare = bctx.createRadialGradient(xc, 0, 10, xc, 0, 210);
-      flare.addColorStop(0.00, "rgba(255, 255, 250, 0.96)");
-      flare.addColorStop(0.20, "rgba(255, 246, 220, 0.82)");
-      flare.addColorStop(0.48, "rgba(255, 230, 180, 0.42)");
-      flare.addColorStop(0.75, "rgba(255, 205, 135, 0.12)");
+      var flare = bctx.createRadialGradient(xc, 0, 3, xc, 0, 110);
+      flare.addColorStop(0.00, "rgba(255, 255, 252, 1.0)");
+      flare.addColorStop(0.18, "rgba(255, 248, 225, 0.92)");
+      flare.addColorStop(0.40, "rgba(255, 230, 180, 0.62)");
+      flare.addColorStop(0.70, "rgba(255, 210, 140, 0.22)");
       flare.addColorStop(1.00, "rgba(255, 190, 110, 0)");
       bctx.fillStyle = flare;
       bctx.beginPath();
-      bctx.arc(xc, 0, 210, 0, Math.PI * 2);
+      bctx.arc(xc, 0, 110, 0, Math.PI * 2);
       bctx.fill();
       bctx.restore();
     }
@@ -1684,11 +1686,11 @@
     var spinEnergy = (phase === "spinning" && elapsedSec >= 3.48 && elapsedSec < 4.58)
       ? Math.sin(((elapsedSec - 3.48) / 1.10) * Math.PI) * 0.15 : 0;
     var spotSwell = Math.min(0.20, Math.abs(hopY) * 0.012 + spinEnergy + (bubbleState === "speaking" ? 0.06 : 0));
-    var spotBreath = (reduceSpotMotion ? 0.42 : 0.42 + Math.sin(elapsedSec * 0.9) * 0.045) * spotFade;
+    var spotBreath = (reduceSpotMotion ? 0.48 : 0.48 + Math.sin(elapsedSec * 0.9) * 0.05) * spotFade;
     var shadowFloorY = targetCy + R + 36;
-    var spotFloorW = R * 3.8 * (0.85 + SPOT_WATTS * 0.15);
+    var spotFloorW = R * 4.4 * (0.85 + SPOT_WATTS * 0.15);
     var beamW = spotFloorW;
-    var beamTop = -H * 0.08;
+    var beamTop = -12;
     var beamH = shadowFloorY - beamTop;
 
     if (beamSprite && spotFade > 0.001) {
