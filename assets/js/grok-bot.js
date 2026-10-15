@@ -478,8 +478,10 @@
     }
   }
 
-  function renderDustMotes(isForeground, spotX, beamTop, beamH, spotFade, elapsedSec, dtS) {
+  function renderDustMotes(isForeground, spotX, beamTop, beamH, spotFade, elapsedSec, dtS, botCy) {
     if (spotFade <= 0.01 || !dustMotes || !dustMotes.length) return;
+
+    var botWorldY = (typeof botCy === "number") ? botCy : targetCy;
 
     ctx.save();
     for (var i = 0; i < dustMotes.length; i++) {
@@ -497,7 +499,6 @@
         p.relX += turbX * dtS;
 
         // Air displacement from bot movements (hop, spin, speech)
-        var botWorldY = currentCy;
         var pWorldY = beamTop + p.yRel * beamH;
         var distToBotY = Math.abs(pWorldY - botWorldY);
         if (distToBotY < R * 1.3) {
@@ -1580,6 +1581,7 @@
     else {
       phase = "active";
       curY = targetCy;
+      sleepProgress = 0;
       smileProgress = 1;
       eyeWiden = 1.0;
 
@@ -1695,7 +1697,7 @@
     }
 
     // Atmospheric Tyndall dust motes drifting behind the bot (background volume)
-    renderDustMotes(false, spotX, beamTop, beamH, spotFade, elapsedSec, 0.016);
+    renderDustMotes(false, spotX, beamTop, beamH, spotFade, elapsedSec, 0.016, currentCy);
 
     // -------------------------------------------------------------
     // 3. THINKING NEURAL RIPPLE WAVES (EMITS AROUND HEAD)
@@ -1810,7 +1812,7 @@
     }
 
     // Atmospheric Tyndall dust motes drifting in front of the bot (foreground volume)
-    renderDustMotes(true, spotX, beamTop, beamH, spotFade, elapsedSec, 0.016);
+    renderDustMotes(true, spotX, beamTop, beamH, spotFade, elapsedSec, 0.016, currentCy);
 
     // -------------------------------------------------------------
     // 6. 3D PROJECTED EYES & REAL-TIME LIP-SYNC MOUTH
