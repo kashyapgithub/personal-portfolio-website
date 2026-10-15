@@ -564,7 +564,7 @@
   }
 
   // Baked once per resize: continuous Gaussian volumetric shaft, optical Fresnel
-  // striations, and incandescent tungsten floor pool with ground haze.
+  // striations, and original calibrated tungsten floor pool.
   function buildSpotSprites() {
     var BW = 512, BH = 1024;
     beamSprite = makeCanvas(BW, BH);
@@ -580,12 +580,13 @@
           var yRel = y / BH;
           var invDy = 1.0 / (y - apexY);
           // Conical half-widths (smooth spreading cone from aperture to floor)
-          var rOuter = 72 + yRel * 178;
-          var rBody  = 38 + yRel * 102;
-          var rCore  = 15 + yRel * 40;
+          var rOuter = 65 + yRel * 165;
+          var rBody  = 34 + yRel * 90;
+          var rCore  = 14 + yRel * 36;
 
-          // Vertical atmospheric extinction (inverse-square / Mie decay)
-          var vertDecay = Math.exp(-1.30 * yRel);
+          // Vertical atmospheric extinction: decays as it travels through air,
+          // fading smoothly to 0 at the floor so the air shaft NEVER washes out the contact shadow.
+          var vertDecay = Math.exp(-1.35 * yRel) * Math.max(0, 1.0 - Math.pow(yRel, 1.6));
           var rowOffset = y * BW * 4;
 
           var xMin = Math.max(0, Math.floor(xc - rOuter));
@@ -620,7 +621,7 @@
             }
 
             // Total volumetric density
-            var totalDensity = (penumbra * 0.32 + body * 0.48 + core * 0.70) * vertDecay * caustic;
+            var totalDensity = (penumbra * 0.30 + body * 0.45 + core * 0.65) * vertDecay * caustic;
             var alpha = Math.min(255, Math.max(0, Math.round(totalDensity * 255)));
 
             // Color temperature shift (hot white core -> warm golden amber penumbra)
@@ -663,69 +664,29 @@
       bctx.restore();
     }
 
-    // ---- Hot tungsten pool for the floor: multi-stage incandescent landing ----
-    hotPoolSprite = makeCanvas(512, 160);
-    // 1. Wide warm amber ambient floor spill
-    paintEllipticalGlow(hotPoolSprite, 256, 80, 250, 0.3125, [
-      [0.00, "rgba(255, 190, 120, 0.50)"],
-      [0.35, "rgba(255, 175, 100, 0.25)"],
-      [0.65, "rgba(255, 160, 85, 0.08)"],
-      [0.85, "rgba(255, 150, 75, 0.018)"],
-      [1.00, "rgba(255, 140, 65, 0)"]
+    // ---- Hot tungsten pool for the floor: the ONE light source down
+    // here. Small and bright so it reads as the spot's landing, with the
+    // contact shadow visibly darker than the lit floor around it. ----
+    hotPoolSprite = makeCanvas(512, 128);
+    paintEllipticalGlow(hotPoolSprite, 256, 64, 250, 0.25, [
+      [0.00, "rgba(255,214,158,0.92)"],
+      [0.25, "rgba(255,206,146,0.62)"],
+      [0.45, "rgba(255,198,136,0.30)"],
+      [0.65, "rgba(255,190,128,0.10)"],
+      [0.82, "rgba(255,186,124,0.028)"],
+      [1.00, "rgba(255,186,124,0)"]
     ]);
-    // 2. Luminous theatrical tungsten landing
-    paintEllipticalGlow(hotPoolSprite, 256, 80, 175, 0.3125, [
-      [0.00, "rgba(255, 228, 165, 0.88)"],
-      [0.30, "rgba(255, 212, 142, 0.65)"],
-      [0.60, "rgba(255, 195, 120, 0.28)"],
-      [0.82, "rgba(255, 180, 105, 0.06)"],
-      [1.00, "rgba(255, 170, 95, 0)"]
-    ]);
-    // 3. Incandescent hotspot core
-    paintEllipticalGlow(hotPoolSprite, 256, 80, 95, 0.30, [
-      [0.00, "rgba(255, 252, 235, 0.98)"],
-      [0.25, "rgba(255, 240, 205, 0.78)"],
-      [0.55, "rgba(255, 222, 165, 0.35)"],
-      [0.85, "rgba(255, 205, 140, 0.08)"],
-      [1.00, "rgba(255, 195, 125, 0)"]
-    ]);
-    // 4. Ground-level volumetric haze / bounce mist
-    paintEllipticalGlow(hotPoolSprite, 256, 76, 210, 0.18, [
-      [0.00, "rgba(255, 235, 185, 0.30)"],
-      [0.50, "rgba(255, 215, 155, 0.12)"],
-      [0.85, "rgba(255, 195, 130, 0.02)"],
-      [1.00, "rgba(255, 180, 110, 0)"]
-    ]);
-    ditherSprite(hotPoolSprite, 1200, 0.02);
 
-    // ---- Top-light kiss: soft overhead wash + porcelain crown specular catchlight ----
+    // ---- Top-light kiss: soft overhead wash, clipped to the disc at
+    // draw time so the face (painted after) stays clean ----
     topKissSprite = makeCanvas(256, 256);
     var kctx = topKissSprite.getContext("2d");
     if (kctx) {
-      var kiss = kctx.createRadialGradient(128, 70, 6, 128, 120, 150);
-      kiss.addColorStop(0.00, "rgba(255, 252, 240, 0.95)");
-      kiss.addColorStop(0.30, "rgba(255, 242, 215, 0.65)");
-      kiss.addColorStop(0.60, "rgba(255, 228, 185, 0.25)");
-      kiss.addColorStop(0.85, "rgba(255, 215, 165, 0.06)");
-      kiss.addColorStop(1.00, "rgba(255, 205, 150, 0)");
+      var kiss = kctx.createRadialGradient(128, 84, 8, 128, 128, 150);
+      kiss.addColorStop(0.00, "rgba(255,246,226,0.92)");
+      kiss.addColorStop(0.45, "rgba(255,238,208,0.38)");
+      kiss.addColorStop(1.00, "rgba(255,236,204,0)");
       kctx.fillStyle = kiss;
-      kctx.fillRect(0, 0, 256, 256);
-
-      var crown = kctx.createRadialGradient(128, 55, 2, 128, 55, 50);
-      crown.addColorStop(0.00, "rgba(255, 255, 255, 0.98)");
-      crown.addColorStop(0.35, "rgba(255, 248, 230, 0.50)");
-      crown.addColorStop(0.70, "rgba(255, 235, 200, 0.12)");
-      crown.addColorStop(1.00, "rgba(255, 220, 175, 0)");
-      kctx.fillStyle = crown;
-      kctx.beginPath();
-      kctx.arc(128, 55, 50, 0, Math.PI * 2);
-      kctx.fill();
-
-      var sss = kctx.createRadialGradient(128, 128, 105, 128, 128, 128);
-      sss.addColorStop(0.00, "rgba(255, 195, 155, 0)");
-      sss.addColorStop(0.75, "rgba(255, 195, 155, 0.28)");
-      sss.addColorStop(1.00, "rgba(255, 185, 140, 0.55)");
-      kctx.fillStyle = sss;
       kctx.fillRect(0, 0, 256, 256);
     }
   }
@@ -1411,11 +1372,6 @@
   function render(now) {
     var nowMs = (typeof now === "number") ? now : performance.now();
     var elapsedSec = (debugTime !== null) ? debugTime : (nowMs - startTime) / 1000;
-    var dtS = 0.016;
-    if (now !== undefined && lastFrameNow >= 0) {
-      dtS = Math.min(0.10, Math.max(0.001, (now - lastFrameNow) / 1000));
-    }
-    lastFrameNow = (now !== undefined) ? now : lastFrameNow;
 
     // -------------------------------------------------------------
     // 1. TIMELINE & CHOREOGRAPHY
@@ -1725,10 +1681,10 @@
     var spinEnergy = (phase === "spinning" && elapsedSec >= 3.48 && elapsedSec < 4.58)
       ? Math.sin(((elapsedSec - 3.48) / 1.10) * Math.PI) * 0.15 : 0;
     var spotSwell = Math.min(0.20, Math.abs(hopY) * 0.012 + spinEnergy + (bubbleState === "speaking" ? 0.06 : 0));
-    var spotBreath = (reduceSpotMotion ? 0.44 : 0.44 + Math.sin(elapsedSec * 0.9) * 0.045) * spotFade;
-    var beamW = R * 4.2 * (0.85 + SPOT_WATTS * 0.15);
-    var beamTop = -H * 0.08;
-    var beamH = (targetCy + R + 48) - beamTop;
+    var spotBreath = (reduceSpotMotion ? 0.42 : 0.42 + Math.sin(elapsedSec * 0.9) * 0.045) * spotFade;
+    var beamW = R * 3.0 * (0.85 + SPOT_WATTS * 0.15);
+    var beamTop = -H * 0.06;
+    var beamH = (targetCy + R + 44) - beamTop;
 
     if (beamSprite && spotFade > 0.001) {
       ctx.save();
@@ -1739,7 +1695,7 @@
     }
 
     // Atmospheric Tyndall dust motes drifting behind the bot (background volume)
-    renderDustMotes(false, spotX, beamTop, beamH, spotFade, elapsedSec, dtS);
+    renderDustMotes(false, spotX, beamTop, beamH, spotFade, elapsedSec, 0.016);
 
     // -------------------------------------------------------------
     // 3. THINKING NEURAL RIPPLE WAVES (EMITS AROUND HEAD)
@@ -1770,8 +1726,14 @@
     var altitude = Math.max(0, shadowFloorY - (currentCy + R));
     var altitudeFactor = Math.max(0.05, Math.min(1.0, 1.0 - altitude / 340));
     // Frame-rate independent smoothing (~90ms time constant)
-    var blend = Math.min(1, dtS * 11);
-    smoothContact += (altitudeFactor - smoothContact) * blend;
+    if (now !== undefined && lastFrameNow >= 0) {
+      var dtS = Math.min(0.10, Math.max(0.001, (now - lastFrameNow) / 1000));
+      var blend = Math.min(1, dtS * 11);
+      smoothContact += (altitudeFactor - smoothContact) * blend;
+    } else {
+      smoothContact += (altitudeFactor - smoothContact) * 0.18;
+    }
+    lastFrameNow = (now !== undefined) ? now : lastFrameNow;
     var contact = smoothContact; // 1 = grounded, 0 = high airborne
 
     // Overhead key: the shadow drops straight beneath the sphere,
@@ -1786,10 +1748,9 @@
       // A. The spotlight pool: the ONLY floor light. Drawn BEFORE the
       // contact shadow — compositing it on top with 'screen' re-lit the
       // exact area the shadow occupies and turned the occlusion grey.
-      var hW = R * 3.4 * SPOT_WATTS * squashX;
-      var hH = hW * (160 / 512) * squashY;
+      var hW = R * 3.0 * SPOT_WATTS * squashX, hH = R * 0.75 * squashY;
       ctx.globalCompositeOperation = "screen";
-      var poolAlpha = Math.min(1, ((0.48 + 0.45 * contact) + spotSwell) * spotFade * SPOT_WATTS);
+      var poolAlpha = Math.min(1, ((0.45 + 0.45 * contact) + spotSwell) * spotFade * SPOT_WATTS);
       if (poolAlpha > 0.005) {
         ctx.globalAlpha = poolAlpha;
         ctx.drawImage(hotPoolSprite, spotX - hW / 2, shadowFloorY - hH / 2, hW, hH);
@@ -1849,7 +1810,7 @@
     }
 
     // Atmospheric Tyndall dust motes drifting in front of the bot (foreground volume)
-    renderDustMotes(true, spotX, beamTop, beamH, spotFade, elapsedSec, dtS);
+    renderDustMotes(true, spotX, beamTop, beamH, spotFade, elapsedSec, 0.016);
 
     // -------------------------------------------------------------
     // 6. 3D PROJECTED EYES & REAL-TIME LIP-SYNC MOUTH
