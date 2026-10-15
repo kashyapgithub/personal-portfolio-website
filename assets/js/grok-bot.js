@@ -517,8 +517,8 @@
       }
 
       var pWorldY = beamTop + p.yRel * beamH;
-      // Beam expands from narrow aperture at top to wide landing at floor
-      var coneRadius = R * (0.65 + p.yRel * 1.55);
+      // Beam expands from wide theatrical aperture at top to floor pool landing
+      var coneRadius = R * (1.30 + p.yRel * 0.64);
       var pWorldX = spotX + p.relX * coneRadius;
 
       var absDist = Math.abs(pWorldX - spotX);
@@ -565,14 +565,14 @@
   }
 
   // Baked once per resize: continuous Gaussian volumetric shaft, optical Fresnel
-  // striations, and original calibrated tungsten floor pool.
+  // striations, and calibrated tungsten floor pool.
   function buildSpotSprites() {
     var BW = 512, BH = 1024;
     beamSprite = makeCanvas(BW, BH);
     var bctx = beamSprite.getContext("2d");
     if (bctx) {
       var xc = BW / 2;
-      var apexY = -80;
+      var apexY = -2048; // Virtual apex matching natural theatrical cone spread
       try {
         var imgData = bctx.createImageData(BW, BH);
         var data = imgData.data;
@@ -580,14 +580,16 @@
         for (var y = 0; y < BH; y++) {
           var yRel = y / BH;
           var invDy = 1.0 / (y - apexY);
-          // Conical half-widths (smooth spreading cone from aperture to floor)
-          var rOuter = 65 + yRel * 165;
-          var rBody  = 34 + yRel * 90;
-          var rCore  = 14 + yRel * 36;
+          // Conical half-widths: wide majestic aperture at top (r=160) expanding
+          // smoothly to 1-to-1 match the floor pool landing ellipse (r=240)
+          var rOuter = 160 + yRel * 80;
+          var rBody  = 115 + yRel * 60;
+          var rCore  = 70 + yRel * 35;
 
-          // Vertical atmospheric extinction: decays as it travels through air,
-          // fading smoothly to 0 at the floor so the air shaft NEVER washes out the contact shadow.
-          var vertDecay = Math.exp(-1.35 * yRel) * Math.max(0, 1.0 - Math.pow(yRel, 1.6));
+          // Vertical atmospheric extinction:
+          // Sustains full volumetric radiance through the air column, then smoothly
+          // transitions right at the floor plane where hotPoolSprite lands.
+          var vertDecay = (1.0 - yRel * 0.20) * Math.max(0, 1.0 - Math.pow(yRel, 4.5));
           var rowOffset = y * BW * 4;
 
           var xMin = Math.max(0, Math.floor(xc - rOuter));
@@ -600,20 +602,20 @@
 
             var angleRatio = dx * invDy;
             // Optical Fresnel lens striations (subtle radial god-ray caustics)
-            var caustic = 1.0 + 0.12 * Math.sin(34 * angleRatio) + 0.08 * Math.sin(68 * angleRatio + 1.2) + 0.05 * Math.sin(114 * angleRatio + 2.5);
+            var caustic = 1.0 + 0.10 * Math.sin(32 * angleRatio) + 0.07 * Math.sin(64 * angleRatio + 1.2) + 0.04 * Math.sin(108 * angleRatio + 2.5);
 
             // Outer Gaussian penumbra: derivative is smoothly zero at rOuter (NO 2D LINES)
             var uOuter = absDx / rOuter;
             var penumbra = (1 - uOuter * uOuter) * (1 - uOuter * uOuter);
 
-            // Body lobe (soft theatrical beam volume)
+            // Body lobe (theatrical beam volume)
             var body = 0;
             if (absDx < rBody) {
               var uBody = absDx / rBody;
               body = (1 - uBody * uBody) * (1 - uBody * uBody);
             }
 
-            // Core lobe (intense incandescent filament spine)
+            // Core lobe (bright filament spine)
             var core = 0;
             if (absDx < rCore) {
               var uCore = absDx / rCore;
@@ -622,14 +624,14 @@
             }
 
             // Total volumetric density
-            var totalDensity = (penumbra * 0.30 + body * 0.45 + core * 0.65) * vertDecay * caustic;
+            var totalDensity = (penumbra * 0.40 + body * 0.45 + core * 0.65) * vertDecay * caustic;
             var alpha = Math.min(255, Math.max(0, Math.round(totalDensity * 255)));
 
             // Color temperature shift (hot white core -> warm golden amber penumbra)
             var coreMix = core / (core + body + penumbra + 0.001);
             var r = 255;
-            var g = Math.round(202 + coreMix * 50);
-            var b = Math.round(145 + coreMix * 105);
+            var g = Math.round(210 + coreMix * 45);
+            var b = Math.round(155 + coreMix * 95);
 
             var idx = rowOffset + x * 4;
             data[idx] = r;
@@ -652,29 +654,28 @@
       // Overhead fixture aperture bloom: radiant corona where the beam originates
       bctx.save();
       bctx.globalCompositeOperation = "screen";
-      var flare = bctx.createRadialGradient(xc, 0, 4, xc, 0, 100);
-      flare.addColorStop(0.00, "rgba(255, 255, 250, 0.95)");
-      flare.addColorStop(0.20, "rgba(255, 245, 215, 0.75)");
-      flare.addColorStop(0.45, "rgba(255, 225, 170, 0.35)");
-      flare.addColorStop(0.75, "rgba(255, 200, 130, 0.08)");
+      var flare = bctx.createRadialGradient(xc, 0, 10, xc, 0, 210);
+      flare.addColorStop(0.00, "rgba(255, 255, 250, 0.96)");
+      flare.addColorStop(0.20, "rgba(255, 246, 220, 0.82)");
+      flare.addColorStop(0.48, "rgba(255, 230, 180, 0.42)");
+      flare.addColorStop(0.75, "rgba(255, 205, 135, 0.12)");
       flare.addColorStop(1.00, "rgba(255, 190, 110, 0)");
       bctx.fillStyle = flare;
       bctx.beginPath();
-      bctx.arc(xc, 0, 100, 0, Math.PI * 2);
+      bctx.arc(xc, 0, 210, 0, Math.PI * 2);
       bctx.fill();
       bctx.restore();
     }
 
-    // ---- Hot tungsten pool for the floor: the ONE light source down
-    // here. Small and bright so it reads as the spot's landing, with the
-    // contact shadow visibly darker than the lit floor around it. ----
+    // ---- Hot tungsten pool for the floor: exact 1-to-1 geometric match
+    // with the landing of beamSprite (r=240), providing seamless continuity. ----
     hotPoolSprite = makeCanvas(512, 128);
-    paintEllipticalGlow(hotPoolSprite, 256, 64, 250, 0.25, [
+    paintEllipticalGlow(hotPoolSprite, 256, 64, 240, 0.25, [
       [0.00, "rgba(255,214,158,0.92)"],
-      [0.25, "rgba(255,206,146,0.62)"],
-      [0.45, "rgba(255,198,136,0.30)"],
-      [0.65, "rgba(255,190,128,0.10)"],
-      [0.82, "rgba(255,186,124,0.028)"],
+      [0.25, "rgba(255,206,146,0.68)"],
+      [0.50, "rgba(255,198,136,0.36)"],
+      [0.76, "rgba(255,190,128,0.12)"],
+      [0.90, "rgba(255,186,124,0.030)"],
       [1.00, "rgba(255,186,124,0)"]
     ]);
 
@@ -1684,9 +1685,11 @@
       ? Math.sin(((elapsedSec - 3.48) / 1.10) * Math.PI) * 0.15 : 0;
     var spotSwell = Math.min(0.20, Math.abs(hopY) * 0.012 + spinEnergy + (bubbleState === "speaking" ? 0.06 : 0));
     var spotBreath = (reduceSpotMotion ? 0.42 : 0.42 + Math.sin(elapsedSec * 0.9) * 0.045) * spotFade;
-    var beamW = R * 3.0 * (0.85 + SPOT_WATTS * 0.15);
-    var beamTop = -H * 0.06;
-    var beamH = (targetCy + R + 44) - beamTop;
+    var shadowFloorY = targetCy + R + 36;
+    var spotFloorW = R * 3.8 * (0.85 + SPOT_WATTS * 0.15);
+    var beamW = spotFloorW;
+    var beamTop = -H * 0.08;
+    var beamH = shadowFloorY - beamTop;
 
     if (beamSprite && spotFade > 0.001) {
       ctx.save();
@@ -1724,7 +1727,6 @@
     // direction offset + critically-damped temporal smoothing so the
     // shadow never pops or jitters between frames.
     // -------------------------------------------------------------
-    var shadowFloorY = targetCy + R + 36;
     var altitude = Math.max(0, shadowFloorY - (currentCy + R));
     var altitudeFactor = Math.max(0.05, Math.min(1.0, 1.0 - altitude / 340));
     // Frame-rate independent smoothing (~90ms time constant)
@@ -1750,7 +1752,7 @@
       // A. The spotlight pool: the ONLY floor light. Drawn BEFORE the
       // contact shadow — compositing it on top with 'screen' re-lit the
       // exact area the shadow occupies and turned the occlusion grey.
-      var hW = R * 3.0 * SPOT_WATTS * squashX, hH = R * 0.75 * squashY;
+      var hW = spotFloorW * squashX, hH = spotFloorW * 0.25 * squashY;
       ctx.globalCompositeOperation = "screen";
       var poolAlpha = Math.min(1, ((0.45 + 0.45 * contact) + spotSwell) * spotFade * SPOT_WATTS);
       if (poolAlpha > 0.005) {
