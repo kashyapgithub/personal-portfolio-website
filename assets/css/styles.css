@@ -241,11 +241,11 @@ body {
 }
 
 /* -------------------------------------------------------------
-   CAPSULE NAVIGATION — LIVING MULTI-SPECTRAL NEBULA ENGINE
-   Floating cosmic glass pill with intensely saturated, slow-morphing
-   gas clouds (electric sapphire cyan, burning solar amber, aurora
-   emerald, and deep ultraviolet with subtle crimson wisps),
-   calm chromatic shifting, and serene, slow-drifting celestial stars.
+   CAPSULE NAVIGATION — 3D SCULPTED OPTICAL GLASS PIECE
+   Tactile, dimensional optical glass slab with physical curvature,
+   crisp top specular rim, internal glass thickness refraction,
+   lateral meniscus bevels, ambient bounce reflections, and
+   realistic glass elevation caustics.
    ------------------------------------------------------------- */
 .site-nav {
   display: flex;
@@ -262,152 +262,94 @@ body {
   padding: 3px 4px;
   border-radius: 999px;
   overflow: hidden;
-  /* Deep Space Obsidian Core with Intensely Saturated Luminous Gas Clouds */
-  background-color: rgba(4, 7, 18, 0.78);
+  /* 3D Glass Body: Top curvature wash into deep refractive smoked glass core */
+  background-color: rgba(10, 14, 24, 0.65);
   background-image:
-    /* Electric Sapphire / Cyan core — intensely luminous */
-    radial-gradient(75% 150% at 14% 48%, rgba(6, 182, 212, 0.72), transparent 72%),
-    /* Solar Amber / Burning Gold furnace */
-    radial-gradient(74% 145% at 38% 54%, rgba(245, 158, 11, 0.70), transparent 70%),
-    /* Aurora Emerald Green */
-    radial-gradient(72% 140% at 65% 42%, rgba(16, 185, 129, 0.68), transparent 70%),
-    /* Deep Cosmic Ultraviolet & Purple */
-    radial-gradient(76% 150% at 88% 52%, rgba(139, 92, 246, 0.72), transparent 72%),
-    /* Subtle cosmic crimson hydrogen filament wisp */
-    radial-gradient(45% 90% at 52% 62%, rgba(244, 63, 94, 0.38), transparent 68%),
-    /* Flowing interstellar ambient gradient — rich and vivid */
-    linear-gradient(115deg,
-      rgba(6, 182, 212, 0.44) 0%,
-      rgba(245, 158, 11, 0.40) 32%,
-      rgba(16, 185, 129, 0.40) 65%,
-      rgba(139, 92, 246, 0.44) 100%);
-  background-size: 200% 120%, 200% 120%, 200% 120%, 200% 120%, 180% 120%, 240% 100%;
-  background-position: 0% 50%, 25% 50%, 65% 50%, 100% 50%, 50% 50%, 0% 50%;
-  animation:
-    capsule-nebula-flow 34s linear infinite alternate,
-    nebula-halo-breathe 18s ease-in-out infinite alternate;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+    /* Top cylindrical convex glass light wash */
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0.06) 22%,
+      rgba(15, 21, 35, 0.35) 55%,
+      rgba(4, 7, 16, 0.65) 100%),
+    /* Subtle internal prismatic chromatic dispersion (simulating light split in silica glass) */
+    radial-gradient(65% 130% at 16% 45%, rgba(6, 182, 212, 0.22), transparent 70%),
+    radial-gradient(60% 120% at 42% 55%, rgba(245, 158, 11, 0.18), transparent 70%),
+    radial-gradient(60% 120% at 68% 45%, rgba(16, 185, 129, 0.18), transparent 70%),
+    radial-gradient(65% 130% at 86% 55%, rgba(139, 92, 246, 0.22), transparent 70%);
+  background-size: 100% 100%, 180% 100%, 180% 100%, 180% 100%, 180% 100%;
+  background-position: 0 0, 10% 50%, 40% 50%, 65% 50%, 90% 50%;
+  /* Prismatic 3D Glass Rim: sharp light on top, soft light on sides, occlusion below */
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-top-color: rgba(255, 255, 255, 0.58);
+  border-bottom-color: rgba(255, 255, 255, 0.14);
+  border-left-color: rgba(255, 255, 255, 0.36);
+  border-right-color: rgba(255, 255, 255, 0.36);
+  /* 3D Glass Thickness Optics & Elevation Caustics */
   box-shadow:
-    0 8px 30px -6px rgba(0, 0, 0, 0.85),
-    0 0 26px -2px rgba(6, 182, 212, 0.50),
-    inset 0 1px 1px rgba(255, 255, 255, 0.35),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.50);
-  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-  -webkit-backdrop-filter: saturate(210%) blur(22px);
-  backdrop-filter: saturate(210%) blur(22px);
+    /* Top specular bevel crest — razor sharp */
+    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.78),
+    /* Inner glass thickness highlight — soft depth wash */
+    inset 0 2.5px 6px -1px rgba(255, 255, 255, 0.24),
+    /* Lateral curved end-cap meniscus reflections */
+    inset 4px 0 7px -2px rgba(255, 255, 255, 0.22),
+    inset -4px 0 7px -2px rgba(255, 255, 255, 0.22),
+    /* Bottom refractive occlusion shadow */
+    inset 0 -3px 6px -1px rgba(0, 0, 0, 0.55),
+    /* Bottom ambient bounce reflection line */
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.28),
+    /* Exterior contact shadow */
+    0 3px 6px -1px rgba(0, 0, 0, 0.55),
+    /* Exterior soft deep ambient drop shadow */
+    0 14px 34px -4px rgba(0, 0, 0, 0.78),
+    /* Glass caustic projection footprint */
+    0 8px 26px -2px rgba(255, 255, 255, 0.06),
+    0 0 1px 1px rgba(255, 255, 255, 0.12);
+  transform: translateZ(0);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s ease,
+              box-shadow 0.25s ease;
+  -webkit-backdrop-filter: blur(26px) saturate(190%) contrast(104%);
+  backdrop-filter: blur(26px) saturate(190%) contrast(104%);
 }
 
-/* Interstellar gas layers drift with calm, stately, slow majestic motion */
-@keyframes capsule-nebula-flow {
-  from {
-    background-position: 0% 50%, 25% 50%, 65% 50%, 100% 50%, 50% 50%, 0% 50%;
-  }
-  to {
-    background-position: 100% 50%, 75% 50%, 35% 50%, 0% 50%, 50% 50%, 100% 50%;
-  }
-}
-
-/* Intensified cosmic breathing aura cycling smoothly across the cosmic spectrum */
-@keyframes nebula-halo-breathe {
-  0% {
-    box-shadow:
-      0 8px 30px -6px rgba(0, 0, 0, 0.85),
-      0 0 28px -2px rgba(6, 182, 212, 0.58),
-      inset 0 1px 1px rgba(255, 255, 255, 0.35),
-      inset 0 -1px 2px rgba(0, 0, 0, 0.50);
-  }
-  33% {
-    box-shadow:
-      0 8px 30px -6px rgba(0, 0, 0, 0.85),
-      0 0 28px -2px rgba(16, 185, 129, 0.55),
-      inset 0 1px 1px rgba(255, 255, 255, 0.38),
-      inset 0 -1px 2px rgba(0, 0, 0, 0.50);
-  }
-  66% {
-    box-shadow:
-      0 8px 30px -6px rgba(0, 0, 0, 0.85),
-      0 0 28px -2px rgba(245, 158, 11, 0.55),
-      inset 0 1px 1px rgba(255, 255, 255, 0.38),
-      inset 0 -1px 2px rgba(0, 0, 0, 0.50);
-  }
-  100% {
-    box-shadow:
-      0 8px 30px -6px rgba(0, 0, 0, 0.85),
-      0 0 28px -2px rgba(139, 92, 246, 0.58),
-      inset 0 1px 1px rgba(255, 255, 255, 0.35),
-      inset 0 -1px 2px rgba(0, 0, 0, 0.50);
-  }
-}
-
-/* Swirling volumetric clouds with slow, deeply saturated chromatic shifting:
-   Gas clouds continuously cycle through electric saturated hues at a tranquil pace. */
+/* Polished Specular Sheen & Glass Glint */
 .nav-capsule::before {
   content: "";
   position: absolute;
-  inset: -35% -12%;
+  inset: -15% -8%;
   border-radius: inherit;
   pointer-events: none;
   background-image:
-    /* Top rim reflection */
-    linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 28%),
-    /* Intensified volumetric flowing gas clouds */
-    radial-gradient(48% 94% at 18% 36%, rgba(14, 165, 233, 0.68), transparent 68%),
-    radial-gradient(48% 90% at 38% 66%, rgba(245, 158, 11, 0.65), transparent 68%),
-    radial-gradient(46% 92% at 64% 34%, rgba(16, 185, 129, 0.65), transparent 68%),
-    radial-gradient(52% 96% at 86% 64%, rgba(139, 92, 246, 0.70), transparent 70%),
-    /* Subtle hydrogen wisp */
-    radial-gradient(28% 60% at 50% 40%, rgba(244, 63, 94, 0.40), transparent 70%),
-    /* High contrast dark interstellar absorption rift */
-    radial-gradient(35% 65% at 46% 52%, rgba(3, 5, 15, 0.70), transparent 72%),
-    /* Secondary energy flares */
-    radial-gradient(22% 55% at 28% 52%, rgba(56, 189, 248, 0.48), transparent 70%),
-    radial-gradient(22% 55% at 76% 48%, rgba(52, 211, 153, 0.46), transparent 70%),
-    /* Specular energy sheen sweeping across */
-    linear-gradient(105deg,
+    /* Top edge glass meniscus reflection */
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.35) 0%,
+      rgba(255, 255, 255, 0.08) 22%,
+      transparent 45%),
+    /* Angled specular sheen streak gliding across the face */
+    linear-gradient(112deg,
       transparent 38%,
-      rgba(255, 255, 255, 0.20) 48%,
-      rgba(186, 230, 253, 0.26) 51%,
-      rgba(253, 230, 138, 0.24) 54%,
-      transparent 64%);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 220% 100%;
-  background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 150% 0;
-  animation:
-    nebula-chroma-shift 45s linear infinite,
-    nebula-gas-drift 20s ease-in-out infinite alternate,
-    capsule-sheen 14s ease-in-out infinite;
+      rgba(255, 255, 255, 0.06) 45%,
+      rgba(255, 255, 255, 0.28) 49%,
+      rgba(255, 255, 255, 0.10) 53%,
+      transparent 60%);
+  background-size: 100% 100%, 240% 100%;
+  background-position: 0 0, 160% 0;
+  animation: glass-sheen-sweep 16s ease-in-out infinite;
 }
 
-/* Deeply saturated chromatic hue shifting — slowed down to a majestic 45s cycle */
-@keyframes nebula-chroma-shift {
-  0% {
-    filter: hue-rotate(0deg) saturate(240%);
+@keyframes glass-sheen-sweep {
+  0%, 20% {
+    background-position: 0 0, 160% 0;
   }
-  50% {
-    filter: hue-rotate(180deg) saturate(280%);
+  50%, 70% {
+    background-position: 0 0, -60% 0;
   }
   100% {
-    filter: hue-rotate(360deg) saturate(240%);
+    background-position: 0 0, -60% 0;
   }
 }
 
-@keyframes nebula-gas-drift {
-  from { transform: translate3d(-3%, 1.8%, 0) rotate(-1.4deg) scale(1.03, 0.985); }
-  50%  { transform: translate3d(0%, -1.8%, 0) rotate(0.8deg) scale(1.04, 0.98); }
-  to   { transform: translate3d(3%, 1.8%, 0) rotate(1.4deg) scale(1.03, 0.985); }
-}
-
-@keyframes capsule-sheen {
-  from { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 150% 0; }
-  to   { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, -60% 0; }
-}
-
-.nav-capsule:hover::before {
-  animation-duration: 25s, 10s, 7s;
-}
-
-/* Organic Cosmic Stardust & Serene Drifting Stars:
-   Smooth, stately horizontal glide (65s cycle) across the capsule
-   while gently twinkling and shimmering. */
+/* Optical silica micro-texture for tangible glass realism */
 .nav-capsule::after {
   content: "";
   position: absolute;
@@ -415,70 +357,77 @@ body {
   border-radius: inherit;
   pointer-events: none;
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='dust'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.16'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23dust)'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 44' width='440' height='44'%3E%3Cdefs%3E%3CradialGradient id='h-blue' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='30%25' stop-color='%2300f0ff' stop-opacity='0.95'/%3E%3Cstop offset='100%25' stop-color='%230284c7' stop-opacity='0'/%3E%3C/radialGradient%3E%3CradialGradient id='h-gold' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='30%25' stop-color='%23fbbf24' stop-opacity='0.95'/%3E%3Cstop offset='100%25' stop-color='%23f59e0b' stop-opacity='0'/%3E%3C/radialGradient%3E%3CradialGradient id='h-green' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='30%25' stop-color='%2334d399' stop-opacity='0.95'/%3E%3Cstop offset='100%25' stop-color='%2310b981' stop-opacity='0'/%3E%3C/radialGradient%3E%3CradialGradient id='h-violet' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='30%25' stop-color='%23c084fc' stop-opacity='0.95'/%3E%3Cstop offset='100%25' stop-color='%237c3aed' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='70' cy='14' r='3.8' fill='url(%23h-blue)'/%3E%3Ccircle cx='70' cy='14' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='175' cy='31' r='4.0' fill='url(%23h-gold)'/%3E%3Ccircle cx='175' cy='31' r='1.15' fill='%23ffffff'/%3E%3Ccircle cx='280' cy='13' r='3.8' fill='url(%23h-green)'/%3E%3Ccircle cx='280' cy='13' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='385' cy='29' r='4.0' fill='url(%23h-violet)'/%3E%3Ccircle cx='385' cy='29' r='1.15' fill='%23ffffff'/%3E%3Ccircle cx='14' cy='25' r='0.70' fill='%2393c5fd' opacity='0.85'/%3E%3Ccircle cx='26' cy='11' r='0.60' fill='%23fde68a' opacity='0.80'/%3E%3Ccircle cx='38' cy='33' r='0.75' fill='%2386efac' opacity='0.88'/%3E%3Ccircle cx='52' cy='20' r='0.60' fill='%23c4b5fd' opacity='0.80'/%3E%3Ccircle cx='82' cy='32' r='0.85' fill='%23ffffff' opacity='0.95'/%3E%3Ccircle cx='98' cy='12' r='0.60' fill='%23fca5a5' opacity='0.70'/%3E%3Ccircle cx='112' cy='27' r='0.65' fill='%237dd3fc' opacity='0.85'/%3E%3Ccircle cx='128' cy='35' r='0.75' fill='%236ee7b7' opacity='0.85'/%3E%3Ccircle cx='144' cy='15' r='0.65' fill='%23fde68a' opacity='0.80'/%3E%3Ccircle cx='158' cy='26' r='0.85' fill='%23ffffff' opacity='0.95'/%3E%3Ccircle cx='194' cy='12' r='0.60' fill='%23a5f3fc' opacity='0.80'/%3E%3Ccircle cx='208' cy='24' r='0.75' fill='%23fed7aa' opacity='0.85'/%3E%3Ccircle cx='222' cy='36' r='0.65' fill='%2386efac' opacity='0.85'/%3E%3Ccircle cx='238' cy='13' r='0.70' fill='%2393c5fd' opacity='0.85'/%3E%3Ccircle cx='254' cy='27' r='0.85' fill='%23ffffff' opacity='0.95'/%3E%3Ccircle cx='268' cy='11' r='0.55' fill='%23fda4af' opacity='0.65'/%3E%3Ccircle cx='302' cy='34' r='0.75' fill='%23fde68a' opacity='0.85'/%3E%3Ccircle cx='318' cy='22' r='0.65' fill='%236ee7b7' opacity='0.85'/%3E%3Ccircle cx='334' cy='11' r='0.70' fill='%237dd3fc' opacity='0.85'/%3E%3Ccircle cx='350' cy='33' r='0.85' fill='%23ffffff' opacity='0.95'/%3E%3Ccircle cx='366' cy='16' r='0.55' fill='%23fca5a5' opacity='0.65'/%3E%3Ccircle cx='398' cy='12' r='0.70' fill='%23fed7aa' opacity='0.85'/%3E%3Ccircle cx='414' cy='31' r='0.65' fill='%2386efac' opacity='0.85'/%3E%3Ccircle cx='428' cy='19' r='0.70' fill='%2393c5fd' opacity='0.85'/%3E%3C/svg%3E");
-  background-size: 160px 160px, 440px 44px;
-  background-position: 0 0, 0px center;
-  background-repeat: repeat, repeat-x;
-  opacity: 0.95;
-  mix-blend-mode: screen;
-  animation:
-    cosmic-star-drift 65s linear infinite,
-    star-shimmer 7.5s ease-in-out infinite alternate;
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='glassgrain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.08'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23glassgrain)'/%3E%3C/svg%3E");
+  background-size: 120px 120px;
+  background-repeat: repeat;
+  opacity: 0.35;
+  mix-blend-mode: overlay;
 }
 
-/* Stars glide slowly and serenely across the capsule */
-@keyframes cosmic-star-drift {
-  from {
-    background-position: 0 0, 0px center;
-  }
-  to {
-    background-position: 0 0, -440px center;
-  }
-}
-
-@keyframes star-shimmer {
-  0%   { opacity: 0.78; filter: brightness(0.95); }
-  50%  { opacity: 1.00; filter: brightness(1.25); }
-  100% { opacity: 0.84; filter: brightness(1.05); }
-}
-
-/* Links sit above grain, splash and sheen so text stays crisp. */
+/* Links sit comfortably inside the glass chamber */
 .nav-capsule > li {
   position: relative;
   z-index: 1;
 }
 
-/* Hover: gentle lift with multi-spectral nebula bloom. */
+/* Hover: Physical 3D lift & intensified glass caustics */
 .nav-capsule:hover {
-  transform: translateY(-1px);
-  border-color: rgba(255, 255, 255, 0.45);
+  transform: translateY(-2px) scale(1.006);
+  border-top-color: rgba(255, 255, 255, 0.72);
+  border-left-color: rgba(255, 255, 255, 0.45);
+  border-right-color: rgba(255, 255, 255, 0.45);
   box-shadow:
-    0 10px 32px -6px rgba(0, 0, 0, 0.85),
-    0 0 32px 0px rgba(6, 182, 212, 0.50),
-    0 0 36px 4px rgba(245, 158, 11, 0.40),
-    inset 0 1px 1px rgba(255, 255, 255, 0.42),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.55);
+    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.90),
+    inset 0 2.5px 7px -1px rgba(255, 255, 255, 0.32),
+    inset 4px 0 8px -2px rgba(255, 255, 255, 0.28),
+    inset -4px 0 8px -2px rgba(255, 255, 255, 0.28),
+    inset 0 -3px 6px -1px rgba(0, 0, 0, 0.58),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.35),
+    0 4px 10px -1px rgba(0, 0, 0, 0.60),
+    0 18px 42px -4px rgba(0, 0, 0, 0.85),
+    0 10px 30px -2px rgba(255, 255, 255, 0.08),
+    0 0 2px 1px rgba(255, 255, 255, 0.18);
 }
 
-/* Each link glows with corresponding celestial nebula tints on hover */
-.nav-capsule > li:nth-child(1) .nav-link:hover { background: rgba(14, 165, 233, 0.35); }
-.nav-capsule > li:nth-child(2) .nav-link:hover { background: rgba(245, 158, 11, 0.35); }
-.nav-capsule > li:nth-child(3) .nav-link:hover { background: rgba(16, 185, 129, 0.32); }
-.nav-capsule > li:nth-child(4) .nav-link:hover { background: rgba(139, 92, 246, 0.35); }
+.nav-capsule:hover::before {
+  animation-duration: 9s;
+}
+
+/* Polished glass inset state on nav link hover */
+.nav-capsule > li .nav-link {
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    color 0.2s ease;
+}
+
+.nav-capsule > li:nth-child(1) .nav-link:hover {
+  background: rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 2px 6px -1px rgba(0, 0, 0, 0.35);
+}
+.nav-capsule > li:nth-child(2) .nav-link:hover {
+  background: rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 2px 6px -1px rgba(0, 0, 0, 0.35);
+}
+.nav-capsule > li:nth-child(3) .nav-link:hover {
+  background: rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 2px 6px -1px rgba(0, 0, 0, 0.35);
+}
+.nav-capsule > li:nth-child(4) .nav-link:hover {
+  background: rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 2px 6px -1px rgba(0, 0, 0, 0.35);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .nav-capsule,
   .nav-capsule::before,
   .nav-capsule::after {
     animation: none;
+    transition: none;
   }
-  .nav-capsule {
-    background-position: 30% 50%, 35% 50%, 42% 50%, 55% 50%, 50% 50%, 30% 50%;
-  }
-  .nav-capsule::before,
-  .nav-capsule::after {
-    background-position: 0 0, 50% 0;
+  .nav-capsule:hover {
+    transform: none;
   }
 }
 
@@ -492,18 +441,18 @@ body {
   color: var(--fg);
   text-decoration: none;
   white-space: nowrap;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 12px rgba(0, 0, 0, 0.85);
-  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, color 0.2s ease;
 }
 
 .nav-link:hover {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.16);
-  text-shadow: 0 1px 3px rgba(0, 40, 40, 0.55);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 2px 6px -1px rgba(0, 0, 0, 0.35);
 }
 
 .nav-link:active {
   transform: translateY(1px);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .nav-link:focus-visible {
@@ -515,7 +464,7 @@ body {
    its frosted read against the header and flatten out. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .nav-capsule {
-    background: linear-gradient(135deg, rgba(0, 212, 200, 0.26), rgba(0, 140, 150, 0.22));
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(15, 20, 32, 0.85));
   }
 }
 
