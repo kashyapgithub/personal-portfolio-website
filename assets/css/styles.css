@@ -259,7 +259,7 @@ body {
   align-items: center;
   list-style: none;
   gap: 2px;
-  padding: 3px 4px;
+  padding: 2px 4px;
   border-radius: 999px;
   overflow: hidden;
   /* Deep Space Obsidian Core with Intensely Saturated Luminous Gas Clouds */
@@ -417,7 +417,7 @@ body {
   background-image:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='dust'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.16'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23dust)'/%3E%3C/svg%3E"),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 44' width='440' height='44'%3E%3Cdefs%3E%3CradialGradient id='h-blue' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='30%25' stop-color='%2300f0ff' stop-opacity='0.95'/%3E%3Cstop offset='100%25' stop-color='%230284c7' stop-opacity='0'/%3E%3C/radialGradient%3E%3CradialGradient id='h-gold' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='30%25' stop-color='%23fbbf24' stop-opacity='0.95'/%3E%3Cstop offset='100%25' stop-color='%23f59e0b' stop-opacity='0'/%3E%3C/radialGradient%3E%3CradialGradient id='h-green' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='30%25' stop-color='%2334d399' stop-opacity='0.95'/%3E%3Cstop offset='100%25' stop-color='%2310b981' stop-opacity='0'/%3E%3C/radialGradient%3E%3CradialGradient id='h-violet' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='30%25' stop-color='%23c084fc' stop-opacity='0.95'/%3E%3Cstop offset='100%25' stop-color='%237c3aed' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='70' cy='14' r='3.8' fill='url(%23h-blue)'/%3E%3Ccircle cx='70' cy='14' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='175' cy='31' r='4.0' fill='url(%23h-gold)'/%3E%3Ccircle cx='175' cy='31' r='1.15' fill='%23ffffff'/%3E%3Ccircle cx='280' cy='13' r='3.8' fill='url(%23h-green)'/%3E%3Ccircle cx='280' cy='13' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='385' cy='29' r='4.0' fill='url(%23h-violet)'/%3E%3Ccircle cx='385' cy='29' r='1.15' fill='%23ffffff'/%3E%3Ccircle cx='14' cy='25' r='0.70' fill='%2393c5fd' opacity='0.85'/%3E%3Ccircle cx='26' cy='11' r='0.60' fill='%23fde68a' opacity='0.80'/%3E%3Ccircle cx='38' cy='33' r='0.75' fill='%2386efac' opacity='0.88'/%3E%3Ccircle cx='52' cy='20' r='0.60' fill='%23c4b5fd' opacity='0.80'/%3E%3Ccircle cx='82' cy='32' r='0.85' fill='%23ffffff' opacity='0.95'/%3E%3Ccircle cx='98' cy='12' r='0.60' fill='%23fca5a5' opacity='0.70'/%3E%3Ccircle cx='112' cy='27' r='0.65' fill='%237dd3fc' opacity='0.85'/%3E%3Ccircle cx='128' cy='35' r='0.75' fill='%236ee7b7' opacity='0.85'/%3E%3Ccircle cx='144' cy='15' r='0.65' fill='%23fde68a' opacity='0.80'/%3E%3Ccircle cx='158' cy='26' r='0.85' fill='%23ffffff' opacity='0.95'/%3E%3Ccircle cx='194' cy='12' r='0.60' fill='%23a5f3fc' opacity='0.80'/%3E%3Ccircle cx='208' cy='24' r='0.75' fill='%23fed7aa' opacity='0.85'/%3E%3Ccircle cx='222' cy='36' r='0.65' fill='%2386efac' opacity='0.85'/%3E%3Ccircle cx='238' cy='13' r='0.70' fill='%2393c5fd' opacity='0.85'/%3E%3Ccircle cx='254' cy='27' r='0.85' fill='%23ffffff' opacity='0.95'/%3E%3Ccircle cx='268' cy='11' r='0.55' fill='%23fda4af' opacity='0.65'/%3E%3Ccircle cx='302' cy='34' r='0.75' fill='%23fde68a' opacity='0.85'/%3E%3Ccircle cx='318' cy='22' r='0.65' fill='%236ee7b7' opacity='0.85'/%3E%3Ccircle cx='334' cy='11' r='0.70' fill='%237dd3fc' opacity='0.85'/%3E%3Ccircle cx='350' cy='33' r='0.85' fill='%23ffffff' opacity='0.95'/%3E%3Ccircle cx='366' cy='16' r='0.55' fill='%23fca5a5' opacity='0.65'/%3E%3Ccircle cx='398' cy='12' r='0.70' fill='%23fed7aa' opacity='0.85'/%3E%3Ccircle cx='414' cy='31' r='0.65' fill='%2386efac' opacity='0.85'/%3E%3Ccircle cx='428' cy='19' r='0.70' fill='%2393c5fd' opacity='0.85'/%3E%3C/svg%3E");
-  background-size: 160px 160px, 440px 44px;
+  background-size: 160px 160px, 440px 31px;
   background-position: 0 0, 0px center;
   background-repeat: repeat, repeat-x;
   opacity: 0.95;
@@ -447,6 +447,8 @@ body {
 .nav-capsule > li {
   position: relative;
   z-index: 1;
+  display: flex;
+  align-items: center;
 }
 
 /* Hover: gentle lift with multi-spectral nebula bloom. */
@@ -485,9 +487,10 @@ body {
 .nav-link {
   display: inline-flex;
   align-items: center;
-  padding: 4px 13px;
+  padding: 2px 10px;
   border-radius: 999px;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
+  line-height: 1.25;
   font-weight: 500;
   color: var(--fg);
   text-decoration: none;
