@@ -1010,7 +1010,7 @@
     if (bubbleInner) {
       // Texts appear at once with warm typography
       bubbleInner.innerHTML =
-        '<p class="bubble-speech-text"><span class="bubble-speech-quote">&ldquo;</span>In a world that never stops rushing, thank you for taking a moment to pause here.<span class="bubble-speech-quote">&rdquo;</span></p>';
+        '<p class="bubble-speech-text">In a world that never stops rushing, thank you for taking a moment to pause here.</p>';
     }
   }
 
