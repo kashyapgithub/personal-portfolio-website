@@ -1,0 +1,47 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='240' viewBox='0 0 1600 240'>
+  <defs>
+    <!-- Filter 1: Silky, natural furniture hardwood grain (Quarter-sawn oak / fine American walnut) -->
+    <filter id='h-grain' x='0%' y='0%' width='100%' height='100%' color-interpolation-filters='sRGB'>
+      <!-- Broad, gentle growth ring arches -->
+      <feTurbulence type='fractalNoise' baseFrequency='0.0016 0.022' numOctaves='4' seed='42' result='macro' />
+      <!-- Fine straight longitudinal grain fibers -->
+      <feTurbulence type='turbulence' baseFrequency='0.006 0.10' numOctaves='3' seed='188' result='micro' />
+      <!-- Gentle organic displacement (scale 7 instead of 16 for elegant fine furniture) -->
+      <feDisplacementMap in='macro' in2='micro' scale='7' xChannelSelector='R' yChannelSelector='G' result='displaced' />
+      <feColorMatrix type='matrix' values='
+        0.44 0 0 0 0.36
+        0.28 0 0 0 0.22
+        0.15 0 0 0 0.11
+        0.75 0 0 0 0.18' in='displaced' result='grainTone'/>
+    </filter>
+
+    <!-- Filter 2: Subtle natural wood pores (open vessel texture, not noisy) -->
+    <filter id='h-pores' x='0%' y='0%' width='100%' height='100%' color-interpolation-filters='sRGB'>
+      <feTurbulence type='fractalNoise' baseFrequency='0.028 0.32' numOctaves='3' seed='312' result='poreNoise' />
+      <feColorMatrix type='matrix' values='
+        0 0 0 0 0.14
+        0 0 0 0 0.09
+        0 0 0 0 0.04
+        1.35 0 0 0 -0.45' in='poreNoise' result='poreTone'/>
+    </filter>
+
+    <!-- Filter 3: Hand-rubbed matte oil/wax micro-roughness tooth -->
+    <filter id='h-tooth' x='0%' y='0%' width='100%' height='100%' color-interpolation-filters='sRGB'>
+      <feTurbulence type='fractalNoise' baseFrequency='0.16 0.10' numOctaves='2' seed='91' result='toothNoise' />
+      <feColorMatrix type='matrix' values='
+        0.16 0 0 0 0.22
+        0.16 0 0 0 0.16
+        0.16 0 0 0 0.10
+        0.30 0 0 0 0' in='toothNoise' result='toothTone'/>
+    </filter>
+  </defs>
+
+  <!-- Deep warm base timber -->
+  <rect width='100%' height='100%' fill='#6a4425' />
+  <!-- Grain layer -->
+  <rect width='100%' height='100%' filter='url(#h-grain)' opacity='0.88' />
+  <!-- Wood pores (subtle tactile tooth) -->
+  <rect width='100%' height='100%' filter='url(#h-pores)' opacity='0.50' style='mix-blend-mode: multiply;' />
+  <!-- Matte surface tooth -->
+  <rect width='100%' height='100%' filter='url(#h-tooth)' opacity='0.32' style='mix-blend-mode: overlay;' />
+</svg>
