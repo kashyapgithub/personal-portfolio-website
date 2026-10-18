@@ -2180,7 +2180,7 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   perspective-origin: 50% 60%;
 }
 
-/* Library Hardwood Shelf Plank — solid warm honey oak / golden teak hardwood board.
+/* Library Hardwood Shelf Plank — solid aged American Walnut / Quarter-Sawn Oak board.
    Total ~63px (28 top + 2.8 eased bevel + 32 front face) with authentic open-pore texture and soft matte satin luster. */
 .shelf-plank--neumorphic {
   position: relative;
@@ -2192,44 +2192,48 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 }
 
 /* Shelf Top Surface — horizontal quarter-sawn hardwood plane seen from just above:
-   gentle contact shadow from books, radiant warm room illumination pooling toward front arris,
+   deep contact shadow from books, soft diffused room illumination without plastic gloss,
    and authentic horizontal grain fibers with open wood pores. */
 .shelf-plank--neumorphic .shelf-surface {
   width: 100%;
   height: 28px;
   background:
-    /* Rear joint seam & subtle contact shadow */
-    linear-gradient(180deg, rgba(14, 6, 2, 0.85) 0%, rgba(25, 10, 3, 0.38) 26%, transparent 66%),
-    /* Natural flame contours & growth ring density shifts */
-    radial-gradient(ellipse 380px 14px at 24% 60%, rgba(38, 19, 7, 0.25) 0%, transparent 75%),
-    radial-gradient(ellipse 440px 16px at 74% 50%, rgba(38, 19, 7, 0.22) 0%, transparent 75%),
-    /* Horizontal walnut grain & tactile open pores */
+    /* Deep rear contact shadow from books and rear joint seam */
+    linear-gradient(180deg, rgba(16, 8, 3, 0.88) 0%, rgba(25, 12, 4, 0.45) 26%, transparent 66%),
+    /* Natural ambient satin room illumination — soft matte sheen, no harsh plastic gloss */
+    radial-gradient(ellipse 80% 140% at 50% 100%, rgba(225, 185, 140, 0.20) 0%, rgba(195, 155, 110, 0.06) 55%, transparent 80%),
+    /* Natural flame contours & growth ring density shifts across the board length */
+    radial-gradient(ellipse 380px 14px at 24% 60%, rgba(42, 22, 9, 0.26) 0%, transparent 75%),
+    radial-gradient(ellipse 440px 16px at 74% 50%, rgba(42, 22, 9, 0.24) 0%, transparent 75%),
+    radial-gradient(ellipse 220px 10px at 48% 65%, rgba(230, 185, 135, 0.14) 0%, transparent 70%),
+    /* Authentic horizontal hardwood grain with tactile open pores & micro-roughness */
     url("../img/wood-horizontal.svg"),
-    /* Medium-dark roasted walnut / amber oak heartwood */
-    linear-gradient(180deg, #5c381c 0%, #704523 35%, #82522a 70%, #8e5a2f 100%);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 1600px 240px, 100% 100%;
-  border-top: 1px solid rgba(45, 24, 10, 0.55);
+    /* Solid aged American walnut / quarter-sawn oak heartwood */
+    linear-gradient(180deg, #58351a 0%, #6f4421 35%, #82532a 70%, #905d31 100%);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 1600px 240px, 100% 100%;
+  border-top: 1px solid rgba(26, 12, 4, 0.85);
   box-shadow:
-    inset 0 3px 5px rgba(25, 12, 4, 0.35),
-    inset 0 -1px 0 rgba(255, 230, 190, 0.20);
+    inset 0 4px 6px rgba(16, 7, 2, 0.55),
+    inset 0 -1px 0 rgba(230, 195, 150, 0.22);
   border-radius: 6px 6px 0 0;
   transform-origin: bottom center;
 }
 
-/* Shelf Nosing — eased bullnose roundover arris catching warm room downlight */
+/* Shelf Nosing — eased bullnose roundover arris with warm natural hardwood roll-over (no white plastic glare) */
 .shelf-plank--neumorphic .shelf-bevel {
   width: 100%;
   height: 2.8px;
   background:
-    /* Soft diffused arris rim catching overhead downlight */
-    linear-gradient(180deg, rgba(245, 215, 170, 0.30) 0%, rgba(130, 80, 40, 0.16) 100%),
+    /* Soft diffuse arris highlight — warm natural wood rim roll-over, eliminating the white plastic glare */
+    linear-gradient(180deg, rgba(240, 210, 170, 0.28) 0%, rgba(130, 85, 45, 0.16) 100%),
+    /* Continuous wood grain wrap across the chamfer */
     url("../img/wood-horizontal.svg"),
-    /* Warm roasted walnut transition */
-    linear-gradient(90deg, #643d1d 0%, #86552c 20%, #9e6939 50%, #86552c 80%, #643d1d 100%);
+    /* Warm natural honey-amber heartwood transition */
+    linear-gradient(90deg, #603a1c 0%, #83542d 20%, #9a683c 50%, #83542d 80%, #603a1c 100%);
   background-size: 100% 100%, 1600px 240px, 100% 100%;
   box-shadow:
-    0 1px 2px rgba(35, 18, 6, 0.20),
-    inset 0 1px 0 rgba(255, 240, 205, 0.25);
+    0 1px 2px rgba(24, 11, 4, 0.25),
+    inset 0 1px 0 rgba(250, 220, 180, 0.28);
 }
 
 /* Shelf Front Edge — solid 32px thick hardwood board face with horizontal organic wood grain, annular rings, and open pores */
@@ -2237,22 +2241,24 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   width: 100%;
   height: 32px;
   background:
-    /* Top bevel roll-off illumination */
-    linear-gradient(180deg, rgba(245, 215, 175, 0.16) 0%, rgba(245, 215, 175, 0) 16%),
-    /* Flame density variations */
-    radial-gradient(ellipse 350px 20px at 26% 45%, rgba(32, 16, 5, 0.32) 0%, transparent 75%),
-    radial-gradient(ellipse 430px 22px at 78% 55%, rgba(32, 16, 5, 0.28) 0%, transparent 75%),
+    /* Top chamfer shadow transition */
+    linear-gradient(180deg, rgba(245, 215, 175, 0.14) 0%, rgba(245, 215, 175, 0) 16%),
+    /* Organic flame knots and natural density shifts in the wood face */
+    radial-gradient(ellipse 350px 20px at 26% 45%, rgba(38, 19, 7, 0.34) 0%, transparent 75%),
+    radial-gradient(ellipse 430px 22px at 78% 55%, rgba(38, 19, 7, 0.30) 0%, transparent 75%),
+    radial-gradient(ellipse 210px 14px at 52% 40%, rgba(235, 190, 140, 0.14) 0%, transparent 70%),
+    /* Authentic horizontal hardwood grain with visible open pores */
     url("../img/wood-horizontal.svg"),
-    /* Solid walnut board face from lit top to grounded bottom */
-    linear-gradient(180deg, #744823 0%, #603a1a 45%, #4b2a10 78%, #361c07 100%);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 1600px 240px, 100% 100%;
-  border-bottom: 2px solid #241205;
+    /* Solid quarter-sawn hardwood depth from warm honey top to dark walnut bottom */
+    linear-gradient(180deg, #784c26 0%, #633c1a 45%, #4e2c10 78%, #3a1e08 100%);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 1600px 240px, 100% 100%;
+  border-bottom: 2px solid #221105;
   border-radius: 0 0 6px 6px;
   box-shadow:
-    0 10px 20px rgba(45, 24, 10, 0.40),
-    0 4px 8px rgba(45, 24, 10, 0.25),
-    inset 0 1px 0 rgba(255, 235, 200, 0.20),
-    inset 0 -2px 3px rgba(25, 12, 4, 0.65);
+    0 12px 24px rgba(32, 16, 5, 0.50),
+    0 4px 8px rgba(32, 16, 5, 0.34),
+    inset 0 1px 0 rgba(240, 210, 170, 0.20),
+    inset 0 -2px 3px rgba(12, 5, 1, 0.85);
 }
 
 /* Cast Shadow beneath shelf — warm, deep ambient occlusion into the room */
@@ -2262,8 +2268,8 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   margin-left: -2%;
   margin-top: -3px;
   background:
-    radial-gradient(ellipse 60% 100% at 50% 0%, rgba(35, 18, 6, 0.50) 0%, rgba(35, 18, 6, 0.20) 45%, transparent 75%),
-    radial-gradient(ellipse 85% 100% at 50% 0%, rgba(55, 28, 10, 0.28) 0%, transparent 80%);
+    radial-gradient(ellipse 60% 100% at 50% 0%, rgba(25, 12, 4, 0.65) 0%, rgba(25, 12, 4, 0.28) 45%, transparent 75%),
+    radial-gradient(ellipse 85% 100% at 50% 0%, rgba(42, 20, 7, 0.38) 0%, transparent 80%);
   filter: blur(9px);
 }
 
@@ -3115,25 +3121,24 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   border-bottom: 1px solid rgba(120, 100, 70, 0.35);
 }
 
-/* The bookcase carcass: solid warm honey oak joinery, inner trim arris, top cornice,
+/* The bookcase carcass: solid dark walnut joinery, inner trim arris, top cornice,
    bottom plinth, and warm ambient library lamp glow */
 .bookshelf-stage.neumorphic-stage {
   background:
-    /* Ambient ceiling/room light wash */
-    linear-gradient(180deg, rgba(255, 235, 200, 0.06) 0%, transparent 28%),
+    linear-gradient(180deg, rgba(245, 215, 175, 0.08) 0%, rgba(245, 215, 175, 0) 24%),
     /* Tongue-and-groove vertical cabinet casing seams */
-    repeating-linear-gradient(90deg, rgba(22, 11, 4, 0.30) 0 1.5px, transparent 1.5px 76px),
+    repeating-linear-gradient(90deg, rgba(20, 10, 4, 0.35) 0 1.5px, transparent 1.5px 76px),
+    /* Authentic vertical walnut timber grain */
     url("../img/wood-vertical.svg"),
-    /* Deep rich roasted walnut carcass */
-    linear-gradient(180deg, #4d3017 0%, #3d2410 32%, #2d1808 72%, #201004 100%);
+    linear-gradient(180deg, #4d3017 0%, #3d2511 32%, #2f1b0a 72%, #221307 100%);
   background-size: 100% 100%, 100% 100%, 240px 1600px, 100% 100%;
-  border: 1px solid #301a0a;
+  border: 1px solid #1e1005;
   border-radius: 14px;
   box-shadow:
-    0 34px 64px -22px rgba(40, 22, 10, 0.65),
-    0 12px 28px rgba(40, 22, 10, 0.40),
+    0 34px 64px -22px rgba(45, 24, 10, 0.60),
+    0 12px 28px rgba(45, 24, 10, 0.40),
     inset 0 0 0 10px #38210e,
-    inset 0 0 0 11px rgba(245, 215, 175, 0.10),
+    inset 0 0 0 11px rgba(240, 210, 165, 0.12),
     inset 0 26px 54px rgba(0, 0, 0, 0.45);
 }
 
@@ -3153,12 +3158,12 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   height: 15px;
   border-radius: 5px;
   background:
-    linear-gradient(180deg, rgba(255, 235, 200, 0.22) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(245, 215, 175, 0.22) 0%, transparent 55%),
     url("../img/wood-horizontal.svg"),
-    linear-gradient(180deg, #6c4728 0%, #523418 45%, #3c230e 100%);
+    linear-gradient(180deg, #75502c 0%, #52371d 45%, #382412 100%);
   background-size: 100% 100%, 1600px 240px, 100% 100%;
-  border-top: 1px solid rgba(255, 235, 200, 0.25);
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.45);
+  border-top: 1px solid rgba(245, 215, 175, 0.32);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.55);
 }
 
 /* Bottom plinth moulding */
@@ -3167,31 +3172,28 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   height: 22px;
   border-radius: 5px;
   background:
-    linear-gradient(180deg, rgba(255, 235, 200, 0.15) 0%, transparent 50%),
+    linear-gradient(180deg, rgba(245, 215, 175, 0.15) 0%, transparent 50%),
     url("../img/wood-horizontal.svg"),
-    linear-gradient(180deg, #5a381c 0%, #442811 55%, #2e1808 100%);
+    linear-gradient(180deg, #5f4124 0%, #422b16 55%, #2c1b0d 100%);
   background-size: 100% 100%, 1600px 240px, 100% 100%;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.65);
-  border-top: 1px solid rgba(255, 235, 200, 0.15);
-  box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.35);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.75);
+  border-top: 1px solid rgba(245, 215, 175, 0.18);
+  box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.45);
 }
 
-/* Warm ambient library wash */
 .bookshelf-stage .shelf-neumorphic-ambient {
   border-radius: 14px;
-  background:
-    radial-gradient(ellipse 85% 65% at 50% -5%, rgba(255, 240, 210, 0.22) 0%, rgba(255, 225, 180, 0.08) 50%, transparent 80%),
-    radial-gradient(ellipse 65% 50% at 50% 50%, rgba(255, 235, 200, 0.06) 0%, transparent 75%);
+  background: radial-gradient(ellipse 62% 42% at 50% 0%, rgba(255, 220, 180, 0.14) 0%, transparent 70%);
 }
 
-/* Brass shelf plates — luminous polished satin brass */
+/* Brass shelf plates */
 .bookshelf-stage .shelf-level-header {
-  background: linear-gradient(180deg, #e4be68 0%, #b88d3d 52%, #9a7026 100%);
-  border: 1px solid #75521b;
+  background: linear-gradient(180deg, #cfa855 0%, #a37c33 52%, #86611f 100%);
+  border: 1px solid #64491b;
   border-radius: 5px;
   padding: 5px 18px;
   margin-bottom: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 250, 220, 0.75);
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 242, 202, 0.65);
 }
 
 .bookshelf-stage .shelf-level-tag {
@@ -3209,166 +3211,46 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   color: rgba(51, 36, 10, 0.72);
 }
 
-/* Case sides: solid roasted walnut upright stiles with open pores */
+/* Case sides: solid dark walnut upright stiles with open pores */
 .bookshelf-stage .shelf-level::before,
 .bookshelf-stage .shelf-level::after {
   background:
-    radial-gradient(16px 130px at 50% 28%, rgba(45, 24, 10, 0.25) 0%, transparent 70%),
-    linear-gradient(90deg, rgba(255, 235, 200, 0.10) 0%, transparent 20%, rgba(20, 10, 4, 0.35) 100%),
+    radial-gradient(16px 130px at 50% 28%, rgba(45, 26, 12, 0.25) 0%, transparent 70%),
+    linear-gradient(90deg, rgba(245, 215, 175, 0.12) 0%, transparent 20%, rgba(18, 9, 3, 0.40) 100%),
     url("../img/wood-vertical.svg"),
-    linear-gradient(90deg, #4e2f15 0%, #643d1d 50%, #4e2f15 100%);
+    linear-gradient(90deg, #482c14 0%, #5f3b1b 50%, #482c14 100%);
   background-size: 100% 100%, 100% 100%, 240px 1600px, 100% 100%;
 }
 
 .bookshelf-stage .shelf-level::before {
-  border-left: 2px solid #784c24;
+  border-left: 2px solid #7c5127;
 }
 
 .bookshelf-stage .shelf-level::after {
-  border-right: 2px solid #784c24;
+  border-right: 2px solid #7c5127;
 }
 
-/* Shelf recess: moody dark library walnut backing providing high-contrast backdrop for spotlighted books */
+/* Shelf recess: deep tongue-and-groove walnut interior behind the book covers */
 .bookshelf-stage .shelf-books-row {
   background:
-    linear-gradient(180deg, rgba(16, 8, 3, 0.55) 0%, rgba(16, 8, 3, 0.15) 20%, transparent 55%),
+    linear-gradient(180deg, rgba(16, 8, 3, 0.50) 0%, rgba(16, 8, 3, 0) 22%),
+    linear-gradient(180deg, rgba(245, 215, 175, 0.08) 0%, rgba(245, 215, 175, 0) 28%),
     repeating-linear-gradient(90deg,
-      rgba(18, 9, 3, 0.40) 0px 1.5px,
-      rgba(235, 195, 145, 0.05) 1.5px 2.5px,
+      rgba(18, 9, 3, 0.45) 0px 1.5px,
+      rgba(240, 210, 165, 0.07) 1.5px 2.5px,
       transparent 2.5px 89.5px,
-      rgba(14, 6, 2, 0.30) 89.5px 91px),
+      rgba(15, 7, 2, 0.35) 89.5px 91px),
     url("../img/wood-vertical.svg"),
-    linear-gradient(180deg, #3a220e 0%, #291607 60%, #1a0c03 100%);
-  background-size: 100% 100%, 100% 100%, 240px 1600px, 100% 100%;
-  border: 1px solid rgba(40, 22, 10, 0.45);
+    linear-gradient(180deg, #442a14 0%, #321d0d 60%, #241407 100%);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 240px 1600px, 100% 100%;
+  border: 1px solid rgba(0, 0, 0, 0.65);
   border-bottom: none;
   border-radius: 10px 10px 0 0;
   box-shadow:
-    inset 0 16px 32px rgba(14, 7, 2, 0.60),
-    inset 0 -3px 8px rgba(14, 7, 2, 0.40),
-    inset 12px 0 24px rgba(14, 7, 2, 0.35),
-    inset -12px 0 24px rgba(14, 7, 2, 0.35);
-}
-
-/* ============================================================
-   Concealed Bookshelf Mini-Spotlight System
-   ============================================================ */
-
-/* Recessed ceiling reveal / valance soffit inside each shelf tier */
-.shelf-lighting-soffit {
-  position: absolute;
-  top: 0;
-  left: 20px;
-  right: 20px;
-  height: 9px;
-  border-radius: 6px 6px 0 0;
-  background: linear-gradient(180deg, #100803 0%, rgba(22, 11, 4, 0.70) 100%);
-  box-shadow:
-    inset 0 2px 4px rgba(0, 0, 0, 0.90),
-    0 2px 6px rgba(0, 0, 0, 0.65);
-  pointer-events: none;
-  z-index: 2;
-}
-
-/* Dedicated spotlight rig anchored 1:1 to each book */
-.book-spotlight {
-  position: absolute;
-  top: -22px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 240px;
-  height: calc(100% + 36px);
-  pointer-events: none;
-  z-index: 0;
-  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
-}
-
-/* Counter-transform on book hover: keeps fixture firmly pinned to ceiling soffit */
-.book-card:hover:not(.is-opening):not(.is-closing) .book-spotlight,
-.book-card:focus-visible:not(.is-opening):not(.is-closing) .book-spotlight {
-  transform: translateX(-50%) translateY(14px) rotateY(7deg) rotateX(-3deg);
-}
-
-/* Gracefully fade out spotlight when book opens into full modal/genie animation */
-.book-card.is-opening .book-spotlight,
-.book-card.is-open .book-spotlight {
-  opacity: 0;
-}
-
-/* Concealed miniature recessed puck downlight fixture */
-.mini-puck-light {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 22px;
-  height: 6px;
-  border-radius: 4px 4px 6px 6px;
-  background: linear-gradient(180deg, #140b05 0%, #29170a 100%);
-  border: 1px solid #442812;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
-  z-index: 3;
-}
-
-/* Micro LED warm-glow emitter lens */
-.mini-puck-light::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 14px;
-  height: 3px;
-  border-radius: 50%;
-  background: #fffcee;
-  box-shadow:
-    0 0 6px 2px rgba(255, 242, 195, 0.95),
-    0 0 14px 4px rgba(255, 215, 130, 0.70),
-    0 0 26px 8px rgba(255, 185, 75, 0.35);
-}
-
-/* Focused conical spotlight beam falling exclusively onto book */
-.spotlight-cone {
-  position: absolute;
-  top: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 220px;
-  height: calc(100% - 10px);
-  background:
-    radial-gradient(ellipse 55% 90% at 50% 0%, rgba(255, 244, 215, 0.42) 0%, rgba(255, 228, 165, 0.20) 34%, rgba(255, 205, 120, 0.06) 62%, transparent 82%),
-    linear-gradient(180deg, rgba(255, 240, 205, 0.24) 0%, rgba(255, 225, 160, 0.11) 38%, rgba(255, 205, 120, 0.02) 75%, transparent 100%);
-  clip-path: polygon(42% 0%, 58% 0%, 96% 100%, 4% 100%);
-  filter: blur(6px);
-  z-index: 1;
-}
-
-/* Warm illumination pool where the beam hits the shelf plank surface */
-.spotlight-shelf-pool {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 175px;
-  height: 24px;
-  border-radius: 50%;
-  background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(255, 235, 180, 0.35) 0%, rgba(255, 215, 130, 0.14) 45%, transparent 75%);
-  filter: blur(5px);
-  z-index: 0;
-}
-
-/* Subtle top edge glint along the book cover catching direct downlight */
-.book-card .book-cover-front::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  border-radius: 6px 14px 0 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 245, 220, 0.65) 25%, rgba(255, 252, 240, 0.90) 50%, rgba(255, 245, 220, 0.65) 75%, transparent 100%);
-  pointer-events: none;
-  z-index: 5;
+    inset 0 16px 32px rgba(18, 9, 3, 0.65),
+    inset 0 -3px 8px rgba(18, 9, 3, 0.45),
+    inset 12px 0 26px rgba(18, 9, 3, 0.40),
+    inset -12px 0 26px rgba(18, 9, 3, 0.40);
 }
 
 /* ============================================================
@@ -3944,15 +3826,6 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
     flex: 0 0 140px;
     height: 205px;
     scroll-snap-align: center;
-  }
-  .book-spotlight {
-    width: 170px;
-  }
-  .spotlight-cone {
-    width: 160px;
-  }
-  .spotlight-shelf-pool {
-    width: 130px;
   }
   .shelf-level-header {
     padding: 0 14px;
