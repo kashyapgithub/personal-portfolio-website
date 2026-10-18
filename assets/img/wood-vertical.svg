@@ -1,38 +1,41 @@
 <svg xmlns='http://www.w3.org/2000/svg' width='240' height='1600' viewBox='0 0 240 1600'>
   <defs>
-    <!-- Natural vertical grain -->
     <filter id='v-grain' x='0%' y='0%' width='100%' height='100%' color-interpolation-filters='sRGB'>
-      <feTurbulence type='fractalNoise' baseFrequency='0.022 0.0016' numOctaves='4' seed='66' result='macro' />
-      <feTurbulence type='turbulence' baseFrequency='0.10 0.006' numOctaves='3' seed='112' result='micro' />
-      <feDisplacementMap in='macro' in2='micro' scale='7' xChannelSelector='R' yChannelSelector='G' result='displaced' />
+      <feTurbulence type='fractalNoise' baseFrequency='0.024 0.0018' numOctaves='5' seed='142' result='macro' />
+      <feTurbulence type='turbulence' baseFrequency='0.11 0.007' numOctaves='3' seed='218' result='micro' />
+      <feDisplacementMap in='macro' in2='micro' scale='6' xChannelSelector='R' yChannelSelector='G' result='displaced' />
       <feColorMatrix type='matrix' values='
-        0.44 0 0 0 0.34
-        0.28 0 0 0 0.20
-        0.15 0 0 0 0.10
-        0.75 0 0 0 0.18' in='displaced' result='grainTone'/>
+        0.58 0 0 0 0.44
+        0.42 0 0 0 0.30
+        0.26 0 0 0 0.16
+        0.70 0 0 0 0.15' in='displaced' result='grainTone'/>
     </filter>
 
     <filter id='v-pores' x='0%' y='0%' width='100%' height='100%' color-interpolation-filters='sRGB'>
-      <feTurbulence type='fractalNoise' baseFrequency='0.32 0.028' numOctaves='3' seed='225' result='poreNoise' />
+      <feTurbulence type='fractalNoise' baseFrequency='0.35 0.026' numOctaves='3' seed='415' result='poreNoise' />
       <feColorMatrix type='matrix' values='
-        0 0 0 0 0.14
-        0 0 0 0 0.09
-        0 0 0 0 0.04
-        1.35 0 0 0 -0.45' in='poreNoise' result='poreTone'/>
+        0 0 0 0 0.22
+        0 0 0 0 0.15
+        0 0 0 0 0.08
+        1.30 0 0 0 -0.42' in='poreNoise' result='poreTone'/>
     </filter>
 
     <filter id='v-tooth' x='0%' y='0%' width='100%' height='100%' color-interpolation-filters='sRGB'>
-      <feTurbulence type='fractalNoise' baseFrequency='0.10 0.16' numOctaves='2' seed='55' result='toothNoise' />
+      <feTurbulence type='fractalNoise' baseFrequency='0.12 0.18' numOctaves='2' seed='108' result='toothNoise' />
       <feColorMatrix type='matrix' values='
-        0.16 0 0 0 0.22
-        0.16 0 0 0 0.16
-        0.16 0 0 0 0.10
-        0.30 0 0 0 0' in='toothNoise' result='toothTone'/>
+        0.20 0 0 0 0.32
+        0.20 0 0 0 0.24
+        0.20 0 0 0 0.16
+        0.28 0 0 0 0' in='toothNoise' result='toothTone'/>
     </filter>
   </defs>
 
-  <rect width='100%' height='100%' fill='#5c3a1f' />
-  <rect width='100%' height='100%' filter='url(#v-grain)' opacity='0.88' />
-  <rect width='100%' height='100%' filter='url(#v-pores)' opacity='0.50' style='mix-blend-mode: multiply;' />
-  <rect width='100%' height='100%' filter='url(#v-tooth)' opacity='0.32' style='mix-blend-mode: overlay;' />
+  <!-- Lighter warm honey-oak base timber -->
+  <rect width='100%' height='100%' fill='#7e5430' />
+  <!-- Crisp natural grain -->
+  <rect width='100%' height='100%' filter='url(#v-grain)' opacity='0.86' />
+  <!-- Open pores -->
+  <rect width='100%' height='100%' filter='url(#v-pores)' opacity='0.45' style='mix-blend-mode: multiply;' />
+  <!-- Soft satin surface tooth -->
+  <rect width='100%' height='100%' filter='url(#v-tooth)' opacity='0.30' style='mix-blend-mode: overlay;' />
 </svg>
