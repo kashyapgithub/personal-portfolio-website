@@ -2608,11 +2608,10 @@
 
   /* ------------------------------------------------------------
      10. Trust Section: Matrix Node Grid
-     Phosphor-green binary rain (0s and 1s) behind a dense web of
-     nodes. Nodes drift, connect with thick glowing edges, and push
-     away from the cursor. Canvas-based and dependency-free (the
-     particles.js / tsParticles look, without pulling a CDN into the
-     page).
+     A dense web of phosphor-green nodes. Nodes drift, connect with
+     thick glowing edges, and push away from the cursor. Canvas-based
+     and dependency-free (the particles.js / tsParticles look, without
+     pulling a CDN into the page).
      ------------------------------------------------------------ */
   (function initTrustNetwork() {
     var section = document.querySelector('[data-od-id="trust"]');
@@ -2654,76 +2653,8 @@
       [0, 143, 17]
     ];
 
-    // ---- Binary rain (offscreen layer, redrawn at ~30fps) ----
-    var RAIN_ENABLED = !reduceMotion;
-    var RAIN_FONT = 16;
-    var RAIN_GLYPHS = "01";
-    var rainCanvas = null;
-    var rainCtx = null;
-    var rainColumns = [];
-    var rainAcc = 0;
-
     function rand(min, max) {
       return min + Math.random() * (max - min);
-    }
-
-    function randGlyph() {
-      return RAIN_GLYPHS[(Math.random() * RAIN_GLYPHS.length) | 0];
-    }
-
-    function makeRain() {
-      rainColumns = [];
-      if (!RAIN_ENABLED) return;
-      var cols = Math.ceil(canvasW / RAIN_FONT);
-      for (var i = 0; i < cols; i++) {
-        var len = (Math.random() * 12 | 0) + 5;
-        var chars = [];
-        for (var k = 0; k < len; k++) chars.push(randGlyph());
-        rainColumns.push({
-          x: i * RAIN_FONT + RAIN_FONT * 0.5,
-          // Spread across the full height so the rain is already
-          // falling the moment the section scrolls into view.
-          y: rand(-canvasH * 0.5, canvasH),
-          speed: rand(0.8, 2.6),
-          len: len,
-          chars: chars
-        });
-      }
-    }
-
-    function stepRain() {
-      for (var i = 0; i < rainColumns.length; i++) {
-        var col = rainColumns[i];
-        col.y += col.speed;
-        if (Math.random() < 0.12) col.chars[(Math.random() * col.len) | 0] = randGlyph();
-        if (col.y - col.len * RAIN_FONT > canvasH) {
-          col.y = -rand(0, canvasH * 0.5);
-          col.speed = rand(0.8, 2.6);
-        }
-      }
-    }
-
-    function drawRain() {
-      if (!RAIN_ENABLED) return;
-      rainCtx.clearRect(0, 0, canvasW, canvasH);
-      rainCtx.font = "bold " + RAIN_FONT + "px monospace";
-      rainCtx.textAlign = "center";
-      rainCtx.textBaseline = "middle";
-
-      for (var i = 0; i < rainColumns.length; i++) {
-        var col = rainColumns[i];
-        for (var k = 0; k < col.len; k++) {
-          var gy = col.y - k * RAIN_FONT;
-          if (gy < -RAIN_FONT || gy > canvasH + RAIN_FONT) continue;
-          var fade = 1 - k / col.len;
-          if (k === 0) {
-            rainCtx.fillStyle = "rgba(190, 255, 200, 0.9)";
-          } else {
-            rainCtx.fillStyle = "rgba(0, 255, 65, " + (fade * 0.45).toFixed(3) + ")";
-          }
-          rainCtx.fillText(col.chars[k], col.x, gy);
-        }
-      }
     }
 
     // ---- Node web ----
@@ -2779,13 +2710,6 @@
     function draw() {
       ctx.clearRect(0, 0, canvasW, canvasH);
       var i, j, a, b, dx, dy, d2, alpha, dist;
-
-      // Rain sits behind the web, dimmed so the nodes stay dominant
-      if (RAIN_ENABLED && rainCanvas) {
-        ctx.globalAlpha = 0.6;
-        ctx.drawImage(rainCanvas, 0, 0, canvasW, canvasH);
-        ctx.globalAlpha = 1;
-      }
 
       // Additive compositing: crossings of thick edges glow brighter
       ctx.globalCompositeOperation = "lighter";
@@ -2918,17 +2842,6 @@
       rafId = null;
       if (!running || !visible) return;
       step();
-
-      // Rain updates at ~30fps; the web runs at display rate
-      if (RAIN_ENABLED) {
-        rainAcc++;
-        if (rainAcc >= 2) {
-          rainAcc = 0;
-          stepRain();
-          drawRain();
-        }
-      }
-
       draw();
       rafId = requestAnimationFrame(frame);
     }
@@ -2953,16 +2866,6 @@
       canvas.width = Math.round(canvasW * dpr);
       canvas.height = Math.round(canvasH * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      if (RAIN_ENABLED) {
-        if (!rainCanvas) rainCanvas = document.createElement("canvas");
-        rainCanvas.width = canvas.width;
-        rainCanvas.height = canvas.height;
-        rainCtx = rainCanvas.getContext("2d");
-        rainCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        makeRain();
-        drawRain();
-      }
 
       makeGlowSprites();
       makeParticles();
