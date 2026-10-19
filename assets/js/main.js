@@ -2608,10 +2608,11 @@
 
   /* ------------------------------------------------------------
      10. Trust Section: Matrix Node Grid
-     Phosphor-green digital rain behind a dense web of nodes. Nodes
-     drift, connect with thick glowing edges, and push away from the
-     cursor. Canvas-based and dependency-free (the particles.js /
-     tsParticles look, without pulling a CDN into the page).
+     Phosphor-green binary rain (0s and 1s) behind a dense web of
+     nodes. Nodes drift, connect with thick glowing edges, and push
+     away from the cursor. Canvas-based and dependency-free (the
+     particles.js / tsParticles look, without pulling a CDN into the
+     page).
      ------------------------------------------------------------ */
   (function initTrustNetwork() {
     var section = document.querySelector('[data-od-id="trust"]');
@@ -2633,12 +2634,15 @@
     var pointer = { x: -9999, y: -9999, active: false };
 
     var TAU = Math.PI * 2;
-    var LINK_DIST = 130;
+    var LINK_DIST = 120;
     var LINK_DIST2 = LINK_DIST * LINK_DIST;
     var POINTER_DIST = 190;
     var POINTER_DIST2 = POINTER_DIST * POINTER_DIST;
     var LINK_WIDTH = 1.9;
     var POINTER_WIDTH = 2.2;
+    var BUCKETS = 6;
+    var linkBuckets = [];
+    for (var lb = 0; lb < BUCKETS; lb++) linkBuckets.push([]);
 
     // Matrix phosphor greens, brightest first. Shades keep the web
     // deep without ever leaving the terminal palette.
@@ -2650,10 +2654,10 @@
       [0, 143, 17]
     ];
 
-    // ---- Digital rain (offscreen layer, redrawn at ~30fps) ----
+    // ---- Binary rain (offscreen layer, redrawn at ~30fps) ----
     var RAIN_ENABLED = !reduceMotion;
     var RAIN_FONT = 16;
-    var RAIN_GLYPHS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789<>/\\|=+-";
+    var RAIN_GLYPHS = "01";
     var rainCanvas = null;
     var rainCtx = null;
     var rainColumns = [];
@@ -2745,8 +2749,8 @@
 
     function makeParticles() {
       particles = [];
-      var count = Math.round((canvasW * canvasH) / 4700);
-      count = Math.max(90, Math.min(340, count));
+      var count = Math.round((canvasW * canvasH) / 2800);
+      count = Math.max(120, Math.min(520, count));
 
       for (var i = 0; i < count; i++) {
         var angle = Math.random() * TAU;
@@ -2761,7 +2765,7 @@
           vy: Math.sin(angle) * speed,
           bvx: Math.cos(angle) * speed,
           bvy: Math.sin(angle) * speed,
-          r: rand(0.7, 1.6),
+          r: rand(0.6, 1.4),
           ci: ci,
           rgb: c[0] + ", " + c[1] + ", " + c[2],
           alpha: alpha,
@@ -2786,8 +2790,13 @@
       // Additive compositing: crossings of thick edges glow brighter
       ctx.globalCompositeOperation = "lighter";
 
-      // Node-to-node links in terminal green
+      // Node-to-node links in terminal green. With 3-digit node counts,
+      // thousands of per-link strokes would dominate the frame, so pairs
+      // are bucketed by alpha (6 levels) and each bucket is stroked as
+      // one path -- 6 stroke calls total instead of thousands.
       ctx.lineWidth = LINK_WIDTH;
+      for (i = 0; i < BUCKETS; i++) linkBuckets[i].length = 0;
+
       for (i = 0; i < particles.length; i++) {
         a = particles[i];
         for (j = i + 1; j < particles.length; j++) {
@@ -2797,14 +2806,24 @@
           d2 = dx * dx + dy * dy;
           if (d2 < LINK_DIST2) {
             dist = Math.sqrt(d2);
-            alpha = (1 - dist / LINK_DIST) * 0.34;
-            ctx.strokeStyle = "rgba(0, 255, 65, " + alpha.toFixed(3) + ")";
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.stroke();
+            var bi = ((1 - dist / LINK_DIST) * BUCKETS) | 0;
+            if (bi >= BUCKETS) bi = BUCKETS - 1;
+            linkBuckets[bi].push(a.x, a.y, b.x, b.y);
           }
         }
+      }
+
+      for (i = 0; i < BUCKETS; i++) {
+        var coords = linkBuckets[i];
+        if (!coords.length) continue;
+        alpha = ((i + 0.5) / BUCKETS) * 0.32;
+        ctx.strokeStyle = "rgba(0, 255, 65, " + alpha.toFixed(3) + ")";
+        ctx.beginPath();
+        for (var k = 0; k < coords.length; k += 4) {
+          ctx.moveTo(coords[k], coords[k + 1]);
+          ctx.lineTo(coords[k + 2], coords[k + 3]);
+        }
+        ctx.stroke();
       }
 
       // Cursor links, brighter phosphor so the pointer reads hot
