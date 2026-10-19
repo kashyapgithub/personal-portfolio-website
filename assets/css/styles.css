@@ -3896,17 +3896,15 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background:
-    radial-gradient(60% 80% at 12% 12%, rgba(30, 215, 96, 0.16), transparent 62%),
-    radial-gradient(55% 90% at 88% 82%, rgba(0, 212, 200, 0.12), transparent 64%),
-    radial-gradient(90% 120% at 50% 50%, rgba(9, 44, 26, 0.55), transparent 70%),
-    linear-gradient(180deg, #020604 0%, #06110a 48%, #020604 100%);
+  background: #000;
   padding: 96px 0;
 }
 
-/* Interactive particle network behind the cards. The canvas is purely
-   decorative and sits below the content; pointer tracking is handled on
-   the section itself so hovering a card still disturbs the nodes. */
+/* Interactive multi-colour particle network behind the cards. The
+   canvas is purely decorative and sits below the content; pointer
+   tracking is handled on the section itself so hovering a card still
+   disturbs the nodes. Colours are additive on black, so overlapping
+   halos mix into nebula-like hues. */
 [data-od-id="trust"] > .container {
   position: relative;
   z-index: 2;
