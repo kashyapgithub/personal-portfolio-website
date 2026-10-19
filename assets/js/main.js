@@ -2607,12 +2607,11 @@
   })();
 
   /* ------------------------------------------------------------
-     10. Trust Section: Cosmic Particle Nebula
-     Nodes drift, link up when close, and push away from the cursor.
-     Multi-colour palette drawn additively on pure black so the halos
-     bleed into each other like a nebula. Canvas-based and
-     dependency-free (the particles.js / tsParticles look, without
-     pulling a CDN into the page).
+     10. Trust Section: Matrix Node Grid
+     Phosphor-green digital rain behind a dense web of nodes. Nodes
+     drift, connect with thick glowing edges, and push away from the
+     cursor. Canvas-based and dependency-free (the particles.js /
+     tsParticles look, without pulling a CDN into the page).
      ------------------------------------------------------------ */
   (function initTrustNetwork() {
     var section = document.querySelector('[data-od-id="trust"]');
@@ -2625,9 +2624,8 @@
     var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var canvasW = 0;
     var canvasH = 0;
+    var dpr = 1;
     var particles = [];
-    var dust = [];
-    var pairRgb = [];
     var glowSprites = [];
     var rafId = null;
     var running = false;
@@ -2635,30 +2633,96 @@
     var pointer = { x: -9999, y: -9999, active: false };
 
     var TAU = Math.PI * 2;
-    var LINK_DIST = 155;
+    var LINK_DIST = 130;
+    var LINK_DIST2 = LINK_DIST * LINK_DIST;
     var POINTER_DIST = 190;
+    var POINTER_DIST2 = POINTER_DIST * POINTER_DIST;
+    var LINK_WIDTH = 1.9;
+    var POINTER_WIDTH = 2.2;
+
+    // Matrix phosphor greens, brightest first. Shades keep the web
+    // deep without ever leaving the terminal palette.
     var COLORS = [
-      [46, 204, 113],   // green
-      [0, 212, 200],    // cyan
-      [66, 140, 255],   // blue
-      [186, 104, 255],  // violet
-      [255, 82, 82],    // red
-      [255, 138, 61],   // orange
-      [255, 214, 64]    // yellow
+      [0, 255, 65],
+      [57, 255, 20],
+      [0, 230, 118],
+      [23, 178, 82],
+      [0, 143, 17]
     ];
+
+    // ---- Digital rain (offscreen layer, redrawn at ~30fps) ----
+    var RAIN_ENABLED = !reduceMotion;
+    var RAIN_FONT = 16;
+    var RAIN_GLYPHS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789<>/\\|=+-";
+    var rainCanvas = null;
+    var rainCtx = null;
+    var rainColumns = [];
+    var rainAcc = 0;
 
     function rand(min, max) {
       return min + Math.random() * (max - min);
     }
 
-    function blend(a, b) {
-      return ((a[0] + b[0]) * 0.5 | 0) + ", " +
-             ((a[1] + b[1]) * 0.5 | 0) + ", " +
-             ((a[2] + b[2]) * 0.5 | 0);
+    function randGlyph() {
+      return RAIN_GLYPHS[(Math.random() * RAIN_GLYPHS.length) | 0];
     }
 
-    // One soft radial sprite per colour, reused for every halo/cloud
-    // draw so the GPU blits a texture instead of rebuilding gradients.
+    function makeRain() {
+      rainColumns = [];
+      if (!RAIN_ENABLED) return;
+      var cols = Math.ceil(canvasW / RAIN_FONT);
+      for (var i = 0; i < cols; i++) {
+        var len = (Math.random() * 12 | 0) + 5;
+        var chars = [];
+        for (var k = 0; k < len; k++) chars.push(randGlyph());
+        rainColumns.push({
+          x: i * RAIN_FONT + RAIN_FONT * 0.5,
+          // Spread across the full height so the rain is already
+          // falling the moment the section scrolls into view.
+          y: rand(-canvasH * 0.5, canvasH),
+          speed: rand(0.8, 2.6),
+          len: len,
+          chars: chars
+        });
+      }
+    }
+
+    function stepRain() {
+      for (var i = 0; i < rainColumns.length; i++) {
+        var col = rainColumns[i];
+        col.y += col.speed;
+        if (Math.random() < 0.12) col.chars[(Math.random() * col.len) | 0] = randGlyph();
+        if (col.y - col.len * RAIN_FONT > canvasH) {
+          col.y = -rand(0, canvasH * 0.5);
+          col.speed = rand(0.8, 2.6);
+        }
+      }
+    }
+
+    function drawRain() {
+      if (!RAIN_ENABLED) return;
+      rainCtx.clearRect(0, 0, canvasW, canvasH);
+      rainCtx.font = "bold " + RAIN_FONT + "px monospace";
+      rainCtx.textAlign = "center";
+      rainCtx.textBaseline = "middle";
+
+      for (var i = 0; i < rainColumns.length; i++) {
+        var col = rainColumns[i];
+        for (var k = 0; k < col.len; k++) {
+          var gy = col.y - k * RAIN_FONT;
+          if (gy < -RAIN_FONT || gy > canvasH + RAIN_FONT) continue;
+          var fade = 1 - k / col.len;
+          if (k === 0) {
+            rainCtx.fillStyle = "rgba(190, 255, 200, 0.9)";
+          } else {
+            rainCtx.fillStyle = "rgba(0, 255, 65, " + (fade * 0.45).toFixed(3) + ")";
+          }
+          rainCtx.fillText(col.chars[k], col.x, gy);
+        }
+      }
+    }
+
+    // ---- Node web ----
     function makeGlowSprites() {
       glowSprites = [];
       for (var i = 0; i < COLORS.length; i++) {
@@ -2671,7 +2735,7 @@
         var rgb = c[0] + ", " + c[1] + ", " + c[2];
         var grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
         grad.addColorStop(0, "rgba(" + rgb + ", 0.9)");
-        grad.addColorStop(0.35, "rgba(" + rgb + ", 0.3)");
+        grad.addColorStop(0.3, "rgba(" + rgb + ", 0.28)");
         grad.addColorStop(1, "rgba(" + rgb + ", 0)");
         g.fillStyle = grad;
         g.fillRect(0, 0, size, size);
@@ -2681,10 +2745,8 @@
 
     function makeParticles() {
       particles = [];
-      dust = [];
-      pairRgb = [];
-      var count = Math.round((canvasW * canvasH) / 14000);
-      count = Math.max(36, Math.min(110, count));
+      var count = Math.round((canvasW * canvasH) / 4700);
+      count = Math.max(90, Math.min(340, count));
 
       for (var i = 0; i < count; i++) {
         var angle = Math.random() * TAU;
@@ -2699,9 +2761,8 @@
           vy: Math.sin(angle) * speed,
           bvx: Math.cos(angle) * speed,
           bvy: Math.sin(angle) * speed,
-          r: rand(0.8, 1.9),
+          r: rand(0.7, 1.6),
           ci: ci,
-          c: c,
           rgb: c[0] + ", " + c[1] + ", " + c[2],
           alpha: alpha,
           aNow: alpha,
@@ -2709,61 +2770,35 @@
           pulse: rand(0.008, 0.02)
         });
       }
-
-      // Big, slow, low-alpha colour clouds. Because everything is drawn
-      // additively on black, wherever two clouds overlap their hues mix
-      // into the mid-tones a single flat palette can't produce.
-      var dustCount = Math.max(8, Math.round(count * 0.22));
-      for (var d = 0; d < dustCount; d++) {
-        var dAngle = Math.random() * TAU;
-        var dSpeed = rand(0.04, 0.14);
-        var dAlpha = rand(0.06, 0.13);
-        dust.push({
-          x: Math.random() * canvasW,
-          y: Math.random() * canvasH,
-          vx: Math.cos(dAngle) * dSpeed,
-          vy: Math.sin(dAngle) * dSpeed,
-          bvx: Math.cos(dAngle) * dSpeed,
-          bvy: Math.sin(dAngle) * dSpeed,
-          r: rand(70, 170),
-          sprite: (Math.random() * COLORS.length) | 0,
-          alpha: dAlpha,
-          aNow: dAlpha,
-          phase: Math.random() * TAU,
-          pulse: rand(0.004, 0.012)
-        });
-      }
-
-      // Pre-compute blended link colours per pair so the draw loop
-      // doesn't string-build thousands of colours every frame.
-      for (var j = 0; j < particles.length; j++) {
-        pairRgb[j] = [];
-        for (var k = j + 1; k < particles.length; k++) {
-          pairRgb[j][k] = blend(particles[j].c, particles[k].c);
-        }
-      }
     }
 
     function draw() {
       ctx.clearRect(0, 0, canvasW, canvasH);
-      var i, j, a, b, dx, dy, dist, alpha;
+      var i, j, a, b, dx, dy, d2, alpha, dist;
 
-      // Additive compositing: overlapping colours mix instead of
-      // stacking, which is what gives the nebula bleed.
+      // Rain sits behind the web, dimmed so the nodes stay dominant
+      if (RAIN_ENABLED && rainCanvas) {
+        ctx.globalAlpha = 0.6;
+        ctx.drawImage(rainCanvas, 0, 0, canvasW, canvasH);
+        ctx.globalAlpha = 1;
+      }
+
+      // Additive compositing: crossings of thick edges glow brighter
       ctx.globalCompositeOperation = "lighter";
 
-      // Node-to-node links, tinted with the average of both endpoints
-      ctx.lineWidth = 0.7;
+      // Node-to-node links in terminal green
+      ctx.lineWidth = LINK_WIDTH;
       for (i = 0; i < particles.length; i++) {
         a = particles[i];
         for (j = i + 1; j < particles.length; j++) {
           b = particles[j];
           dx = a.x - b.x;
           dy = a.y - b.y;
-          dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < LINK_DIST) {
-            alpha = (1 - dist / LINK_DIST) * 0.22;
-            ctx.strokeStyle = "rgba(" + pairRgb[i][j] + ", " + alpha.toFixed(3) + ")";
+          d2 = dx * dx + dy * dy;
+          if (d2 < LINK_DIST2) {
+            dist = Math.sqrt(d2);
+            alpha = (1 - dist / LINK_DIST) * 0.34;
+            ctx.strokeStyle = "rgba(0, 255, 65, " + alpha.toFixed(3) + ")";
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
             ctx.lineTo(b.x, b.y);
@@ -2772,17 +2807,18 @@
         }
       }
 
-      // Cursor links to nearby nodes, tinted with each node's colour
+      // Cursor links, brighter phosphor so the pointer reads hot
       if (pointer.active) {
-        ctx.lineWidth = 0.9;
+        ctx.lineWidth = POINTER_WIDTH;
         for (i = 0; i < particles.length; i++) {
           a = particles[i];
           dx = a.x - pointer.x;
           dy = a.y - pointer.y;
-          dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < POINTER_DIST) {
-            alpha = (1 - dist / POINTER_DIST) * 0.45;
-            ctx.strokeStyle = "rgba(" + a.rgb + ", " + alpha.toFixed(3) + ")";
+          d2 = dx * dx + dy * dy;
+          if (d2 < POINTER_DIST2) {
+            dist = Math.sqrt(d2);
+            alpha = (1 - dist / POINTER_DIST) * 0.6;
+            ctx.strokeStyle = "rgba(57, 255, 20, " + alpha.toFixed(3) + ")";
             ctx.beginPath();
             ctx.moveTo(pointer.x, pointer.y);
             ctx.lineTo(a.x, a.y);
@@ -2791,22 +2827,13 @@
         }
       }
 
-      // Dust clouds first: soft colour fields under the stars
-      for (i = 0; i < dust.length; i++) {
-        var q = dust[i];
-        var qr = q.r;
-        ctx.globalAlpha = q.aNow;
-        ctx.drawImage(glowSprites[q.sprite], q.x - qr, q.y - qr, qr * 2, qr * 2);
-      }
-      ctx.globalAlpha = 1;
-
-      // Nodes: wide coloured glow + bright core, all additive
+      // Nodes: tight glow + bright core
       for (i = 0; i < particles.length; i++) {
         a = particles[i];
         var v = a.aNow;
-        var gr = a.r * 9;
+        var gr = a.r * 6;
 
-        ctx.globalAlpha = Math.min(1, v * 0.7);
+        ctx.globalAlpha = Math.min(1, v * 0.65);
         ctx.drawImage(glowSprites[a.ci], a.x - gr, a.y - gr, gr * 2, gr * 2);
         ctx.globalAlpha = 1;
 
@@ -2826,14 +2853,15 @@
 
       for (var i = 0; i < particles.length; i++) {
         var p = particles[i];
-        var dx, dy, dist, force;
+        var dx, dy, d2, dist, force;
 
         // Repel from the cursor, squaring force for a soft edge
         if (active) {
           dx = p.x - px;
           dy = p.y - py;
-          dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < POINTER_DIST && dist > 0.001) {
+          d2 = dx * dx + dy * dy;
+          if (d2 < POINTER_DIST2 && d2 > 0.000001) {
+            dist = Math.sqrt(d2);
             force = 1 - dist / POINTER_DIST;
             force *= force * 0.9;
             p.vx += (dx / dist) * force;
@@ -2845,9 +2873,9 @@
         p.vx += (p.bvx - p.vx) * 0.018;
         p.vy += (p.bvy - p.vy) * 0.018;
 
-        // Slow twinkle so the nebula breathes
+        // Slow twinkle so the web breathes
         p.phase += p.pulse;
-        p.aNow = p.alpha * (0.72 + 0.28 * Math.sin(p.phase));
+        p.aNow = p.alpha * (0.8 + 0.2 * Math.sin(p.phase));
 
         // Speed limit so a fast swipe doesn't launch nodes
         var speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
@@ -2865,26 +2893,23 @@
         if (p.y < 0) { p.y = 0; p.vy *= -1; p.bvy *= -1; }
         else if (p.y > canvasH) { p.y = canvasH; p.vy *= -1; p.bvy *= -1; }
       }
-
-      // Dust clouds drift and breathe, unlinked and repulsion-free
-      for (var d = 0; d < dust.length; d++) {
-        var q = dust[d];
-        q.x += q.vx;
-        q.y += q.vy;
-        q.phase += q.pulse;
-        q.aNow = q.alpha * (0.7 + 0.3 * Math.sin(q.phase));
-
-        if (q.x < -q.r) { q.x = -q.r; q.vx *= -1; q.bvx *= -1; }
-        else if (q.x > canvasW + q.r) { q.x = canvasW + q.r; q.vx *= -1; q.bvx *= -1; }
-        if (q.y < -q.r) { q.y = -q.r; q.vy *= -1; q.bvy *= -1; }
-        else if (q.y > canvasH + q.r) { q.y = canvasH + q.r; q.vy *= -1; q.bvy *= -1; }
-      }
     }
 
     function frame() {
       rafId = null;
       if (!running || !visible) return;
       step();
+
+      // Rain updates at ~30fps; the web runs at display rate
+      if (RAIN_ENABLED) {
+        rainAcc++;
+        if (rainAcc >= 2) {
+          rainAcc = 0;
+          stepRain();
+          drawRain();
+        }
+      }
+
       draw();
       rafId = requestAnimationFrame(frame);
     }
@@ -2905,10 +2930,20 @@
       canvasW = Math.max(1, Math.round(rect.width));
       canvasH = Math.max(1, Math.round(rect.height));
 
-      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.round(canvasW * dpr);
       canvas.height = Math.round(canvasH * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      if (RAIN_ENABLED) {
+        if (!rainCanvas) rainCanvas = document.createElement("canvas");
+        rainCanvas.width = canvas.width;
+        rainCanvas.height = canvas.height;
+        rainCtx = rainCanvas.getContext("2d");
+        rainCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        makeRain();
+        drawRain();
+      }
 
       makeGlowSprites();
       makeParticles();

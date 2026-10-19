@@ -3900,11 +3900,10 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   padding: 96px 0;
 }
 
-/* Interactive multi-colour particle network behind the cards. The
-   canvas is purely decorative and sits below the content; pointer
-   tracking is handled on the section itself so hovering a card still
-   disturbs the nodes. Colours are additive on black, so overlapping
-   halos mix into nebula-like hues. */
+/* Interactive matrix particle grid behind the cards. The canvas is
+   purely decorative and sits below the content; pointer tracking is
+   handled on the section itself so hovering a card still disturbs the
+   nodes. */
 [data-od-id="trust"] > .container {
   position: relative;
   z-index: 2;
