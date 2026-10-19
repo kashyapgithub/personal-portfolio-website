@@ -2634,7 +2634,7 @@
     var pointer = { x: -9999, y: -9999, active: false };
 
     var TAU = Math.PI * 2;
-    var LINK_DIST = 120;
+    var LINK_DIST = 130;
     var LINK_DIST2 = LINK_DIST * LINK_DIST;
     var POINTER_DIST = 190;
     var POINTER_DIST2 = POINTER_DIST * POINTER_DIST;
@@ -2749,8 +2749,8 @@
 
     function makeParticles() {
       particles = [];
-      var count = Math.round((canvasW * canvasH) / 2800);
-      count = Math.max(120, Math.min(520, count));
+      var count = Math.round((canvasW * canvasH) / 4700);
+      count = Math.max(90, Math.min(340, count));
 
       for (var i = 0; i < count; i++) {
         var angle = Math.random() * TAU;
@@ -2765,7 +2765,7 @@
           vy: Math.sin(angle) * speed,
           bvx: Math.cos(angle) * speed,
           bvy: Math.sin(angle) * speed,
-          r: rand(0.6, 1.4),
+          r: rand(0.7, 1.6),
           ci: ci,
           rgb: c[0] + ", " + c[1] + ", " + c[2],
           alpha: alpha,
@@ -2949,7 +2949,7 @@
       canvasW = Math.max(1, Math.round(rect.width));
       canvasH = Math.max(1, Math.round(rect.height));
 
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       canvas.width = Math.round(canvasW * dpr);
       canvas.height = Math.round(canvasH * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
