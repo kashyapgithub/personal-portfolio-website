@@ -2607,11 +2607,12 @@
   })();
 
   /* ------------------------------------------------------------
-     10. Trust Section: Matrix Node Grid
-     A dense web of phosphor-green nodes. Nodes drift, connect with
-     thick glowing edges, and push away from the cursor. Canvas-based
-     and dependency-free (the particles.js / tsParticles look, without
-     pulling a CDN into the page).
+     10. Trust Section: Bioluminescent Node Web
+     A dense web of phosphor-green nodes, like algae lighting up in
+     dark water. Nodes drift and connect with thick glowing edges;
+     hovering pushes them away and shifts nearby nodes into random
+     cool blues and cyans, which fade back to green afterwards.
+     Canvas-based and dependency-free.
      ------------------------------------------------------------ */
   (function initTrustNetwork() {
     var section = document.querySelector('[data-od-id="trust"]');
@@ -2637,20 +2638,34 @@
     var LINK_DIST2 = LINK_DIST * LINK_DIST;
     var POINTER_DIST = 190;
     var POINTER_DIST2 = POINTER_DIST * POINTER_DIST;
+    var LIGHT_DIST = 260;
+    var LIGHT_DIST2 = LIGHT_DIST * LIGHT_DIST;
     var LINK_WIDTH = 1.9;
     var POINTER_WIDTH = 2.2;
     var BUCKETS = 6;
     var linkBuckets = [];
     for (var lb = 0; lb < BUCKETS; lb++) linkBuckets.push([]);
+    var hotLinks = [];
+    var flow = 0;
 
-    // Matrix phosphor greens, brightest first. Shades keep the web
-    // deep without ever leaving the terminal palette.
+    // Default bioluminescent algae greens, brightest first: seafoam,
+    // mint, emerald, deep sea, shadowed weed.
     var COLORS = [
-      [0, 255, 65],
-      [57, 255, 20],
-      [0, 230, 118],
-      [23, 178, 82],
-      [0, 143, 17]
+      [0, 255, 130],
+      [80, 255, 170],
+      [0, 230, 150],
+      [20, 190, 130],
+      [0, 150, 100]
+    ];
+
+    // Cool "disturbed plankton" colours: cyans, blues, aqua.
+    var HOVER_COLORS = [
+      [0, 225, 255],
+      [64, 140, 255],
+      [0, 255, 190],
+      [120, 160, 255],
+      [30, 255, 230],
+      [90, 120, 255]
     ];
 
     function rand(min, max) {
@@ -2660,13 +2675,14 @@
     // ---- Node web ----
     function makeGlowSprites() {
       glowSprites = [];
-      for (var i = 0; i < COLORS.length; i++) {
+      var all = COLORS.concat(HOVER_COLORS);
+      for (var i = 0; i < all.length; i++) {
         var size = 128;
         var cvs = document.createElement("canvas");
         cvs.width = size;
         cvs.height = size;
         var g = cvs.getContext("2d");
-        var c = COLORS[i];
+        var c = all[i];
         var rgb = c[0] + ", " + c[1] + ", " + c[2];
         var grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
         grad.addColorStop(0, "rgba(" + rgb + ", 0.9)");
@@ -2698,9 +2714,16 @@
           bvy: Math.sin(angle) * speed,
           r: rand(0.7, 1.6),
           ci: ci,
+          base: c,
+          cr: c[0],
+          cg: c[1],
+          cb: c[2],
           rgb: c[0] + ", " + c[1] + ", " + c[2],
           alpha: alpha,
           aNow: alpha,
+          heat: 0,
+          hover: null,
+          hoverCi: -1,
           phase: Math.random() * TAU,
           pulse: rand(0.008, 0.02)
         });
@@ -2717,9 +2740,11 @@
       // Node-to-node links in terminal green. With 3-digit node counts,
       // thousands of per-link strokes would dominate the frame, so pairs
       // are bucketed by alpha (6 levels) and each bucket is stroked as
-      // one path -- 6 stroke calls total instead of thousands.
+      // one path -- 6 stroke calls total instead of thousands. Links
+      // touching a "lit" node are pulled out and tinted individually.
       ctx.lineWidth = LINK_WIDTH;
       for (i = 0; i < BUCKETS; i++) linkBuckets[i].length = 0;
+      hotLinks.length = 0;
 
       for (i = 0; i < particles.length; i++) {
         a = particles[i];
@@ -2730,9 +2755,13 @@
           d2 = dx * dx + dy * dy;
           if (d2 < LINK_DIST2) {
             dist = Math.sqrt(d2);
-            var bi = ((1 - dist / LINK_DIST) * BUCKETS) | 0;
-            if (bi >= BUCKETS) bi = BUCKETS - 1;
-            linkBuckets[bi].push(a.x, a.y, b.x, b.y);
+            if (a.heat > 0.03 || b.heat > 0.03) {
+              hotLinks.push(a, b, 1 - dist / LINK_DIST);
+            } else {
+              var bi = ((1 - dist / LINK_DIST) * BUCKETS) | 0;
+              if (bi >= BUCKETS) bi = BUCKETS - 1;
+              linkBuckets[bi].push(a.x, a.y, b.x, b.y);
+            }
           }
         }
       }
@@ -2741,7 +2770,7 @@
         var coords = linkBuckets[i];
         if (!coords.length) continue;
         alpha = ((i + 0.5) / BUCKETS) * 0.32;
-        ctx.strokeStyle = "rgba(0, 255, 65, " + alpha.toFixed(3) + ")";
+        ctx.strokeStyle = "rgba(0, 255, 130, " + alpha.toFixed(3) + ")";
         ctx.beginPath();
         for (var k = 0; k < coords.length; k += 4) {
           ctx.moveTo(coords[k], coords[k + 1]);
@@ -2750,7 +2779,22 @@
         ctx.stroke();
       }
 
-      // Cursor links, brighter phosphor so the pointer reads hot
+      // Lit links: average the two endpoints' current (blended) colours
+      for (i = 0; i < hotLinks.length; i += 3) {
+        a = hotLinks[i];
+        b = hotLinks[i + 1];
+        alpha = hotLinks[i + 2] * 0.5;
+        var rr = (a.cr + b.cr) * 0.5 | 0;
+        var gg = (a.cg + b.cg) * 0.5 | 0;
+        var bb = (a.cb + b.cb) * 0.5 | 0;
+        ctx.strokeStyle = "rgba(" + rr + ", " + gg + ", " + bb + ", " + alpha.toFixed(3) + ")";
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+
+      // Cursor links pull in each node's current colour
       if (pointer.active) {
         ctx.lineWidth = POINTER_WIDTH;
         for (i = 0; i < particles.length; i++) {
@@ -2761,7 +2805,7 @@
           if (d2 < POINTER_DIST2) {
             dist = Math.sqrt(d2);
             alpha = (1 - dist / POINTER_DIST) * 0.6;
-            ctx.strokeStyle = "rgba(57, 255, 20, " + alpha.toFixed(3) + ")";
+            ctx.strokeStyle = "rgba(" + a.rgb + ", " + alpha.toFixed(3) + ")";
             ctx.beginPath();
             ctx.moveTo(pointer.x, pointer.y);
             ctx.lineTo(a.x, a.y);
@@ -2770,14 +2814,22 @@
         }
       }
 
-      // Nodes: tight glow + bright core
+      // Nodes: green glow crossfades into the cool hover glow
       for (i = 0; i < particles.length; i++) {
         a = particles[i];
         var v = a.aNow;
         var gr = a.r * 6;
+        var baseAlpha = Math.min(1, v * 0.65) * (1 - a.heat);
 
-        ctx.globalAlpha = Math.min(1, v * 0.65);
-        ctx.drawImage(glowSprites[a.ci], a.x - gr, a.y - gr, gr * 2, gr * 2);
+        if (baseAlpha > 0.003) {
+          ctx.globalAlpha = baseAlpha;
+          ctx.drawImage(glowSprites[a.ci], a.x - gr, a.y - gr, gr * 2, gr * 2);
+        }
+        if (a.heat > 0.01) {
+          var hgr = gr * 1.25;
+          ctx.globalAlpha = Math.min(1, v * 0.95) * a.heat;
+          ctx.drawImage(glowSprites[COLORS.length + a.hoverCi], a.x - hgr, a.y - hgr, hgr * 2, hgr * 2);
+        }
         ctx.globalAlpha = 1;
 
         ctx.beginPath();
@@ -2793,16 +2845,29 @@
       var px = pointer.x;
       var py = pointer.y;
       var active = pointer.active;
+      flow += 0.005;
 
       for (var i = 0; i < particles.length; i++) {
         var p = particles[i];
         var dx, dy, d2, dist, force;
+        var lit = false;
 
-        // Repel from the cursor, squaring force for a soft edge
         if (active) {
           dx = p.x - px;
           dy = p.y - py;
           d2 = dx * dx + dy * dy;
+
+          // Light radius is deliberately wider than push radius, so
+          // nodes glow cool even as the cursor clears them away.
+          if (d2 < LIGHT_DIST2) {
+            lit = true;
+            if (!p.hover) {
+              p.hoverCi = (Math.random() * HOVER_COLORS.length) | 0;
+              p.hover = HOVER_COLORS[p.hoverCi];
+            }
+          }
+
+          // Repel from the cursor, squaring force for a soft edge
           if (d2 < POINTER_DIST2 && d2 > 0.000001) {
             dist = Math.sqrt(d2);
             force = 1 - dist / POINTER_DIST;
@@ -2812,9 +2877,31 @@
           }
         }
 
+        // Bioluminescent heat: light up fast, fade back slowly
+        var target = lit ? 1 : 0;
+        p.heat += (target - p.heat) * (lit ? 0.14 : 0.05);
+        if (!lit && p.heat < 0.01) {
+          p.heat = 0;
+          p.hover = null;
+          p.hoverCi = -1;
+          p.cr = p.base[0];
+          p.cg = p.base[1];
+          p.cb = p.base[2];
+          p.rgb = p.base[0] + ", " + p.base[1] + ", " + p.base[2];
+        } else if (p.hover && p.heat > 0) {
+          p.cr = (p.base[0] + (p.hover[0] - p.base[0]) * p.heat) | 0;
+          p.cg = (p.base[1] + (p.hover[1] - p.base[1]) * p.heat) | 0;
+          p.cb = (p.base[2] + (p.hover[2] - p.base[2]) * p.heat) | 0;
+          p.rgb = p.cr + ", " + p.cg + ", " + p.cb;
+        }
+
         // Ease back toward the particle's natural drift
         p.vx += (p.bvx - p.vx) * 0.018;
         p.vy += (p.bvy - p.vy) * 0.018;
+
+        // Gentle ambient current, like water moving over algae
+        p.vx += Math.cos(p.y * 0.01 + flow) * 0.0012;
+        p.vy += Math.sin(p.x * 0.01 + flow * 0.8) * 0.0012;
 
         // Slow twinkle so the web breathes
         p.phase += p.pulse;
