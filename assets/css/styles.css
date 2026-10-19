@@ -3893,8 +3893,40 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 
 /* Trust section dark */
 [data-od-id="trust"] {
-  background: var(--black);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(60% 80% at 12% 12%, rgba(30, 215, 96, 0.16), transparent 62%),
+    radial-gradient(55% 90% at 88% 82%, rgba(0, 212, 200, 0.12), transparent 64%),
+    radial-gradient(90% 120% at 50% 50%, rgba(9, 44, 26, 0.55), transparent 70%),
+    linear-gradient(180deg, #020604 0%, #06110a 48%, #020604 100%);
   padding: 96px 0;
+}
+
+/* Interactive particle network behind the cards. The canvas is purely
+   decorative and sits below the content; pointer tracking is handled on
+   the section itself so hovering a card still disturbs the nodes. */
+[data-od-id="trust"] > .container {
+  position: relative;
+  z-index: 2;
+}
+.trust-net {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.9;
+  -webkit-mask-image: radial-gradient(120% 100% at 50% 45%, #000 35%, transparent 100%);
+  mask-image: radial-gradient(120% 100% at 50% 45%, #000 35%, transparent 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .trust-net {
+    opacity: 0.6;
+  }
 }
 [data-od-id="trust"] .section-head {
   max-width: 760px;
@@ -4001,6 +4033,21 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
    Only the margin is touched -- every colour rule above is untouched. */
 [data-od-id="trust"] .step-icon {
   margin: 0;
+  /* Base tile styles the trust block assumes from the demo's shared
+     stylesheet -- without these the SVGs collapse and the cards read
+     as empty rectangles. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+}
+
+[data-od-id="trust"] .step-icon svg {
+  width: 24px;
+  height: 24px;
 }
 
 /* -------------------------------------------------------------

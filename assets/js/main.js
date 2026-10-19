@@ -2607,7 +2607,244 @@
   })();
 
   /* ------------------------------------------------------------
-     10. Smart Sticky Nav Bar Header (Hide on Scroll Down, Reveal on Scroll Up)
+     10. Trust Section: Ambient Green Particle Network
+     Nodes drift, link up when close, and push away from the cursor.
+     Canvas-based and dependency-free (the particles.js / tsParticles
+     look, without pulling a CDN into the page).
+     ------------------------------------------------------------ */
+  (function initTrustNetwork() {
+    var section = document.querySelector('[data-od-id="trust"]');
+    var canvas = document.getElementById("trust-net");
+    if (!section || !canvas) return;
+
+    var ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var canvasW = 0;
+    var canvasH = 0;
+    var particles = [];
+    var rafId = null;
+    var running = false;
+    var visible = true;
+    var pointer = { x: -9999, y: -9999, active: false };
+
+    var TAU = Math.PI * 2;
+    var LINK_DIST = 145;
+    var POINTER_DIST = 190;
+    var COLORS = ["43, 234, 125", "13, 158, 75", "0, 212, 200"];
+
+    function rand(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function makeParticles() {
+      particles = [];
+      var count = Math.round((canvasW * canvasH) / 17000);
+      count = Math.max(30, Math.min(90, count));
+
+      for (var i = 0; i < count; i++) {
+        var angle = Math.random() * TAU;
+        var speed = rand(0.12, 0.34);
+        particles.push({
+          x: Math.random() * canvasW,
+          y: Math.random() * canvasH,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          bvx: Math.cos(angle) * speed,
+          bvy: Math.sin(angle) * speed,
+          r: rand(0.8, 1.9),
+          color: COLORS[(Math.random() * COLORS.length) | 0],
+          alpha: rand(0.45, 0.9)
+        });
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvasW, canvasH);
+      var i, j, a, b, dx, dy, dist, alpha;
+
+      // Node-to-node links
+      ctx.lineWidth = 0.8;
+      for (i = 0; i < particles.length; i++) {
+        a = particles[i];
+        for (j = i + 1; j < particles.length; j++) {
+          b = particles[j];
+          dx = a.x - b.x;
+          dy = a.y - b.y;
+          dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < LINK_DIST) {
+            alpha = (1 - dist / LINK_DIST) * 0.3;
+            ctx.strokeStyle = "rgba(43, 234, 125, " + alpha.toFixed(3) + ")";
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Cursor links + a soft pool of light under the pointer
+      if (pointer.active) {
+        ctx.lineWidth = 0.9;
+        for (i = 0; i < particles.length; i++) {
+          a = particles[i];
+          dx = a.x - pointer.x;
+          dy = a.y - pointer.y;
+          dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < POINTER_DIST) {
+            alpha = (1 - dist / POINTER_DIST) * 0.5;
+            ctx.strokeStyle = "rgba(0, 212, 200, " + alpha.toFixed(3) + ")";
+            ctx.beginPath();
+            ctx.moveTo(pointer.x, pointer.y);
+            ctx.lineTo(a.x, a.y);
+            ctx.stroke();
+          }
+        }
+
+        var glowR = POINTER_DIST * 0.7;
+        var glow = ctx.createRadialGradient(pointer.x, pointer.y, 0, pointer.x, pointer.y, glowR);
+        glow.addColorStop(0, "rgba(43, 234, 125, 0.10)");
+        glow.addColorStop(1, "rgba(43, 234, 125, 0)");
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(pointer.x, pointer.y, glowR, 0, TAU);
+        ctx.fill();
+      }
+
+      // Nodes: faint halo + bright core
+      for (i = 0; i < particles.length; i++) {
+        a = particles[i];
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(" + a.color + ", " + (a.alpha * 0.14).toFixed(3) + ")";
+        ctx.arc(a.x, a.y, a.r * 4.2, 0, TAU);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(" + a.color + ", " + a.alpha.toFixed(3) + ")";
+        ctx.arc(a.x, a.y, a.r, 0, TAU);
+        ctx.fill();
+      }
+    }
+
+    function step() {
+      var px = pointer.x;
+      var py = pointer.y;
+      var active = pointer.active;
+
+      for (var i = 0; i < particles.length; i++) {
+        var p = particles[i];
+        var dx, dy, dist, force;
+
+        // Repel from the cursor, squaring force for a soft edge
+        if (active) {
+          dx = p.x - px;
+          dy = p.y - py;
+          dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < POINTER_DIST && dist > 0.001) {
+            force = 1 - dist / POINTER_DIST;
+            force *= force * 0.9;
+            p.vx += (dx / dist) * force;
+            p.vy += (dy / dist) * force;
+          }
+        }
+
+        // Ease back toward the particle's natural drift
+        p.vx += (p.bvx - p.vx) * 0.018;
+        p.vy += (p.bvy - p.vy) * 0.018;
+
+        // Speed limit so a fast swipe doesn't launch nodes
+        var speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+        if (speed > 2.6) {
+          p.vx = (p.vx / speed) * 2.6;
+          p.vy = (p.vy / speed) * 2.6;
+        }
+
+        p.x += p.vx;
+        p.y += p.vy;
+
+        // Bounce off the section edges, flipping the drift too
+        if (p.x < 0) { p.x = 0; p.vx *= -1; p.bvx *= -1; }
+        else if (p.x > canvasW) { p.x = canvasW; p.vx *= -1; p.bvx *= -1; }
+        if (p.y < 0) { p.y = 0; p.vy *= -1; p.bvy *= -1; }
+        else if (p.y > canvasH) { p.y = canvasH; p.vy *= -1; p.bvy *= -1; }
+      }
+    }
+
+    function frame() {
+      rafId = null;
+      if (!running || !visible) return;
+      step();
+      draw();
+      rafId = requestAnimationFrame(frame);
+    }
+
+    function start() {
+      running = true;
+      if (!reduceMotion && rafId === null) rafId = requestAnimationFrame(frame);
+    }
+
+    function stop() {
+      running = false;
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+
+    function resize() {
+      var rect = section.getBoundingClientRect();
+      canvasW = Math.max(1, Math.round(rect.width));
+      canvasH = Math.max(1, Math.round(rect.height));
+
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(canvasW * dpr);
+      canvas.height = Math.round(canvasH * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      makeParticles();
+      draw();
+    }
+
+    // Pointer is tracked on the section so hovering a card still works
+    section.addEventListener("pointermove", function (e) {
+      if (e.pointerType === "touch") return;
+      var rect = canvas.getBoundingClientRect();
+      pointer.x = e.clientX - rect.left;
+      pointer.y = e.clientY - rect.top;
+      pointer.active = true;
+    }, { passive: true });
+
+    section.addEventListener("pointerleave", function () {
+      pointer.active = false;
+      pointer.x = -9999;
+      pointer.y = -9999;
+    });
+
+    if ("ResizeObserver" in window) {
+      new ResizeObserver(resize).observe(section);
+    } else {
+      window.addEventListener("resize", resize);
+    }
+
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries) {
+        visible = entries[0].isIntersecting;
+        if (visible && !document.hidden) start();
+        else stop();
+      }, { threshold: 0, rootMargin: "120px 0px" }).observe(section);
+    } else {
+      start();
+    }
+
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) stop();
+      else if (visible) start();
+    });
+
+    resize();
+  })();
+
+  /* ------------------------------------------------------------
+     11. Smart Sticky Nav Bar Header (Hide on Scroll Down, Reveal on Scroll Up)
      ------------------------------------------------------------ */
   (function initSmartHeader() {
     var header = document.querySelector(".site-header");
