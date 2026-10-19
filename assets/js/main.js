@@ -2684,7 +2684,7 @@
         }
       }
 
-      // Cursor links + a soft pool of light under the pointer
+      // Cursor links to nearby nodes
       if (pointer.active) {
         ctx.lineWidth = 0.9;
         for (i = 0; i < particles.length; i++) {
@@ -2701,15 +2701,6 @@
             ctx.stroke();
           }
         }
-
-        var glowR = POINTER_DIST * 0.7;
-        var glow = ctx.createRadialGradient(pointer.x, pointer.y, 0, pointer.x, pointer.y, glowR);
-        glow.addColorStop(0, "rgba(43, 234, 125, 0.10)");
-        glow.addColorStop(1, "rgba(43, 234, 125, 0)");
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(pointer.x, pointer.y, glowR, 0, TAU);
-        ctx.fill();
       }
 
       // Nodes: faint halo + bright core
