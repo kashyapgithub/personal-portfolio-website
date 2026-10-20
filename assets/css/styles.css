@@ -4168,26 +4168,27 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   margin: 0 auto;
 }
 
-/* Beveled frame + inner face, matching the reference:
-   a gradient rim (dark top-left, white bottom-right), a soft
-   inset shadow on the frame, and an outer shadow on the face. */
+/* Beveled frame + inner face. The gap is deepened with a
+   stronger inset frame shadow, while the face gets a convex
+   surface gradient plus a larger outer shadow/highlight pair. */
 .character-card {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   aspect-ratio: 1 / 1;
-  padding: 0.55rem;
+  padding: 0.58rem;
   border: 2px solid transparent;
   border-radius: 2rem;
   background:
-    linear-gradient(#edf1f4, #edf1f4) padding-box,
-    linear-gradient(145deg, #9ea5ae 0%, #d9dee4 45%, #ffffff 100%) border-box;
+    linear-gradient(145deg, #f4f7f9 0%, #e9eef2 55%, #e0e6ec 100%) padding-box,
+    linear-gradient(145deg, #97a0aa 0%, #cbd1d8 40%, #ffffff 100%) border-box;
   box-shadow:
-    inset 2px 2px 6px rgba(32, 37, 45, 0.38),
-    inset -1px -1px 3px rgba(255, 255, 255, 0.5),
-    0 24px 48px -20px rgba(0, 0, 0, 0.8),
-    0 0 28px rgba(240, 246, 252, 0.06);
+    inset 3px 3px 9px rgba(22, 28, 36, 0.46),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.7),
+    0 36px 64px -24px rgba(0, 0, 0, 0.95),
+    0 12px 24px -12px rgba(0, 0, 0, 0.65),
+    0 0 34px rgba(240, 246, 252, 0.08);
   cursor: pointer;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
@@ -4204,28 +4205,34 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   width: 100%;
   height: 100%;
   border-radius: 1.8rem;
-  background: #ebf0f3;
+  background: linear-gradient(145deg, #f8fafc 0%, #eff3f6 48%, #e8edf1 100%);
   box-shadow:
-    3px 4px 8px -1px rgba(32, 37, 45, 0.18),
-    1px 1px 2px -1px rgba(32, 37, 45, 0.06),
-    -3px -3px 8px rgba(255, 255, 255, 0.55),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+    6px 8px 16px -2px rgba(20, 26, 34, 0.3),
+    2px 3px 6px -1px rgba(20, 26, 34, 0.16),
+    -5px -5px 12px rgba(255, 255, 255, 0.78),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.85),
+    inset -1px -1px 4px rgba(70, 80, 95, 0.09),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.32);
 }
 
 .character-card:hover {
-  transform: translateY(-6px);
+  transform: translateY(-8px) scale(1.004);
   box-shadow:
-    inset 2px 2px 6px rgba(32, 37, 45, 0.38),
-    0 32px 58px -22px rgba(0, 0, 0, 0.9),
-    0 0 34px rgba(230, 240, 250, 0.12);
+    inset 3px 3px 9px rgba(22, 28, 36, 0.48),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.7),
+    0 42px 72px -26px rgba(0, 0, 0, 1),
+    0 16px 30px -14px rgba(0, 0, 0, 0.7),
+    0 0 40px rgba(230, 240, 250, 0.14);
 }
 
 .character-card:hover .character-frame {
   box-shadow:
-    4px 5px 10px -1px rgba(32, 37, 45, 0.2),
-    1px 1px 2px -1px rgba(32, 37, 45, 0.06),
-    -3px -3px 9px rgba(255, 255, 255, 0.6),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+    7px 9px 18px -2px rgba(20, 26, 34, 0.34),
+    2px 3px 6px -1px rgba(20, 26, 34, 0.18),
+    -5px -5px 13px rgba(255, 255, 255, 0.82),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.85),
+    inset -1px -1px 4px rgba(70, 80, 95, 0.09),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.32);
 }
 
 .character-card:focus-visible {
@@ -4235,10 +4242,11 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 
 /* Chosen card reads as pressed into the black surface. */
 .character-card.is-selected {
-  transform: translateY(1px) scale(0.985);
+  transform: translateY(2px) scale(0.98);
   box-shadow:
-    inset 0 0 18px rgba(32, 37, 45, 0.18),
-    0 14px 26px -18px rgba(0, 0, 0, 0.8);
+    inset 0 0 22px rgba(22, 28, 36, 0.22),
+    inset 3px 3px 10px rgba(22, 28, 36, 0.28),
+    0 10px 22px -16px rgba(0, 0, 0, 0.8);
 }
 
 .character-card.is-selected::after {
@@ -4252,10 +4260,11 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 
 .character-card.is-selected .character-frame {
   box-shadow:
-    2px 3px 7px -1px rgba(32, 37, 45, 0.16),
-    1px 1px 2px -1px rgba(32, 37, 45, 0.08),
-    -2px -2px 5px rgba(255, 255, 255, 0.45),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    2px 3px 8px -2px rgba(20, 26, 34, 0.2),
+    1px 1px 2px -1px rgba(20, 26, 34, 0.1),
+    -2px -2px 6px rgba(255, 255, 255, 0.5),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.6),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
 
 @media (max-width: 860px) {
@@ -4276,7 +4285,7 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   }
 
   .character-card {
-    padding: 0.5rem;
+    padding: 0.52rem;
     border-radius: 1.5rem;
   }
 
