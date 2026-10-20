@@ -3932,7 +3932,7 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 [data-od-id="trust"] .section-head h2 {
   display: inline-block;
   color: #c7ccd3;
-  font-weight: 400;
+  font-weight: 500;
   font-size: clamp(1.35rem, 2.3vw, 1.8rem);
 }
 [data-od-id="trust"] .section-head .lead {
