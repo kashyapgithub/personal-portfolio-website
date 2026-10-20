@@ -3936,14 +3936,13 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   font-size: clamp(1.6rem, 2.8vw, 2.2rem);
   background-image: linear-gradient(
     100deg,
-    #e8eaee 0%,
-    #ffffff 12%,
-    #b9bec7 28%,
-    #e9d8a6 46%,
-    #d4af37 58%,
-    #f3e3a9 70%,
-    #c7ccd4 86%,
-    #9aa0a8 100%
+    #f8f9fb 0%,
+    #ffffff 15%,
+    #d7dbe1 32%,
+    #9ba1aa 50%,
+    #eef0f3 68%,
+    #b4bac2 84%,
+    #8b9199 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
