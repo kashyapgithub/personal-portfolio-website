@@ -4210,22 +4210,6 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
     inset 0 0 0 1px rgba(255, 255, 255, 0.14);
 }
 
-.character-card:hover {
-  transform: translateY(-8px) scale(1.004);
-  box-shadow:
-    inset 5px 5px 11px rgba(163, 177, 198, 0.94),
-    inset -5px -5px 11px rgba(255, 255, 255, 0.98),
-    0 42px 72px -26px rgba(0, 0, 0, 1),
-    0 0 38px rgba(224, 229, 236, 0.16);
-}
-
-.character-card:hover .character-frame {
-  box-shadow:
-    6px 7px 14px rgba(163, 177, 198, 0.95),
-    -6px -7px 14px rgba(255, 255, 255, 1),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.14);
-}
-
 .character-card:focus-visible {
   outline: 2px solid #f5f5f7;
   outline-offset: 6px;
@@ -4288,7 +4272,6 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
     transition: none;
   }
 
-  .character-card:hover,
   .character-card.is-selected {
     transform: none;
   }
