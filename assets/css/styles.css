@@ -3916,13 +3916,14 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   width: 100%;
   height: 100%;
   pointer-events: none;
-  opacity: 0.9;
+  /* 30% dimmer than the original 0.9 so the web sits further back */
+  opacity: 0.63;
   -webkit-mask-image: radial-gradient(120% 100% at 50% 45%, #000 35%, transparent 100%);
   mask-image: radial-gradient(120% 100% at 50% 45%, #000 35%, transparent 100%);
 }
 @media (prefers-reduced-motion: reduce) {
   .trust-net {
-    opacity: 0.6;
+    opacity: 0.42;
   }
 }
 [data-od-id="trust"] .section-head {
