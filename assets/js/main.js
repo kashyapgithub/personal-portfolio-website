@@ -3075,9 +3075,11 @@
 
   /* ------------------------------------------------------------
      13. Page Rank HUD
-     Tiny "SEC 01 / 03" marker that tracks the main (non-hero)
-     sections. The hero carries no rank, so the HUD stays hidden
-     until the first ranked section reaches the reading line.
+     Tiny "SEC 01 / 03" marker for the main (non-hero) sections.
+     The hero carries no rank, so the HUD stays hidden while the
+     hero owns the reading line. Once a ranked page is reached the
+     HUD shows, then fades out after 3s of stillness — any scroll
+     brings it straight back.
      ------------------------------------------------------------ */
   (function initPageRank() {
     var hud = document.getElementById("page-rank");
@@ -3092,6 +3094,11 @@
     var hero = document.getElementById("hero");
     var tracked = hero ? [hero].concat(ranked) : ranked.slice();
     var active = new Set();
+    var shownRank = 0;
+    var hideTimer = null;
+    var scrollQueued = false;
+
+    var HIDE_AFTER_MS = 3000;
 
     function pad(n) {
       return n < 10 ? "0" + n : String(n);
@@ -3100,12 +3107,15 @@
     function show(section) {
       var rank = parseInt(section.getAttribute("data-rank"), 10) || 1;
 
-      value.textContent = pad(rank);
-      totalEl.textContent = "/ " + pad(ranked.length);
+      if (rank !== shownRank) {
+        shownRank = rank;
+        value.textContent = pad(rank);
+        totalEl.textContent = "/ " + pad(ranked.length);
 
-      ticks.forEach(function (tick, i) {
-        tick.classList.toggle("is-active", i === rank - 1);
-      });
+        ticks.forEach(function (tick, i) {
+          tick.classList.toggle("is-active", i === rank - 1);
+        });
+      }
 
       hud.classList.add("is-visible");
     }
@@ -3114,15 +3124,41 @@
       hud.classList.remove("is-visible");
     }
 
-    function resolve() {
+    function cancelHide() {
+      if (hideTimer) {
+        clearTimeout(hideTimer);
+        hideTimer = null;
+      }
+    }
+
+    function scheduleHide() {
+      cancelHide();
+      hideTimer = setTimeout(function () {
+        hideTimer = null;
+        hide();
+      }, HIDE_AFTER_MS);
+    }
+
+    function currentSection() {
       // Last tracked section in DOM order that currently owns the band.
       var current = null;
       tracked.forEach(function (section) {
         if (active.has(section)) current = section;
       });
+      return current;
+    }
 
-      if (current && current.hasAttribute("data-rank")) show(current);
-      else hide();
+    function sync() {
+      var section = currentSection();
+
+      if (section && section.hasAttribute("data-rank")) {
+        show(section);
+        scheduleHide();
+      } else {
+        // Hero (or between pages): no rank to show.
+        cancelHide();
+        hide();
+      }
     }
 
     if (!("IntersectionObserver" in window)) {
@@ -3136,14 +3172,25 @@
         if (entry.isIntersecting) active.add(entry.target);
         else active.delete(entry.target);
       });
-      resolve();
+      sync();
     }, { rootMargin: "-40% 0px -59% 0px", threshold: 0 });
 
     tracked.forEach(function (section) {
       observer.observe(section);
     });
 
-    window.addEventListener("resize", resolve, { passive: true });
+    // Any scroll movement re-arms the HUD for another 3 seconds.
+    window.addEventListener("scroll", function () {
+      if (scrollQueued) return;
+      scrollQueued = true;
+
+      requestAnimationFrame(function () {
+        scrollQueued = false;
+        sync();
+      });
+    }, { passive: true });
+
+    window.addEventListener("resize", sync, { passive: true });
   })();
 
 })();
