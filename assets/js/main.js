@@ -3048,7 +3048,6 @@
     if (!grid) return;
 
     var cards = Array.prototype.slice.call(grid.querySelectorAll(".character-card"));
-    var status = document.getElementById("characters-status");
     var storageKey = "bk-favourite-character";
 
     function select(card, persist) {
@@ -3063,10 +3062,6 @@
           (isSelected ? "Selected: " : "Choose ") + other.getAttribute("data-character")
         );
       });
-
-      if (status) {
-        status.textContent = "Selected / " + name;
-      }
 
       if (persist) {
         try {

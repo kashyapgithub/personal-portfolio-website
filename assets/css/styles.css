@@ -4160,16 +4160,6 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   text-align: center;
 }
 
-.characters-title {
-  margin: 0 0 clamp(3rem, 6vw, 4.5rem);
-  color: #f5f5f7;
-  font-family: var(--font);
-  font-size: clamp(1.4rem, 2.4vw, 2rem);
-  font-weight: 400;
-  letter-spacing: -0.025em;
-  line-height: 1.2;
-}
-
 .characters-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -4252,17 +4242,6 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   transform: scale(0.96);
 }
 
-.characters-status {
-  min-height: 1.4em;
-  margin-top: clamp(2.5rem, 5vw, 3.5rem);
-  color: #6d7482;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
 .characters-credit {
   margin-top: clamp(1.75rem, 3vw, 2.5rem);
   color: #4b515c;
@@ -4294,11 +4273,6 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
     padding: 4rem 0 3.5rem;
   }
 
-  .characters-title {
-    margin-bottom: 2.5rem;
-    font-size: 1.35rem;
-  }
-
   .characters-grid {
     gap: 1.1rem;
   }
@@ -4310,10 +4284,6 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   .character-art {
     width: 60%;
     height: 60%;
-  }
-
-  .characters-status {
-    margin-top: 2.25rem;
   }
 }
 
