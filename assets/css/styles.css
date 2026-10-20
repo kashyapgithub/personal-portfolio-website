@@ -3932,8 +3932,8 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 [data-od-id="trust"] .section-head h2 {
   display: inline-block;
   color: #c7ccd3;
-  font-weight: 600;
-  font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+  font-weight: 400;
+  font-size: clamp(1.35rem, 2.3vw, 1.8rem);
 }
 [data-od-id="trust"] .section-head .lead {
   color: var(--silver);
