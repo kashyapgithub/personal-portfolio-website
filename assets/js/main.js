@@ -3073,4 +3073,77 @@
     });
   })();
 
+  /* ------------------------------------------------------------
+     13. Page Rank HUD
+     Tiny "SEC 01 / 03" marker that tracks the main (non-hero)
+     sections. The hero carries no rank, so the HUD stays hidden
+     until the first ranked section reaches the reading line.
+     ------------------------------------------------------------ */
+  (function initPageRank() {
+    var hud = document.getElementById("page-rank");
+    var value = document.getElementById("page-rank-value");
+    var totalEl = document.getElementById("page-rank-total");
+    if (!hud || !value || !totalEl) return;
+
+    var ranked = Array.prototype.slice.call(document.querySelectorAll("[data-rank]"));
+    if (!ranked.length) return;
+
+    var ticks = Array.prototype.slice.call(hud.querySelectorAll(".page-rank__ticks i"));
+    var hero = document.getElementById("hero");
+    var tracked = hero ? [hero].concat(ranked) : ranked.slice();
+    var active = new Set();
+
+    function pad(n) {
+      return n < 10 ? "0" + n : String(n);
+    }
+
+    function show(section) {
+      var rank = parseInt(section.getAttribute("data-rank"), 10) || 1;
+
+      value.textContent = pad(rank);
+      totalEl.textContent = "/ " + pad(ranked.length);
+
+      ticks.forEach(function (tick, i) {
+        tick.classList.toggle("is-active", i === rank - 1);
+      });
+
+      hud.classList.add("is-visible");
+    }
+
+    function hide() {
+      hud.classList.remove("is-visible");
+    }
+
+    function resolve() {
+      // Last tracked section in DOM order that currently owns the band.
+      var current = null;
+      tracked.forEach(function (section) {
+        if (active.has(section)) current = section;
+      });
+
+      if (current && current.hasAttribute("data-rank")) show(current);
+      else hide();
+    }
+
+    if (!("IntersectionObserver" in window)) {
+      hide();
+      return;
+    }
+
+    // Thin band at 40% viewport height = the "current page" line.
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) active.add(entry.target);
+        else active.delete(entry.target);
+      });
+      resolve();
+    }, { rootMargin: "-40% 0px -59% 0px", threshold: 0 });
+
+    tracked.forEach(function (section) {
+      observer.observe(section);
+    });
+
+    window.addEventListener("resize", resolve, { passive: true });
+  })();
+
 })();

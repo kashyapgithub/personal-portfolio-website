@@ -44,6 +44,8 @@
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-serif: Georgia, "Times New Roman", Times, serif;
   --font-mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, Monaco, "Liberation Mono", monospace;
+  /* Cyberpunk HUD face for the tiny page-rank marker */
+  --font-cyber: "Share Tech Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /* Geometry & Rhythm */
   --radius: 8px;
@@ -4274,5 +4276,125 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 
   .character-card.is-selected {
     transform: none;
+  }
+}
+
+/* ============================================================
+   Page Rank HUD
+   Tiny "SEC 01 / 03" marker for the main pages. The hero is
+   excluded, so the HUD only fades in once a ranked section
+   reaches the reading line. Cyberpunk HUD: teal signal, corner
+   brackets, mono digits.
+   ============================================================ */
+.page-rank {
+  position: fixed;
+  left: clamp(12px, 2.2vw, 22px);
+  bottom: clamp(12px, 2.2vw, 20px);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px 5px 8px;
+  font-family: var(--font-cyber);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: rgba(8, 10, 16, 0.72);
+  border: 1px solid rgba(0, 212, 200, 0.22);
+  border-radius: 2px;
+  box-shadow:
+    0 0 0 1px rgba(0, 212, 200, 0.05),
+    0 8px 24px -14px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+}
+
+.page-rank.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Corner brackets */
+.page-rank::before,
+.page-rank::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border: 1px solid rgba(0, 212, 200, 0.55);
+  pointer-events: none;
+}
+
+.page-rank::before {
+  top: -1px;
+  left: -1px;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.page-rank::after {
+  right: -1px;
+  bottom: -1px;
+  border-left: 0;
+  border-top: 0;
+}
+
+.page-rank__label {
+  color: var(--faint);
+  font-size: 0.85em;
+}
+
+.page-rank__value {
+  color: var(--accent);
+  font-size: 1.15em;
+  line-height: 1;
+  text-shadow: 0 0 10px rgba(0, 212, 200, 0.45);
+}
+
+.page-rank__total {
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
+.page-rank__ticks {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 3px;
+}
+
+.page-rank__ticks i {
+  display: block;
+  width: 8px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.14);
+  transition: background 0.25s var(--ease), width 0.25s var(--ease);
+}
+
+.page-rank__ticks i.is-active {
+  width: 14px;
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(0, 212, 200, 0.5);
+}
+
+@media (max-width: 480px) {
+  .page-rank {
+    font-size: 9px;
+    gap: 5px;
+    padding: 4px 7px 4px 6px;
+  }
+
+  .page-rank__ticks {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-rank,
+  .page-rank__ticks i {
+    transition: none;
   }
 }
