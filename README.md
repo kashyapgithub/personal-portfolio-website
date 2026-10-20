@@ -34,9 +34,15 @@ Replaced with profile-backed content:
 ├── send to agent         # LinkedIn profile export — source of truth
 ├── assets/
 │   ├── css/
-│   │   └── styles.css    # Design tokens, dark/light theme, layout
+│   │   ├── styles.css    # Readable source: tokens, themes, layout
+│   │   └── styles.min.css
 │   └── js/
-│       └── main.js       # Rotator, workflow cascade, console demo, tabs, reveal
+│       ├── main.js       # Rotator, workflow, tabs, reveal, lazy readers
+│       ├── chapters.js   # Chapter modal + genie engine (lazy-loaded)
+│       ├── grok-bot.js   # Hero 3D bot
+│       └── *.min.js
+├── scripts/
+│   └── build.sh          # Rebuilds the minified CSS/JS
 ├── .gitignore
 └── README.md
 ```
@@ -45,19 +51,27 @@ Replaced with profile-backed content:
 
 ## Running Locally
 
-Zero build steps — vanilla HTML/CSS/JS:
+No runtime build step — vanilla HTML/CSS/JS. The committed `.min` assets are ready to serve:
 
 ```bash
 python3 -m http.server 8000
 # open http://localhost:8000
 ```
 
+After editing the readable CSS/JS sources, rebuild the files `index.html` actually loads:
+
+```bash
+bash scripts/build.sh
+```
+
 ## Verification
 
 ```bash
 node --check assets/js/main.js
+node --check assets/js/chapters.js
+node --check assets/js/grok-bot.js
 python3 -c "from html.parser import HTMLParser; HTMLParser().feed(open('index.html').read()); print('HTML parses OK')"
-grep -ri "raft\|LMAX\|disruptor\|MCP gateway\|750 hot\|127 modules\|1.42" index.html assets/js/main.js || echo "No stale fake claims"
+grep -ri "raft\|LMAX\|disruptor\|MCP gateway\|750 hot\|127 modules\|1.42" index.html assets/js/main.js assets/js/chapters.js || echo "No stale fake claims"
 ```
 
 ## Book-open diagnostics

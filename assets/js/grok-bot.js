@@ -717,9 +717,12 @@
   }
 
   function resize() {
-    DPR = Math.min(window.devicePixelRatio || 1, 2);
     W = hero ? hero.clientWidth : window.innerWidth;
     H = hero ? hero.clientHeight : (window.innerHeight - 70);
+    // The bot is soft-edged; 1.5x is plenty on desktop and 1.25x on
+    // phones. This cuts the backing-store pixel count by ~44-61% versus
+    // 2x, which is the single biggest per-frame raster saving here.
+    DPR = Math.min(window.devicePixelRatio || 1, W < 640 ? 1.25 : 1.5);
 
     canvas.width = Math.round(W * DPR);
     canvas.height = Math.round(H * DPR);
@@ -1372,10 +1375,29 @@
   // MAIN RENDER LOOP & TIMELINE
   // =============================================================
   var startTime = performance.now();
+  var rafId = null;
+  var heroVisible = true;
+  var lastIdleFrame = -1;
+  var IDLE_AFTER_SEC = 12.5;   // intro + auto-scroll have settled by here
+  var IDLE_FRAME_MS = 1000 / 30;
 
   function render(now) {
+    rafId = null;
+    if (!heroVisible || document.hidden) return;
+
     var nowMs = (typeof now === "number") ? now : performance.now();
     var elapsedSec = (debugTime !== null) ? debugTime : (nowMs - startTime) / 1000;
+
+    // The cinematic intro runs at 60fps. Once the bot is just floating,
+    // drawing at 30fps is visually indistinguishable and halves the
+    // per-frame canvas work on integrated GPUs.
+    if (elapsedSec > IDLE_AFTER_SEC) {
+      if (lastIdleFrame >= 0 && nowMs - lastIdleFrame < IDLE_FRAME_MS) {
+        rafId = requestAnimationFrame(render);
+        return;
+      }
+      lastIdleFrame = nowMs;
+    }
 
     // -------------------------------------------------------------
     // 1. TIMELINE & CHOREOGRAPHY
@@ -1829,7 +1851,22 @@
     renderEye(EYE_RIGHT, currentCy, true, isSpeakingNow);
     renderSmile(currentCy, elapsedSec, isSpeakingNow);
 
-    requestAnimationFrame(render);
+    rafId = requestAnimationFrame(render);
+  }
+
+  function startRender() {
+    if (rafId !== null || !heroVisible || document.hidden) return;
+    rafId = requestAnimationFrame(render);
+  }
+
+  function stopRender() {
+    if (rafId !== null) cancelAnimationFrame(rafId);
+    rafId = null;
+  }
+
+  function syncBotVisibility() {
+    if (heroVisible && !document.hidden) startRender();
+    else stopRender();
   }
 
   // =============================================================
@@ -1996,6 +2033,17 @@
   buildSphereSprite();
   buildSpotSprites();
   window.addEventListener("resize", scheduleRebake);
-  requestAnimationFrame(render);
+
+  // Stop drawing the full-viewport bot when the hero is scrolled away or
+  // the tab is hidden. Without this the rAF loop keeps burning CPU for
+  // the entire session, even while the rest of the page is being read.
+  if (hero && "IntersectionObserver" in window) {
+    new IntersectionObserver(function (entries) {
+      heroVisible = entries[0].isIntersecting;
+      syncBotVisibility();
+    }, { rootMargin: "120px 0px", threshold: 0 }).observe(hero);
+  }
+  document.addEventListener("visibilitychange", syncBotVisibility);
+  startRender();
 
 })();
