@@ -3931,6 +3931,7 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 }
 [data-od-id="trust"] .section-head h2 {
   color: #ffffff;
+  font-weight: 600;
 }
 [data-od-id="trust"] .section-head .lead {
   color: var(--silver);
