@@ -3040,57 +3040,37 @@
 
   /* ------------------------------------------------------------
      12. Character Select: Neumorphic Tiles
-     One choice, remembered locally. Each tile is a toggle button
-     so keyboard and screen-reader users get the same interaction.
+     One active tile at a time. Kept as toggle buttons so the
+     pressed state is conveyed to keyboard and screen-reader users.
      ------------------------------------------------------------ */
   (function initCharacterSelect() {
     var grid = document.querySelector(".characters-grid");
     if (!grid) return;
 
     var cards = Array.prototype.slice.call(grid.querySelectorAll(".character-card"));
-    var storageKey = "bk-favourite-character";
 
-    function select(card, persist) {
-      var name = card.getAttribute("data-character");
-
+    function select(card) {
       cards.forEach(function (other) {
         var isSelected = other === card;
+        var label = other.getAttribute("data-label") || other.getAttribute("aria-label") || "Character";
+
         other.classList.toggle("is-selected", isSelected);
         other.setAttribute("aria-pressed", isSelected ? "true" : "false");
         other.setAttribute(
           "aria-label",
-          (isSelected ? "Selected: " : "Choose ") + other.getAttribute("data-character")
+          (isSelected ? "Selected: " : "") + label.replace(/^Selected: /, "")
         );
       });
-
-      if (persist) {
-        try {
-          localStorage.setItem(storageKey, name);
-        } catch (e) {
-          /* Storage can be unavailable; the choice still works for this visit. */
-        }
-      }
     }
 
     cards.forEach(function (card) {
+      var current = card.getAttribute("aria-label");
+      if (current) card.setAttribute("data-label", current.replace(/^Selected: /, ""));
+
       card.addEventListener("click", function () {
-        select(card, true);
+        select(card);
       });
     });
-
-    try {
-      var saved = localStorage.getItem(storageKey);
-      if (saved) {
-        for (var i = 0; i < cards.length; i++) {
-          if (cards[i].getAttribute("data-character") === saved) {
-            select(cards[i], false);
-            break;
-          }
-        }
-      }
-    } catch (e) {
-      /* Ignore unavailable storage. */
-    }
   })();
 
 })();
