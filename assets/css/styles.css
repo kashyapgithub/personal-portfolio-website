@@ -4252,10 +4252,10 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 }
 
 /* ------------------------------------------------------------
-   Character cubby: the 3D compartment that pops out of the inner
+   Character cubby: the 3D block that pops out of the inner
    rectangle when a tile is selected. The front face is the element
    itself; the top and right faces fold back in Z via preserve-3d so
-   the block reads as a solid cubicle. It stays inset inside the
+   the block reads as a solid volume. It stays inset inside the
    frame, and the card clips it, so it never escapes the outer tile.
    ------------------------------------------------------------ */
 .character-cubby {
@@ -4301,20 +4301,6 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   background: linear-gradient(90deg, #cdd6e2 0%, #b9c4d3 55%, #a8b4c5 100%);
   transform-origin: right center;
   transform: rotateY(-90deg);
-}
-
-/* 2x2 grid of sunken compartments on the front face. */
-.character-cubby-inner {
-  position: absolute;
-  inset: 14%;
-  border-radius: 0.55rem;
-  background-color: #d3dae5;
-  background-image:
-    linear-gradient(90deg, transparent calc(50% - 1px), #b7c3d2 calc(50% - 1px), #b7c3d2 calc(50% + 1px), transparent calc(50% + 1px)),
-    linear-gradient(180deg, transparent calc(50% - 1px), #b7c3d2 calc(50% - 1px), #b7c3d2 calc(50% + 1px), transparent calc(50% + 1px));
-  box-shadow:
-    inset 5px 5px 10px rgba(133, 150, 172, 0.8),
-    inset -5px -5px 10px rgba(255, 255, 255, 0.95);
 }
 
 /* Contact shadow on the frame, flat on the surface behind the block. */
