@@ -43,7 +43,9 @@
   /* Typography Stacks */
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-serif: Georgia, "Times New Roman", Times, serif;
-  --font-mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, Monaco, "Liberation Mono", monospace;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, Monaco, "Liberation Mono", monospace;
+  /* Display face — technical geometry for headings, brand and UI chips */
+  --font-display: "Space Grotesk", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   /* Cyberpunk HUD face for the tiny page-rank marker */
   --font-cyber: "Share Tech Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
@@ -128,6 +130,13 @@ body {
   color: var(--fg);
 }
 
+/* Display type: every heading inherits the technical display face
+   unless a component opts out (book covers, chapter reader, etc.). */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
 .skip-link {
   position: absolute;
   top: -60px;
@@ -202,25 +211,37 @@ body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   text-decoration: none;
   color: var(--fg);
 }
 
 .brand-monogram {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--radius);
-  background: var(--surface-raised);
-  border: 1px solid var(--border-strong);
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 9px;
+  background: linear-gradient(155deg, rgba(0, 212, 200, 0.20), rgba(0, 212, 200, 0.04));
+  border: 1px solid rgba(0, 212, 200, 0.32);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-mono);
+  font-family: var(--font-display);
   font-weight: 700;
-  font-size: 0.85rem;
-  letter-spacing: -0.02em;
-  color: var(--fg);
+  font-size: 0.72rem;
+  letter-spacing: 0.01em;
+  color: var(--accent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 8px 20px -14px rgba(0, 212, 200, 0.7);
+  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.brand:hover .brand-monogram {
+  border-color: rgba(0, 212, 200, 0.6);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 8px 22px -12px rgba(0, 212, 200, 0.85);
 }
 
 .brand-details {
@@ -229,9 +250,10 @@ body {
 }
 
 .brand-name {
+  font-family: var(--font-display);
   font-weight: 600;
   font-size: 0.95rem;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.01em;
   line-height: 1.2;
 }
 
@@ -491,6 +513,7 @@ body {
   align-items: center;
   padding: 3px 12px;
   border-radius: 999px;
+  font-family: var(--font-display);
   font-size: 0.8125rem;
   line-height: 1.3846;
   font-weight: 500;
@@ -528,6 +551,11 @@ body {
   .site-nav {
     display: none;
   }
+  /* The nav is gone, so drop the empty middle track and give the
+     brand the slack — keeps the action chips flush right. */
+  .header-inner {
+    grid-template-columns: 1fr auto;
+  }
 }
 
 .nav-actions {
@@ -539,29 +567,57 @@ body {
 .copy-email-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   height: 34px;
   padding: 0 12px;
-  border-radius: var(--radius);
+  border-radius: 10px;
   border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--fg);
-  font-size: 0.82rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.012));
+  color: var(--fg-secondary);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
   font-weight: 500;
+  letter-spacing: 0.005em;
   cursor: pointer;
   text-decoration: none;
-  transition: all 0.15s var(--ease);
+  transition:
+    background 0.2s var(--ease),
+    border-color 0.2s var(--ease),
+    color 0.2s var(--ease),
+    box-shadow 0.2s var(--ease),
+    transform 0.15s var(--ease);
 }
 
 .copy-email-btn:hover {
-  background: var(--surface-hover);
-  border-color: var(--border-strong);
+  color: var(--fg);
+  border-color: rgba(0, 212, 200, 0.42);
+  background: linear-gradient(180deg, rgba(0, 212, 200, 0.16), rgba(0, 212, 200, 0.045));
+  box-shadow:
+    0 0 0 1px rgba(0, 212, 200, 0.08),
+    0 10px 24px -16px rgba(0, 212, 200, 0.55);
+}
+
+.copy-email-btn:active {
+  transform: translateY(1px);
+}
+
+.copy-email-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .copy-email-btn svg {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
+  flex: none;
   color: var(--muted);
+  transition: color 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+.copy-email-btn:hover svg {
+  color: var(--accent);
+  transform: translateY(-0.5px);
 }
 
 /* ============================================================
@@ -1045,11 +1101,11 @@ body {
 }
 
 .hero-title-sans {
-  font-family: var(--font);
+  font-family: var(--font-display);
   font-weight: 600;
   font-size: clamp(2rem, 4vw, 3rem);
   line-height: 1.08;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
   color: var(--fg);
 }
 
@@ -2051,6 +2107,19 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   .copy-email-btn span {
     display: none;
   }
+  .copy-email-btn {
+    width: 34px;
+    padding: 0;
+    gap: 0;
+  }
+  .brand-name {
+    font-size: 0.8rem;
+  }
+  .brand-monogram {
+    width: 28px;
+    height: 28px;
+    font-size: 0.68rem;
+  }
   .github-spotlight-card {
     flex-direction: column;
     align-items: flex-start;
@@ -2093,11 +2162,11 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 }
 
 .bookshelf-head h2 {
-  font-family: var(--font);
+  font-family: var(--font-display);
   font-size: clamp(2rem, 3.4vw, 2.85rem);
   font-weight: 700;
   line-height: 1.15;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
   color: #0f172a;
   margin-bottom: 12px;
 }
