@@ -1642,17 +1642,6 @@ body {
   color: var(--muted);
 }
 
-/* Title plate: a grey rectangle sized just big enough to hold the
-   heading text (inline-block + snug padding, no extra breathing room). */
-.title-plate {
-  display: inline-block;
-  padding: 0.38rem 0.85rem;
-  background: #242933;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 6px;
-  box-shadow: 0 12px 28px -20px rgba(0, 0, 0, 0.95);
-}
-
 /* ============================================================
    Interactive Architecture Tabs (How It Works Arena)
    ============================================================ */
