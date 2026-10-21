@@ -3071,6 +3071,18 @@
         select(card);
       });
     });
+
+    /* A click anywhere outside the tiles restores their default look. */
+    document.addEventListener("click", function (event) {
+      var target = event.target;
+
+      for (var i = 0; i < cards.length; i++) {
+        if (cards[i] === target || cards[i].contains(target)) return;
+      }
+
+      if (!cards.some(function (card) { return card.classList.contains("is-selected"); })) return;
+      select(null);
+    });
   })();
 
   /* ------------------------------------------------------------
