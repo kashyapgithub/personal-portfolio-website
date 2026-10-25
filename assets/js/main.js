@@ -3047,7 +3047,11 @@
     var grid = document.querySelector(".characters-grid");
     if (!grid) return;
 
-    var cards = Array.prototype.slice.call(grid.querySelectorAll(".character-card"));
+    var cards = Array.prototype.slice.call(grid.querySelectorAll(".character-card")).filter(function (card) {
+      /* The first tile opens the AI tools dialog instead of acting as a
+         selectable character. */
+      return !card.hasAttribute("data-ai-tools-trigger");
+    });
 
     function select(card) {
       cards.forEach(function (other) {
@@ -3086,7 +3090,89 @@
   })();
 
   /* ------------------------------------------------------------
-     13. Page Rank HUD
+     13. AI Tools Dialog
+     The first neumorphic tile opens the current tool list. MCP is
+     a protocol, so the second group lists MCP servers rather than
+     calling them tools.
+     ------------------------------------------------------------ */
+  (function initAiToolsDialog() {
+    var trigger = document.getElementById("ai-tools-trigger");
+    var overlay = document.getElementById("ai-tools-overlay");
+    if (!trigger || !overlay) return;
+
+    var panel = overlay.querySelector(".ai-tools-panel");
+    var closeEls = overlay.querySelectorAll("[data-ai-tools-close]");
+    var closeBtn = overlay.querySelector(".ai-tools-close");
+    var lastFocus = null;
+    var isOpen = false;
+
+    function openDialog() {
+      if (isOpen) return;
+
+      isOpen = true;
+      lastFocus = document.activeElement;
+      overlay.classList.add("is-open");
+      overlay.setAttribute("aria-hidden", "false");
+      trigger.setAttribute("aria-expanded", "true");
+      document.body.classList.add("ai-tools-locked");
+
+      if (closeBtn) closeBtn.focus();
+    }
+
+    function closeDialog() {
+      if (!isOpen) return;
+
+      isOpen = false;
+      overlay.classList.remove("is-open");
+      overlay.setAttribute("aria-hidden", "true");
+      trigger.setAttribute("aria-expanded", "false");
+      document.body.classList.remove("ai-tools-locked");
+
+      if (lastFocus && lastFocus !== document.body && typeof lastFocus.focus === "function") {
+        lastFocus.focus();
+      } else {
+        trigger.focus();
+      }
+      lastFocus = null;
+    }
+
+    trigger.addEventListener("click", openDialog);
+
+    Array.prototype.forEach.call(closeEls, function (el) {
+      el.addEventListener("click", closeDialog);
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (!isOpen) return;
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeDialog();
+        return;
+      }
+
+      if (event.key !== "Tab" || !panel) return;
+
+      var focusable = panel.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusable.length) return;
+
+      var first = focusable[0];
+      var last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
+  })();
+
+  /* ------------------------------------------------------------
+     14. Page Rank HUD
      Tiny "SEC 01 / 03" marker for the main (non-hero) sections.
      The hero carries no rank, so the HUD stays hidden while the
      hero owns the reading line. Once a ranked page is reached the

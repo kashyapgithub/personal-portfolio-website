@@ -4317,6 +4317,369 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 }
 
 /* ============================================================
+   AI Tools Card + Neumorphic Dialog
+   ============================================================ */
+.character-card--ai {
+  text-align: left;
+  color: #33405a;
+}
+
+.character-card--ai .character-frame {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: clamp(0.8rem, 1.55vw, 1.15rem);
+}
+
+.ai-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.55rem;
+  width: 100%;
+  height: 100%;
+  text-align: left;
+}
+
+.ai-tile-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.ai-tile-glyph {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: clamp(28px, 2.4vw, 32px);
+  height: clamp(28px, 2.4vw, 32px);
+  border-radius: 10px;
+  color: #4f607d;
+  background: #e0e5ec;
+  box-shadow:
+    inset 2px 2px 5px rgba(163, 177, 198, 0.6),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.92);
+}
+
+.ai-tile-glyph svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ai-tile-kicker {
+  font-family: var(--font-mono);
+  font-size: clamp(0.44rem, 0.62vw, 0.54rem);
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #6c7c95;
+}
+
+.ai-tile-title {
+  font-size: clamp(0.92rem, 1.02vw, 1.1rem);
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+  color: #2f3b50;
+}
+
+.ai-tile-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: clamp(0.47rem, 0.66vw, 0.56rem);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #5a6b86;
+}
+
+.ai-tile-action svg {
+  transition: transform 0.25s var(--ease);
+}
+
+.character-card--ai:hover .ai-tile-action svg,
+.character-card--ai:focus-visible .ai-tile-action svg {
+  transform: translateX(3px);
+}
+
+body.ai-tools-locked {
+  overflow: hidden;
+}
+
+.ai-tools-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(14px, 4vw, 32px);
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.24s var(--ease),
+    visibility 0s linear 0.24s;
+}
+
+.ai-tools-overlay.is-open {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transition:
+    opacity 0.24s var(--ease),
+    visibility 0s linear 0s;
+}
+
+.ai-tools-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 7, 14, 0.74);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.ai-tools-panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 760px;
+  max-height: 88vh;
+  max-height: 88svh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(22px, 3.4vw, 34px);
+  color: #2f3b50;
+  background: #e0e5ec;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 28px;
+  box-shadow:
+    -8px -8px 20px rgba(255, 255, 255, 0.5),
+    18px 22px 56px rgba(0, 0, 0, 0.55),
+    0 24px 48px -12px rgba(4, 7, 14, 0.6);
+  opacity: 0;
+  transform: translateY(18px) scale(0.97);
+  transition:
+    opacity 0.28s var(--ease),
+    transform 0.34s var(--ease);
+}
+
+.ai-tools-overlay.is-open .ai-tools-panel {
+  opacity: 1;
+  transform: none;
+}
+
+.ai-tools-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding-bottom: 1.15rem;
+  border-bottom: 1px solid rgba(163, 177, 198, 0.55);
+}
+
+.ai-tools-head-copy {
+  min-width: 0;
+}
+
+.ai-tools-eyebrow,
+.ai-tools-group-title,
+.ai-tools-count,
+.ai-tools-index,
+.ai-tools-foot {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+
+.ai-tools-eyebrow {
+  display: block;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: #68788f;
+}
+
+.ai-tools-title {
+  margin-top: 0.45rem;
+  font-size: clamp(1.4rem, 2.7vw, 1.95rem);
+  font-weight: 700;
+  line-height: 1.14;
+  letter-spacing: -0.03em;
+  color: #263249;
+}
+
+.ai-tools-summary {
+  max-width: 48ch;
+  margin-top: 0.5rem;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: #5a6a82;
+}
+
+.ai-tools-close {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  color: #435269;
+  background: #e0e5ec;
+  border: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow:
+    4px 4px 10px rgba(163, 177, 198, 0.75),
+    -4px -4px 10px rgba(255, 255, 255, 0.95);
+  transition:
+    box-shadow 0.2s var(--ease),
+    color 0.2s var(--ease);
+}
+
+.ai-tools-close:hover {
+  color: #1f2c42;
+}
+
+.ai-tools-close:active {
+  box-shadow:
+    inset 3px 3px 8px rgba(163, 177, 198, 0.78),
+    inset -3px -3px 8px rgba(255, 255, 255, 0.95);
+}
+
+.ai-tools-close:focus-visible {
+  outline: 2px solid #4f607d;
+  outline-offset: 3px;
+}
+
+.ai-tools-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  gap: clamp(16px, 3vw, 28px);
+  padding-top: 1.35rem;
+}
+
+.ai-tools-group {
+  min-width: 0;
+}
+
+.ai-tools-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.62rem;
+}
+
+.ai-tools-group-title {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #5c6d86;
+}
+
+.ai-tools-count {
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  color: #8492a6;
+}
+
+.ai-tools-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  list-style: none;
+}
+
+.ai-tools-item {
+  display: flex;
+  align-items: center;
+  gap: 0.72rem;
+  min-height: 48px;
+  padding: 0.62rem 0.88rem;
+  background: #e4e9f0;
+  border-radius: 14px;
+  box-shadow:
+    inset 2px 2px 5px rgba(163, 177, 198, 0.45),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.88);
+}
+
+.ai-tools-index {
+  font-size: 0.56rem;
+  letter-spacing: 0.06em;
+  color: #7d8ca2;
+}
+
+.ai-tools-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #2c384d;
+}
+
+.ai-tools-note {
+  margin-top: 0.72rem;
+  font-size: 0.68rem;
+  line-height: 1.55;
+  color: #6a7890;
+}
+
+.ai-tools-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 1.4rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(163, 177, 198, 0.5);
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+  color: #7a889c;
+}
+
+.ai-tools-foot::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2f9e6e;
+  box-shadow: 0 0 8px rgba(47, 158, 110, 0.55);
+}
+
+@media (max-width: 620px) {
+  .ai-tools-panel {
+    border-radius: 22px;
+  }
+
+  .ai-tools-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-tools-head {
+    gap: 0.9rem;
+  }
+
+  .ai-tools-close {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-tools-overlay,
+  .ai-tools-panel,
+  .ai-tile-action svg {
+    transition: none;
+  }
+
+  .ai-tools-panel {
+    transform: none;
+  }
+}
+
+/* ============================================================
    Page Rank HUD
    Tiny "SEC 01 / 03" marker for the main pages. The hero is
    excluded, so the HUD only fades in once a ranked section
