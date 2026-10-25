@@ -3090,84 +3090,44 @@
   })();
 
   /* ------------------------------------------------------------
-     13. AI Tools Dialog
-     The first neumorphic tile opens the current tool list. MCP is
-     a protocol, so the second group lists MCP servers rather than
-     calling them tools.
+     13. AI Tools Card
+     The first neumorphic tile reveals the current tool list inside
+     the same square and turns into an inset well while open. MCP is
+     a protocol, so that group lists MCP servers rather than tools.
      ------------------------------------------------------------ */
-  (function initAiToolsDialog() {
+  (function initAiToolsCard() {
     var trigger = document.getElementById("ai-tools-trigger");
-    var overlay = document.getElementById("ai-tools-overlay");
-    if (!trigger || !overlay) return;
+    var list = document.getElementById("ai-tools-list");
+    if (!trigger || !list) return;
 
-    var panel = overlay.querySelector(".ai-tools-panel");
-    var closeEls = overlay.querySelectorAll("[data-ai-tools-close]");
-    var closeBtn = overlay.querySelector(".ai-tools-close");
-    var lastFocus = null;
     var isOpen = false;
 
-    function openDialog() {
-      if (isOpen) return;
-
-      isOpen = true;
-      lastFocus = document.activeElement;
-      overlay.classList.add("is-open");
-      overlay.setAttribute("aria-hidden", "false");
-      trigger.setAttribute("aria-expanded", "true");
-      document.body.classList.add("ai-tools-locked");
-
-      if (closeBtn) closeBtn.focus();
+    function setOpen(next) {
+      isOpen = next;
+      trigger.classList.toggle("is-open", isOpen);
+      trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      list.setAttribute("aria-hidden", isOpen ? "false" : "true");
+      trigger.setAttribute(
+        "aria-label",
+        isOpen
+          ? "AI tools used currently. Hide the list."
+          : "AI tools used currently. Open the list."
+      );
     }
 
-    function closeDialog() {
-      if (!isOpen) return;
-
-      isOpen = false;
-      overlay.classList.remove("is-open");
-      overlay.setAttribute("aria-hidden", "true");
-      trigger.setAttribute("aria-expanded", "false");
-      document.body.classList.remove("ai-tools-locked");
-
-      if (lastFocus && lastFocus !== document.body && typeof lastFocus.focus === "function") {
-        lastFocus.focus();
-      } else {
-        trigger.focus();
-      }
-      lastFocus = null;
-    }
-
-    trigger.addEventListener("click", openDialog);
-
-    Array.prototype.forEach.call(closeEls, function (el) {
-      el.addEventListener("click", closeDialog);
+    trigger.addEventListener("click", function () {
+      setOpen(!isOpen);
     });
 
     document.addEventListener("keydown", function (event) {
-      if (!isOpen) return;
+      if (!isOpen || event.key !== "Escape") return;
+      setOpen(false);
+      trigger.focus();
+    });
 
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeDialog();
-        return;
-      }
-
-      if (event.key !== "Tab" || !panel) return;
-
-      var focusable = panel.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      if (!focusable.length) return;
-
-      var first = focusable[0];
-      var last = focusable[focusable.length - 1];
-
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
+    document.addEventListener("click", function (event) {
+      if (!isOpen || trigger.contains(event.target)) return;
+      setOpen(false);
     });
   })();
 
