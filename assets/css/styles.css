@@ -4339,29 +4339,8 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 }
 
 .ai-tile-top {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  display: block;
   min-width: 0;
-}
-
-.ai-tile-glyph {
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  width: clamp(28px, 2.4vw, 32px);
-  height: clamp(28px, 2.4vw, 32px);
-  border-radius: 10px;
-  color: #4f607d;
-  background: #e0e5ec;
-  box-shadow:
-    inset 2px 2px 5px rgba(163, 177, 198, 0.6),
-    inset -2px -2px 5px rgba(255, 255, 255, 0.92);
-}
-
-.ai-tile-glyph svg {
-  width: 16px;
-  height: 16px;
 }
 
 .ai-tile-kicker {
@@ -4380,27 +4359,6 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   line-height: 1.18;
   letter-spacing: -0.02em;
   color: #2f3b50;
-}
-
-.ai-tile-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-family: var(--font-mono);
-  font-size: clamp(0.47rem, 0.66vw, 0.56rem);
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #5a6b86;
-}
-
-.ai-tile-action svg {
-  transition: transform 0.25s var(--ease);
-}
-
-.character-card--ai:hover .ai-tile-action svg,
-.character-card--ai:focus-visible .ai-tile-action svg {
-  transform: translateX(3px);
 }
 
 /* Recessed state: the tile itself becomes an inset well. */
@@ -4557,8 +4515,7 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
 
 @media (prefers-reduced-motion: reduce) {
   .ai-tile-front,
-  .ai-tile-list,
-  .ai-tile-action svg {
+  .ai-tile-list {
     transition: none;
   }
 }
