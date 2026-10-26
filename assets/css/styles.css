@@ -4513,6 +4513,52 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   }
 }
 
+/* Narrow phones: tighten the list so all six entries fit the square. */
+@media (max-width: 440px) {
+  .ai-tile-list {
+    gap: 0.18rem;
+  }
+
+  .ai-tools-group {
+    gap: 0.02rem;
+  }
+
+  .ai-tools-row {
+    font-size: 0.54rem;
+    line-height: 1.16;
+  }
+
+  .ai-tools-group-title {
+    font-size: 0.36rem;
+    line-height: 1.12;
+  }
+
+  .ai-tile-list-head,
+  .ai-tile-list-foot {
+    font-size: 0.36rem;
+  }
+
+  .ai-tile-list-head {
+    padding-bottom: 0.12rem;
+  }
+
+  .ai-tile-list-foot {
+    padding-top: 0.12rem;
+  }
+}
+
+@media (max-width: 370px) {
+  .ai-tile-list-head {
+    display: none;
+  }
+}
+
+@media (max-width: 340px) {
+  .ai-tile-list-foot {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ai-tile-front,
   .ai-tile-list {
