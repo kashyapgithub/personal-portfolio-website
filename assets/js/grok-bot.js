@@ -453,168 +453,154 @@
   }
 
   // ===============================================================
-  // CELESTIAL STARFIELD
-  // The hero borrows the nav capsule's sparkle language instead of
-  // generic dust: white-hot cores wrapped in cyan, amber, emerald and
-  // violet glow, gliding slowly and shimmering. Sprites are baked once
-  // so each frame costs only a handful of drawImage calls.
+  // PIXAR-GRADE VOLUMETRIC SPOTLIGHT & THEATRICAL ATMOSPHERE RIG
+  // Continuous Gaussian volumetric beam with zero 2D polygon lines,
+  // optical Fresnel lens striations (god-rays), multi-stage
+  // incandescent floor landing pool, and floating Tyndall dust motes.
   // ===============================================================
-  var STAR_PALETTE = [
-    { glow: "34, 211, 238",  halo: "2, 132, 199" },  // electric cyan
-    { glow: "251, 191, 36",  halo: "245, 158, 11" }, // solar amber
-    { glow: "52, 211, 153",  halo: "16, 185, 129" }, // aurora emerald
-    { glow: "192, 132, 252", halo: "124, 58, 237" }  // cosmic violet
-  ];
-  var STAR_COUNT = 30;
-  var starSprites = [];
-  var starfield = [];
+  var DUST_COUNT = 45;
+  var dustMotes = [];
+  var moteSprites = [];
 
-  function buildStarSprites() {
-    starSprites = [];
-    for (var i = 0; i < STAR_PALETTE.length; i++) {
-      var size = 96;
-      var sprite = makeCanvas(size, size);
+  // Bake the capsule-star silhouette once, in the original warm dust
+  // palette. Only the shape changes: a white-hot core inside a soft
+  // amber halo instead of a flat dot. Motion and colours stay untouched.
+  function buildMoteSprites() {
+    moteSprites = [];
+    var variants = 6;
+    for (var v = 0; v < variants; v++) {
+      var t = v / (variants - 1);
+      var gColor = Math.round(245 - t * 35);
+      var bColor = Math.round(215 - t * 75);
+      var sprite = makeCanvas(96, 96);
       var sctx = sprite.getContext("2d");
       if (!sctx) continue;
-      var mid = size / 2;
-      var g = sctx.createRadialGradient(mid, mid, 0, mid, mid, mid);
-      // Same falloff as the capsule stars: a hot white centre that
-      // dissolves through saturated colour into a barely-there halo.
-      g.addColorStop(0, "rgba(255,255,255,1)");
-      g.addColorStop(0.22, "rgba(255,255,255,1)");
-      g.addColorStop(0.30, "rgba(" + STAR_PALETTE[i].glow + ",0.95)");
-      g.addColorStop(0.52, "rgba(" + STAR_PALETTE[i].glow + ",0.40)");
-      g.addColorStop(0.76, "rgba(" + STAR_PALETTE[i].halo + ",0.10)");
-      g.addColorStop(1, "rgba(" + STAR_PALETTE[i].halo + ",0)");
-      sctx.fillStyle = g;
-      sctx.fillRect(0, 0, size, size);
-      starSprites.push(sprite);
+      var mid = 48;
+      var grad = sctx.createRadialGradient(mid, mid, 0, mid, mid, mid);
+      grad.addColorStop(0, "rgba(255,255,255,1)");
+      grad.addColorStop(0.30, "rgba(255,255,255,1)");
+      grad.addColorStop(0.38, "rgba(255," + gColor + "," + bColor + ",0.95)");
+      grad.addColorStop(0.60, "rgba(255," + gColor + "," + bColor + ",0.38)");
+      grad.addColorStop(0.82, "rgba(255," + gColor + "," + bColor + ",0.10)");
+      grad.addColorStop(1, "rgba(255," + gColor + "," + bColor + ",0)");
+      sctx.fillStyle = grad;
+      sctx.fillRect(0, 0, 96, 96);
+      moteSprites.push(sprite);
     }
   }
 
-  function initStarfield() {
-    starfield = [];
-    var goldenAngle = Math.PI * (3 - Math.sqrt(5));
-
-    for (var i = 0; i < STAR_COUNT; i++) {
-      var isHero = i < 4;
-      var isMedium = i >= 4 && i < 10;
-      var color;
-      var x;
-      var y;
-
-      if (isHero) {
-        // One signature star per quadrant, echoing the four coloured
-        // glows that live in the nav capsule.
-        color = i;
-        var heroAngle = -Math.PI * 0.5 + i * Math.PI * 0.5 + (Math.random() - 0.5) * 0.35;
-        var heroOrbit = R * (1.30 + Math.random() * 0.55);
-        x = Math.cos(heroAngle) * heroOrbit;
-        y = Math.sin(heroAngle) * heroOrbit * 0.78;
-      } else {
-        color = Math.floor(Math.random() * STAR_PALETTE.length);
-        // Golden-angle scatter keeps the halo even, never clumpy.
-        var angle = i * goldenAngle + (Math.random() - 0.5) * 0.5;
-        var orbit = R * (1.08 + Math.sqrt(Math.random()) * 1.55);
-        x = Math.cos(angle) * orbit;
-        y = Math.sin(angle) * orbit * 0.78;
-      }
-
-      starfield.push({
-        x: x,
-        y: y,
-        color: color,
-        kind: isHero ? 2 : (isMedium ? 1 : 0),
-        depth: Math.random(),
-        foreground: !isHero && Math.random() < 0.22,
-        speedX: -(3.2 + Math.random() * 5.4),
-        bobAmp: 0.8 + Math.random() * 2.2,
-        bobRate: 0.22 + Math.random() * 0.42,
-        twinkleRate: 0.8 + Math.random() * 1.7,
-        phase: Math.random() * Math.PI * 2
+  function initDustMotes() {
+    dustMotes = [];
+    for (var i = 0; i < DUST_COUNT; i++) {
+      dustMotes.push({
+        relX: (Math.random() - 0.5) * 1.4, // normalized across beam cone width
+        yRel: 0.04 + Math.random() * 0.92, // 0 (aperture) to 1 (floor)
+        z: Math.random() * 2.0 - 1.0,      // -1 (near camera/bokeh) to +1 (far behind bot)
+        radius: 0.8 + Math.random() * 1.6, // radius in px
+        speedY: -(0.030 + Math.random() * 0.045), // gentle upward thermal convection
+        speedX: (Math.random() - 0.5) * 0.020,    // slow horizontal drift
+        phase: Math.random() * Math.PI * 2,       // unique wave phase
+        twinkleRate: 1.8 + Math.random() * 3.2,   // twinkle frequency
+        baseAlpha: 0.40 + Math.random() * 0.55    // individual density
       });
     }
   }
 
-  function renderStarfield(isForeground, spotFade, elapsedSec, dtS) {
-    if (!starfield.length) return;
+  function renderDustMotes(isForeground, spotX, beamTop, beamH, spotFade, elapsedSec, dtS, botCy) {
+    if (spotFade <= 0.01 || !dustMotes || !dustMotes.length) return;
 
-    var rangeX = Math.min(W * 0.47, R * 2.75);
-    var rangeY = Math.min(H * 0.34, R * 1.85);
-    var centerY = targetCy;
-    // Faint starlight survives the sleeping scene; the spotlight wakes
-    // it to full luminance.
-    var visibility = 0.42 + 0.58 * spotFade;
+    var botWorldY = (typeof botCy === "number") ? botCy : targetCy;
 
     ctx.save();
-    ctx.globalCompositeOperation = "screen";
+    for (var i = 0; i < dustMotes.length; i++) {
+      var p = dustMotes[i];
+      // Separate into background (z > 0) and foreground (z <= 0)
+      if (isForeground ? (p.z > 0) : (p.z <= 0)) continue;
 
-    for (var i = 0; i < starfield.length; i++) {
-      var p = starfield[i];
-      if (p.foreground !== isForeground) continue;
-
+      // Update particle physics (frame-rate independent using dtS)
       if (!reduceSpotMotion) {
-        p.x += p.speedX * dtS;
-        if (p.x < -rangeX) {
-          p.x = rangeX;
-          p.y = (Math.random() * 2 - 1) * rangeY;
+        p.yRel += p.speedY * dtS;
+        p.relX += p.speedX * dtS;
+
+        // Gentle Brownian horizontal swirl
+        var turbX = Math.sin(elapsedSec * 1.2 + p.phase) * 0.008;
+        p.relX += turbX * dtS;
+
+        // Air displacement from bot movements (hop, spin, speech)
+        var pWorldY = beamTop + p.yRel * beamH;
+        var distToBotY = Math.abs(pWorldY - botWorldY);
+        if (distToBotY < R * 1.3) {
+          var push = (Math.abs(hopY) * 0.0015 + (phase === "spinning" ? 0.003 : 0));
+          p.relX += (p.relX > 0 ? push : -push) * dtS * 60;
+        }
+
+        // Wrap around vertically if it floats out the top or floor
+        if (p.yRel < 0.02) {
+          p.yRel = 0.96;
+          p.relX = (Math.random() - 0.5) * 1.2;
+        } else if (p.yRel > 0.98) {
+          p.yRel = 0.05;
+          p.relX = (Math.random() - 0.5) * 1.2;
         }
       }
 
-      // Keep the halo inside its band after a viewport resize.
-      if (p.y < -rangeY) p.y = -rangeY + Math.random() * rangeY * 0.25;
-      else if (p.y > rangeY) p.y = rangeY - Math.random() * rangeY * 0.25;
+      var pWorldY = beamTop + p.yRel * beamH;
+      // Majestic conical spread: focused studio aperture at top expanding outward to floor landing
+      var coneRadius = R * (0.19 + p.yRel * 1.87);
+      var pWorldX = spotX + p.relX * coneRadius;
 
-      var sx = cx + p.x + Math.sin(elapsedSec * p.bobRate + p.phase) * p.bobAmp;
-      var sy = centerY + p.y + Math.cos(elapsedSec * p.bobRate * 0.8 + p.phase) * p.bobAmp * 0.55;
+      var absDist = Math.abs(pWorldX - spotX);
+      var normDist = absDist / coneRadius;
+      if (normDist >= 1.0) continue; // Outside illuminated cone
 
-      // Foreground stars never drift across the bot's face.
-      if (isForeground) {
-        var fdx = sx - cx;
-        var fdy = sy - centerY;
-        if (fdx * fdx + fdy * fdy < R * R * 1.12) continue;
-      }
+      // Continuous Gaussian volumetric illumination
+      var beamIntensity = (1 - normDist * normDist);
+      beamIntensity = beamIntensity * beamIntensity;
 
-      var twinkle = reduceSpotMotion ? 1 : 0.64 + 0.36 * Math.sin(elapsedSec * p.twinkleRate + p.phase);
-      // Rare, sharper glints keep the field alive without noise.
-      var glint = reduceSpotMotion ? 0 :
-        Math.pow(Math.max(0, Math.sin(elapsedSec * p.twinkleRate * 0.47 + p.phase)), 9) * 0.45;
-      var alpha = Math.min(1, (0.58 + 0.42 * twinkle) * visibility * (p.foreground ? 0.78 : 1));
-      if (alpha <= 0.02) continue;
+      // Vertical atmospheric light availability
+      var vertLight = Math.max(0.35, 1.0 - p.yRel * 0.35);
 
-      var palette = STAR_PALETTE[p.color];
+      // Micro-shimmer as faceted dust speck tumbles in air
+      var twinkle = reduceSpotMotion ? 0.85 : (0.70 + 0.30 * Math.sin(elapsedSec * p.twinkleRate + p.phase));
 
-      if (p.kind === 2 && starSprites[p.color]) {
-        // Signature glow orb: radius 3.4–4.7px, white core ~1px.
-        var glowRadius = 3.4 + p.depth * 1.3 + glint * 1.4;
+      var alpha = beamIntensity * vertLight * twinkle * p.baseAlpha * spotFade;
+      if (alpha <= 0.015) continue;
+
+      // Depth of field (bokeh): foreground motes are larger and softer
+      var dofScale = p.z < -0.3 ? (1.0 + (-p.z - 0.3) * 0.8) : (0.75 + (1 - p.z) * 0.25);
+      var drawRadius = Math.max(0.6, p.radius * dofScale);
+
+      // Color temperature: incandescent white in core, golden amber near edges
+      var isCore = normDist < 0.28;
+      var rColor = 255;
+      var gColor = Math.round(isCore ? 245 : 210 + (1 - normDist) * 35);
+      var bColor = Math.round(isCore ? 215 : 140 + (1 - normDist) * 65);
+
+      // Same glowing silhouette as the capsule stars, kept in the
+      // original warm dust palette.
+      var variant = Math.min(5, Math.floor(normDist * 5.999));
+      var starSprite = moteSprites[variant];
+      if (starSprite) {
+        var glowRadius = drawRadius * 2.2;
         ctx.globalAlpha = alpha;
-        ctx.drawImage(starSprites[p.color], sx - glowRadius, sy - glowRadius, glowRadius * 2, glowRadius * 2);
+        ctx.drawImage(starSprite, pWorldX - glowRadius, pWorldY - glowRadius, glowRadius * 2, glowRadius * 2);
+
+        // Soft bokeh bloom for closer foreground motes, now using the
+        // same star falloff so the old hard-edged disc disappears.
+        if (p.z < -0.35 && alpha > 0.15) {
+          var bokehRadius = drawRadius * 3.8;
+          ctx.globalAlpha = alpha * 0.16;
+          ctx.drawImage(starSprite, pWorldX - bokehRadius, pWorldY - bokehRadius, bokehRadius * 2, bokehRadius * 2);
+        }
         ctx.globalAlpha = 1;
-      } else if (p.kind === 1) {
-        // Medium star: soft coloured bloom with a pinprick core.
-        var medRadius = 1.7 + p.depth * 0.7 + glint;
-        ctx.beginPath();
-        ctx.arc(sx, sy, medRadius * 2.1, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(" + palette.halo + "," + (alpha * 0.16).toFixed(3) + ")";
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(sx, sy, medRadius, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(" + palette.glow + "," + (alpha * 0.75).toFixed(3) + ")";
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(sx, sy, Math.max(0.55, medRadius * 0.38), 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255,255,255," + alpha.toFixed(3) + ")";
-        ctx.fill();
       } else {
-        // Tiny capsule-style speck: pure saturated colour, no bloom.
-        var speckRadius = 0.55 + p.depth * 0.55 + glint * 0.45;
+        // Fallback if sprite baking failed.
         ctx.beginPath();
-        ctx.arc(sx, sy, speckRadius, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(" + palette.glow + "," + (alpha * 0.9).toFixed(3) + ")";
+        ctx.arc(pWorldX, pWorldY, drawRadius, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(" + rColor + "," + gColor + "," + bColor + "," + alpha.toFixed(3) + ")";
         ctx.fill();
       }
     }
-
     ctx.restore();
   }
 
@@ -1755,9 +1741,8 @@
       ctx.restore();
     }
 
-    // Celestial stardust behind the bot — the nav capsule's palette,
-    // scattered in a slow-drifting halo around the sphere.
-    renderStarfield(false, spotFade, elapsedSec, 0.016);
+    // Atmospheric Tyndall dust motes drifting behind the bot (background volume)
+    renderDustMotes(false, spotX, beamTop, beamH, spotFade, elapsedSec, 0.016, currentCy);
 
     // -------------------------------------------------------------
     // 3. THINKING NEURAL RIPPLE WAVES (EMITS AROUND HEAD)
@@ -1870,8 +1855,8 @@
       renderZzz(cx, currentCy, elapsedSec, sleepProgress);
     }
 
-    // A few nearer stars pass in front of the bot, never across its face.
-    renderStarfield(true, spotFade, elapsedSec, 0.016);
+    // Atmospheric Tyndall dust motes drifting in front of the bot (foreground volume)
+    renderDustMotes(true, spotX, beamTop, beamH, spotFade, elapsedSec, 0.016, currentCy);
 
     // -------------------------------------------------------------
     // 6. 3D PROJECTED EYES & REAL-TIME LIP-SYNC MOUTH
@@ -2046,8 +2031,8 @@
   // First paint must have sprites immediately — scheduleRebake defers,
   // so bake up front and record the radius so the next resize is a no-op.
   bakedR = R;
-  buildStarSprites();
-  initStarfield();
+  buildMoteSprites();
+  initDustMotes();
   buildShadowSprites();
   buildSphereSprite();
   buildSpotSprites();
