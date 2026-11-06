@@ -2631,6 +2631,8 @@
     var dust = [];
     var gasPuffs = [];
     var glowSprites = [];
+    var flareSprites = [];
+    var flare8Sprites = [];
     var hotGlowSprite = null;
     var nebulaClouds = [];
     var rafId = null;
@@ -2683,11 +2685,59 @@
       return cvs;
     }
 
+    // Light-flare sprite: soft halo + tapered rays scattered from a
+    // point source (no solid core -- the core is drawn live so it can
+    // twinkle). Each ray is a narrow triangle widest at the source
+    // and fading to zero at the tip, so light looks scattered rather
+    // than drawn as a silhouette.
+    function makeFlareSprite(c, diagonal) {
+      var size = 128, cx = 64, cy = 64;
+      var cvs = document.createElement("canvas");
+      cvs.width = size;
+      cvs.height = size;
+      var g = cvs.getContext("2d");
+      var rgb = c[0] + ", " + c[1] + ", " + c[2];
+      var halo = g.createRadialGradient(cx, cy, 0, cx, cy, 64);
+      halo.addColorStop(0, "rgba(" + rgb + ", 0.85)");
+      halo.addColorStop(0.3, "rgba(" + rgb + ", 0.25)");
+      halo.addColorStop(1, "rgba(" + rgb + ", 0)");
+      g.fillStyle = halo;
+      g.fillRect(0, 0, size, size);
+      var angles = diagonal
+        ? [0, Math.PI / 4, Math.PI / 2, Math.PI * 0.75, Math.PI, Math.PI * 1.25, Math.PI * 1.5, Math.PI * 1.75]
+        : [0, Math.PI / 2, Math.PI, Math.PI * 1.5];
+      for (var k = 0; k < angles.length; k++) {
+        var ang = angles[k];
+        var isDiag = diagonal && (k % 2 === 1);
+        var len = isDiag ? 42 : 56;
+        var halfW = isDiag ? 1.1 : 2.0;
+        var ux = Math.cos(ang), uy = Math.sin(ang);
+        var px = -uy, py = ux;
+        var tipX = cx + ux * len, tipY = cy + uy * len;
+        var lg = g.createLinearGradient(cx, cy, tipX, tipY);
+        lg.addColorStop(0, "rgba(" + rgb + ", 0.65)");
+        lg.addColorStop(0.35, "rgba(" + rgb + ", 0.28)");
+        lg.addColorStop(1, "rgba(" + rgb + ", 0)");
+        g.fillStyle = lg;
+        g.beginPath();
+        g.moveTo(cx + px * halfW, cy + py * halfW);
+        g.lineTo(tipX, tipY);
+        g.lineTo(cx - px * halfW, cy - py * halfW);
+        g.closePath();
+        g.fill();
+      }
+      return cvs;
+    }
+
     // ---- Nebula web ----
     function makeGlowSprites() {
       glowSprites = [];
+      flareSprites = [];
+      flare8Sprites = [];
       for (var i = 0; i < COLORS.length; i++) {
         glowSprites.push(makeGlowSprite(COLORS[i]));
+        flareSprites.push(makeFlareSprite(COLORS[i], false));
+        flare8Sprites.push(makeFlareSprite(COLORS[i], true));
       }
       hotGlowSprite = makeGlowSprite(HOT);
     }
@@ -2704,20 +2754,19 @@
         var c = COLORS[ci];
         var alpha = rand(0.45, 0.95);
         var r = Math.random() < 0.08 ? rand(1.8, 2.6) : rand(0.6, 1.4);
-        // Star shape like real sky: most points are plain dots,
-        // brighter/hero stars get diffraction spikes (4-point
-        // sparkle), mids get a short cross. shape: 0 dot, 1 sparkle,
-        // 2 cross. spike = tip length in multiples of r; innerRatio
-        // = valley radius / tip radius (lower = sharper star).
+        // Star like real sky: tiny point of light; the bright ones
+        // scatter rays from it (shape 1/2 = flared). shape: 0 bare
+        // point + halo, 1 long flare, 2 short flare. spike = ray
+        // length in multiples of the point radius.
         var shapeRoll = Math.random();
-        var shape, spike, innerRatio;
-        if (r > 1.8) shape = 1;
-        else if (shapeRoll < 0.22) shape = 1;
-        else if (shapeRoll < 0.45) shape = 2;
-        else shape = 0;
-        if (shape === 1) { spike = rand(2.8, 4.2); innerRatio = rand(0.30, 0.50); }
-        else if (shape === 2) { spike = rand(1.9, 2.6); innerRatio = rand(0.60, 0.78); }
-        else { spike = 1; innerRatio = 1; }
+        var shape, spike, flare8;
+        if (r > 1.8) { shape = 1; flare8 = true; }
+        else if (shapeRoll < 0.22) { shape = 1; flare8 = false; }
+        else if (shapeRoll < 0.45) { shape = 2; flare8 = false; }
+        else { shape = 0; flare8 = false; }
+        if (shape === 1) spike = rand(2.8, 4.2);
+        else if (shape === 2) spike = rand(1.9, 2.6);
+        else spike = 1;
         particles.push({
           x: Math.random() * canvasW,
           y: Math.random() * canvasH,
@@ -2727,9 +2776,8 @@
           bvy: Math.sin(angle) * speed,
           r: r,
           shape: shape,
-          rot: rand(0, Math.PI),
           spike: spike,
-          innerRatio: innerRatio,
+          flare8: flare8,
           ci: ci,
           base: c,
           cr: c[0],
@@ -2943,18 +2991,33 @@
         }
       }
 
-      // Nodes: coloured star cores over a soft glow; heat crossfades
-      // toward white-hot and spikes stretch slightly. Shape per star:
-      // dot, short cross (shape 2), or 4-point sparkle (shape 1).
+      // Nodes: tiny point of light + scattered rays. The halo (or the
+      // flare sprite, which already includes its halo) sits behind a
+      // small whitened core; bright stars additionally throw tapered
+      // rays outward. Nothing here is a solid silhouette -- everything
+      // is additive light fading to transparent.
       for (i = 0; i < particles.length; i++) {
         a = particles[i];
         var v = a.aNow;
         var gr = a.r * 7;
         var baseAlpha = Math.min(1, v * 0.6) * (1 - a.heat * 0.85);
+        var tw = a.alpha > 0 ? v / a.alpha : 0.8;
+        var sizeScale = (0.92 + 0.08 * tw) * (1 + a.heat * 0.35);
 
         if (baseAlpha > 0.003) {
           ctx.globalAlpha = baseAlpha;
-          ctx.drawImage(glowSprites[a.ci], a.x - gr, a.y - gr, gr * 2, gr * 2);
+          if (a.shape === 0) {
+            ctx.drawImage(glowSprites[a.ci], a.x - gr, a.y - gr, gr * 2, gr * 2);
+          } else {
+            // Flare sprite: halo + rays. Its ray tips sit at
+            // 56/64 of the sprite half-size, so scale the draw size
+            // from the desired ray length.
+            var rayLen = a.r * a.spike * sizeScale;
+            if (rayLen < 1.5) rayLen = 1.5;
+            var fSize = rayLen * 2.2857;
+            var fSprite = a.flare8 ? flare8Sprites[a.ci] : flareSprites[a.ci];
+            ctx.drawImage(fSprite, a.x - fSize / 2, a.y - fSize / 2, fSize, fSize);
+          }
         }
         if (a.heat > 0.01) {
           var hgr = gr * 1.4;
@@ -2963,29 +3026,20 @@
         }
         ctx.globalAlpha = 1;
 
+        // Tiny bright core: colour washed toward white so it reads
+        // as the light source, not a painted dot. Flared stars keep
+        // a smaller core so the rays dominate.
+        var wMix = 0.5 + a.heat * 0.45;
+        if (wMix > 0.95) wMix = 0.95;
+        var ccr = (a.cr + (255 - a.cr) * wMix) | 0;
+        var ccg = (a.cg + (255 - a.cg) * wMix) | 0;
+        var ccb = (a.cb + (255 - a.cb) * wMix) | 0;
+        var coreFrac = a.shape === 0 ? 0.85 : 0.55;
+        var coreR = a.r * coreFrac * sizeScale;
+        if (coreR < 0.45) coreR = 0.45;
         ctx.beginPath();
-        ctx.fillStyle = "rgba(" + a.rgb + ", " + (v * 0.95).toFixed(3) + ")";
-        if (a.shape === 0) {
-          ctx.arc(a.x, a.y, a.r * (1 + a.heat * 0.2), 0, TAU);
-        } else {
-          // 8-vertex star: 4 tips + 4 valleys. Spikes breathe
-          // with the same twinkle factor that drives alpha, so
-          // a star shimmers in size as well as brightness.
-          var tw = a.alpha > 0 ? v / a.alpha : 0.8;
-          var sizeScale = (0.92 + 0.08 * tw) * (1 + a.heat * 0.35);
-          var outer = a.r * a.spike * sizeScale;
-          if (outer < 1.5) outer = 1.5;
-          var inner = outer * a.innerRatio;
-          for (var sv = 0; sv < 8; sv++) {
-            var sa = a.rot + sv * Math.PI / 4;
-            var srad = (sv % 2 === 0) ? outer : inner;
-            var sx = a.x + Math.cos(sa) * srad;
-            var sy = a.y + Math.sin(sa) * srad;
-            if (sv === 0) ctx.moveTo(sx, sy);
-            else ctx.lineTo(sx, sy);
-          }
-          ctx.closePath();
-        }
+        ctx.fillStyle = "rgba(" + ccr + ", " + ccg + ", " + ccb + ", " + (v * 0.95).toFixed(3) + ")";
+        ctx.arc(a.x, a.y, coreR, 0, TAU);
         ctx.fill();
       }
 
