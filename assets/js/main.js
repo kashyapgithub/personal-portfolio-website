@@ -2608,11 +2608,11 @@
 
   /* ------------------------------------------------------------
      10. Trust Section: Space Nebula Particle Web
-     A multi-spectral nebula of star-like nodes. Each node carries its
-     own nebula colour; connecting threads are true linear gradients
-     running from one node's colour into the other's. Soft nebula
-     clouds drift behind the web, and near the cursor nodes heat up
-     toward a white-hot glow. Canvas-based and dependency-free.
+     A multi-spectral nebula of star-like nodes over drifting gas
+     clouds and fine dust motes. Each node carries its own nebula
+     colour; connecting threads are true linear gradients running
+     from one node's colour into the other's. Near the cursor nodes
+     heat up toward a white-hot glow. Canvas-based and dependency-free.
      ------------------------------------------------------------ */
   (function initTrustNetwork() {
     var section = document.querySelector('[data-od-id="trust"]');
@@ -2627,6 +2627,7 @@
     var canvasH = 0;
     var dpr = 1;
     var particles = [];
+    var dust = [];
     var glowSprites = [];
     var hotGlowSprite = null;
     var nebulaClouds = [];
@@ -2723,12 +2724,45 @@
         });
       }
 
-      // Soft nebula clouds: slow-drifting, additive washes behind the web.
+      // Gas clouds: big, layered washes so the nebula reads as gas,
+      // not a single blob. Each cloud draws a main wash plus a smaller
+      // offset wisp; alpha is per-cloud so layers vary in strength.
       nebulaClouds = [
-        { fx: 0.22, fy: 0.32, fr: 0.38, ci: 0, phase: 0, speed: 0.5 },
-        { fx: 0.78, fy: 0.28, fr: 0.34, ci: 2, phase: 2.1, speed: 0.42 },
-        { fx: 0.55, fy: 0.72, fr: 0.40, ci: 1, phase: 4.2, speed: 0.36 }
+        { fx: 0.22, fy: 0.34, fr: 0.36, ci: 0, phase: 0, speed: 0.5, alpha: 0.24 },
+        { fx: 0.30, fy: 0.42, fr: 0.24, ci: 1, phase: 1.1, speed: 0.58, alpha: 0.16 },
+        { fx: 0.78, fy: 0.30, fr: 0.34, ci: 2, phase: 2.1, speed: 0.42, alpha: 0.22 },
+        { fx: 0.70, fy: 0.26, fr: 0.22, ci: 3, phase: 3.0, speed: 0.50, alpha: 0.14 },
+        { fx: 0.55, fy: 0.74, fr: 0.42, ci: 4, phase: 4.2, speed: 0.36, alpha: 0.20 },
+        { fx: 0.45, fy: 0.62, fr: 0.26, ci: 5, phase: 5.3, speed: 0.44, alpha: 0.15 }
       ];
+
+      // Fine dust: tiny slow motes filling the black with nebula grit.
+      // Unlinked, dimmer and smaller than the web stars; they wrap
+      // around edges instead of bouncing and twinkle on their own phase.
+      dust = [];
+      var dustCount = Math.round((canvasW * canvasH) / 8000);
+      dustCount = Math.max(90, Math.min(160, dustCount));
+      for (var di = 0; di < dustCount; di++) {
+        var dAngle = Math.random() * TAU;
+        var dSpeed = rand(0.03, 0.10);
+        var dCi = (Math.random() * COLORS.length) | 0;
+        var dc = COLORS[dCi];
+        var dAlpha = rand(0.18, 0.55);
+        dust.push({
+          x: Math.random() * canvasW,
+          y: Math.random() * canvasH,
+          vx: Math.cos(dAngle) * dSpeed,
+          vy: Math.sin(dAngle) * dSpeed,
+          r: rand(0.3, 0.95),
+          ci: dCi,
+          rgb: dc[0] + ", " + dc[1] + ", " + dc[2],
+          alpha: dAlpha,
+          aNow: dAlpha * 0.7,
+          phase: Math.random() * TAU,
+          pulse: rand(0.015, 0.045),
+          spark: Math.random() < 0.14
+        });
+      }
     }
 
     function draw() {
@@ -2738,17 +2772,42 @@
       // Additive compositing: crossings glow brighter like gas in a nebula.
       ctx.globalCompositeOperation = "lighter";
 
-      // Nebula clouds: huge, faint, slow-drifting washes.
+      // Gas clouds: layered, uneven washes. Each cloud draws a large
+      // main wash plus a smaller offset wisp so the edges look like
+      // gas tendrils instead of a clean circle.
       if (nebulaClouds.length) {
-        ctx.globalAlpha = 0.10;
         for (i = 0; i < nebulaClouds.length; i++) {
           var cl = nebulaClouds[i];
-          var cx = cl.fx * canvasW + Math.cos(flow * cl.speed + cl.phase) * canvasW * 0.08;
-          var cy = cl.fy * canvasH + Math.sin(flow * cl.speed * 0.8 + cl.phase) * canvasH * 0.08;
+          var cx = cl.fx * canvasW + Math.cos(flow * cl.speed + cl.phase) * canvasW * 0.09;
+          var cy = cl.fy * canvasH + Math.sin(flow * cl.speed * 0.8 + cl.phase) * canvasH * 0.09;
           var cr2 = cl.fr * Math.max(canvasW, canvasH);
+          ctx.globalAlpha = cl.alpha;
           ctx.drawImage(glowSprites[cl.ci], cx - cr2, cy - cr2, cr2 * 2, cr2 * 2);
+          // Offset wisp: smaller, slightly different colour phase.
+          var wr = cr2 * 0.55;
+          var wx = cx + Math.cos(cl.phase + 1.7) * cr2 * 0.45;
+          var wy = cy + Math.sin(cl.phase + 1.7) * cr2 * 0.45;
+          ctx.globalAlpha = cl.alpha * 0.6;
+          ctx.drawImage(glowSprites[cl.ci], wx - wr, wy - wr, wr * 2, wr * 2);
         }
         ctx.globalAlpha = 1;
+      }
+
+      // Fine dust motes: unlinked twinkles sitting between gas and stars.
+      // Sparking motes get a soft glow sprite; the rest are plain dots.
+      for (i = 0; i < dust.length; i++) {
+        var d = dust[i];
+        var dv = d.aNow;
+        if (d.spark && dv > 0.05) {
+          var dgr = d.r * 5;
+          ctx.globalAlpha = dv * 0.5;
+          ctx.drawImage(glowSprites[d.ci], d.x - dgr, d.y - dgr, dgr * 2, dgr * 2);
+        }
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(" + d.rgb + ", " + dv.toFixed(3) + ")";
+        ctx.arc(d.x, d.y, d.r, 0, TAU);
+        ctx.fill();
       }
 
       // Node-to-node links: each is a linear gradient from one endpoint's
@@ -2905,6 +2964,48 @@
         else if (p.x > canvasW) { p.x = canvasW; p.vx *= -1; p.bvx *= -1; }
         if (p.y < 0) { p.y = 0; p.vy *= -1; p.bvy *= -1; }
         else if (p.y > canvasH) { p.y = canvasH; p.vy *= -1; p.bvy *= -1; }
+      }
+
+      // Dust drift: slower than stars, twinkles on its own phase, and
+      // brightens gently near the cursor. Wraps around the edges so
+      // the grit feels continuous rather than confined.
+      for (i = 0; i < dust.length; i++) {
+        var mote = dust[i];
+        if (active) {
+          dx = mote.x - px;
+          dy = mote.y - py;
+          d2 = dx * dx + dy * dy;
+          if (d2 < POINTER_DIST2 && d2 > 0.000001) {
+            dist = Math.sqrt(d2);
+            force = (1 - dist / POINTER_DIST) * 0.25;
+            mote.vx += (dx / dist) * force;
+            mote.vy += (dy / dist) * force;
+          }
+        }
+        mote.vx += Math.cos(mote.y * 0.008 + flow * 0.7) * 0.0006;
+        mote.vy += Math.sin(mote.x * 0.008 + flow * 0.6) * 0.0006;
+        // Dust drag: keeps the slow drift from building up.
+        mote.vx *= 0.995;
+        mote.vy *= 0.995;
+        mote.phase += mote.pulse;
+        var moteTwinkle = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(mote.phase));
+        var moteNear = 1;
+        if (active) {
+          dx = mote.x - px;
+          dy = mote.y - py;
+          d2 = dx * dx + dy * dy;
+          if (d2 < LIGHT_DIST2) {
+            moteNear = 1 + (1 - Math.sqrt(d2) / LIGHT_DIST) * 0.8;
+          }
+        }
+        mote.aNow = mote.alpha * moteTwinkle * moteNear;
+        if (mote.aNow > 1) mote.aNow = 1;
+        mote.x += mote.vx;
+        mote.y += mote.vy;
+        if (mote.x < -6) mote.x = canvasW + 6;
+        else if (mote.x > canvasW + 6) mote.x = -6;
+        if (mote.y < -6) mote.y = canvasH + 6;
+        else if (mote.y > canvasH + 6) mote.y = -6;
       }
     }
 

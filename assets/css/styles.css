@@ -3935,7 +3935,13 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background: #000;
+  /* Faint static nebula haze under the canvas so the gaps between
+     cards keep a hint of gas even where the canvas mask fades. */
+  background:
+    radial-gradient(60% 50% at 22% 34%, rgba(255, 90, 210, 0.10), transparent 60%),
+    radial-gradient(55% 45% at 78% 30%, rgba(0, 220, 255, 0.09), transparent 60%),
+    radial-gradient(65% 55% at 55% 74%, rgba(255, 170, 70, 0.09), transparent 65%),
+    #000;
   padding: 96px 0;
 }
 
@@ -3955,14 +3961,14 @@ html.js .reveal[data-delay="3"] { transition-delay: 0.3s; }
   width: 100%;
   height: 100%;
   pointer-events: none;
-  /* 30% dimmer than the original 0.9 so the web sits further back */
-  opacity: 0.63;
-  -webkit-mask-image: radial-gradient(120% 100% at 50% 45%, #000 35%, transparent 100%);
-  mask-image: radial-gradient(120% 100% at 50% 45%, #000 35%, transparent 100%);
+  /* Nebula sits present but still a layer behind the cards. */
+  opacity: 0.88;
+  -webkit-mask-image: radial-gradient(135% 115% at 50% 45%, #000 50%, transparent 100%);
+  mask-image: radial-gradient(135% 115% at 50% 45%, #000 50%, transparent 100%);
 }
 @media (prefers-reduced-motion: reduce) {
   .trust-net {
-    opacity: 0.42;
+    opacity: 0.55;
   }
 }
 [data-od-id="trust"] .section-head {
