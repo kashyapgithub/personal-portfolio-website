@@ -2608,11 +2608,12 @@
 
   /* ------------------------------------------------------------
      10. Trust Section: Space Nebula Particle Web
-     A multi-spectral nebula of star-like nodes over drifting gas
-     clouds and fine dust motes. Each node carries its own nebula
-     colour; connecting threads are true linear gradients running
-     from one node's colour into the other's. Near the cursor nodes
-     heat up toward a white-hot glow. Canvas-based and dependency-free.
+     A multi-spectral nebula of sparkle-star nodes over drifting
+     gas clouds and fine dust motes. Each node carries its own
+     nebula colour and star shape (dot / cross / 4-point sparkle,
+     like real sky); threads are true linear gradients between
+     endpoint colours. Near the cursor nodes heat up white-hot.
+     Canvas-based and dependency-free.
      ------------------------------------------------------------ */
   (function initTrustNetwork() {
     var section = document.querySelector('[data-od-id="trust"]');
@@ -2703,6 +2704,20 @@
         var c = COLORS[ci];
         var alpha = rand(0.45, 0.95);
         var r = Math.random() < 0.08 ? rand(1.8, 2.6) : rand(0.6, 1.4);
+        // Star shape like real sky: most points are plain dots,
+        // brighter/hero stars get diffraction spikes (4-point
+        // sparkle), mids get a short cross. shape: 0 dot, 1 sparkle,
+        // 2 cross. spike = tip length in multiples of r; innerRatio
+        // = valley radius / tip radius (lower = sharper star).
+        var shapeRoll = Math.random();
+        var shape, spike, innerRatio;
+        if (r > 1.8) shape = 1;
+        else if (shapeRoll < 0.22) shape = 1;
+        else if (shapeRoll < 0.45) shape = 2;
+        else shape = 0;
+        if (shape === 1) { spike = rand(2.8, 4.2); innerRatio = rand(0.30, 0.50); }
+        else if (shape === 2) { spike = rand(1.9, 2.6); innerRatio = rand(0.60, 0.78); }
+        else { spike = 1; innerRatio = 1; }
         particles.push({
           x: Math.random() * canvasW,
           y: Math.random() * canvasH,
@@ -2711,6 +2726,10 @@
           bvx: Math.cos(angle) * speed,
           bvy: Math.sin(angle) * speed,
           r: r,
+          shape: shape,
+          rot: rand(0, Math.PI),
+          spike: spike,
+          innerRatio: innerRatio,
           ci: ci,
           base: c,
           cr: c[0],
@@ -2924,7 +2943,9 @@
         }
       }
 
-      // Nodes: coloured star glow; heating crossfades toward white-hot.
+      // Nodes: coloured star cores over a soft glow; heat crossfades
+      // toward white-hot and spikes stretch slightly. Shape per star:
+      // dot, short cross (shape 2), or 4-point sparkle (shape 1).
       for (i = 0; i < particles.length; i++) {
         a = particles[i];
         var v = a.aNow;
@@ -2944,7 +2965,27 @@
 
         ctx.beginPath();
         ctx.fillStyle = "rgba(" + a.rgb + ", " + (v * 0.95).toFixed(3) + ")";
-        ctx.arc(a.x, a.y, a.r, 0, TAU);
+        if (a.shape === 0) {
+          ctx.arc(a.x, a.y, a.r * (1 + a.heat * 0.2), 0, TAU);
+        } else {
+          // 8-vertex star: 4 tips + 4 valleys. Spikes breathe
+          // with the same twinkle factor that drives alpha, so
+          // a star shimmers in size as well as brightness.
+          var tw = a.alpha > 0 ? v / a.alpha : 0.8;
+          var sizeScale = (0.92 + 0.08 * tw) * (1 + a.heat * 0.35);
+          var outer = a.r * a.spike * sizeScale;
+          if (outer < 1.5) outer = 1.5;
+          var inner = outer * a.innerRatio;
+          for (var sv = 0; sv < 8; sv++) {
+            var sa = a.rot + sv * Math.PI / 4;
+            var srad = (sv % 2 === 0) ? outer : inner;
+            var sx = a.x + Math.cos(sa) * srad;
+            var sy = a.y + Math.sin(sa) * srad;
+            if (sv === 0) ctx.moveTo(sx, sy);
+            else ctx.lineTo(sx, sy);
+          }
+          ctx.closePath();
+        }
         ctx.fill();
       }
 
