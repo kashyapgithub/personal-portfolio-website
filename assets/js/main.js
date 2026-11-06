@@ -2628,6 +2628,7 @@
     var dpr = 1;
     var particles = [];
     var dust = [];
+    var gasPuffs = [];
     var glowSprites = [];
     var hotGlowSprite = null;
     var nebulaClouds = [];
@@ -2736,31 +2737,68 @@
         { fx: 0.45, fy: 0.62, fr: 0.26, ci: 5, phase: 5.3, speed: 0.44, alpha: 0.15 }
       ];
 
-      // Fine dust: tiny slow motes filling the black with nebula grit.
-      // Unlinked, dimmer and smaller than the web stars; they wrap
-      // around edges instead of bouncing and twinkle on their own phase.
+      // Fine dust: layered depth tiers (far/mid/near) so the grit
+      // feels like real volume, not one flat sheet. Far motes are
+      // tiny, dim and slow; near motes are larger and sparkle. A few
+      // are near-white like fresh star grit. Drag keeps drift slow.
       dust = [];
-      var dustCount = Math.round((canvasW * canvasH) / 8000);
-      dustCount = Math.max(90, Math.min(160, dustCount));
+      var dustCount = Math.round((canvasW * canvasH) / 7000);
+      dustCount = Math.max(110, Math.min(220, dustCount));
       for (var di = 0; di < dustCount; di++) {
         var dAngle = Math.random() * TAU;
-        var dSpeed = rand(0.03, 0.10);
+        var roll = Math.random();
+        var depth = roll < 0.55 ? 0 : (roll < 0.85 ? 1 : 2);
+        var dSpeed, dAlpha, dR, dSpark;
+        if (depth === 0) {
+          dSpeed = rand(0.02, 0.06); dAlpha = rand(0.10, 0.28);
+          dR = rand(0.25, 0.50); dSpark = Math.random() < 0.04;
+        } else if (depth === 1) {
+          dSpeed = rand(0.03, 0.10); dAlpha = rand(0.18, 0.50);
+          dR = rand(0.40, 0.80); dSpark = Math.random() < 0.14;
+        } else {
+          dSpeed = rand(0.06, 0.14); dAlpha = rand(0.30, 0.65);
+          dR = rand(0.70, 1.35); dSpark = Math.random() < 0.35;
+        }
+        var dWhite = Math.random() < 0.10;
         var dCi = (Math.random() * COLORS.length) | 0;
-        var dc = COLORS[dCi];
-        var dAlpha = rand(0.18, 0.55);
+        var dc = dWhite ? HOT : COLORS[dCi];
         dust.push({
           x: Math.random() * canvasW,
           y: Math.random() * canvasH,
           vx: Math.cos(dAngle) * dSpeed,
           vy: Math.sin(dAngle) * dSpeed,
-          r: rand(0.3, 0.95),
+          r: dR,
           ci: dCi,
+          white: dWhite,
+          depth: depth,
           rgb: dc[0] + ", " + dc[1] + ", " + dc[2],
           alpha: dAlpha,
           aNow: dAlpha * 0.7,
           phase: Math.random() * TAU,
           pulse: rand(0.015, 0.045),
-          spark: Math.random() < 0.14
+          spark: dSpark
+        });
+      }
+
+      // Gas grit: small soft knots clustered around cloud centres.
+      // Each puff rides a cloud centre (plus an offset that scales
+      // with cloud radius), so the gas looks clumpy and textured
+      // rather than a smooth radial gradient.
+      gasPuffs = [];
+      var puffCount = Math.round((canvasW * canvasH) / 16000);
+      puffCount = Math.max(36, Math.min(64, puffCount));
+      for (var pi = 0; pi < puffCount; pi++) {
+        var k = (Math.random() * nebulaClouds.length) | 0;
+        var owner = nebulaClouds[k];
+        gasPuffs.push({
+          k: k,
+          ox: rand(-1, 1),
+          oy: rand(-1, 1),
+          r: rand(8, 22),
+          ci: owner.ci,
+          alpha: rand(0.05, 0.11),
+          phase: Math.random() * TAU,
+          pulse: rand(0.01, 0.03)
         });
       }
     }
@@ -2772,41 +2810,63 @@
       // Additive compositing: crossings glow brighter like gas in a nebula.
       ctx.globalCompositeOperation = "lighter";
 
-      // Gas clouds: layered, uneven washes. Each cloud draws a large
-      // main wash plus a smaller offset wisp so the edges look like
-      // gas tendrils instead of a clean circle.
+      // Gas clouds: layered, uneven washes that slowly breathe.
+      // Centres are precomputed once so grit and dust can ride them.
+      var cloudCx = [], cloudCy = [], cloudCr = [];
       if (nebulaClouds.length) {
         for (i = 0; i < nebulaClouds.length; i++) {
           var cl = nebulaClouds[i];
-          var cx = cl.fx * canvasW + Math.cos(flow * cl.speed + cl.phase) * canvasW * 0.09;
-          var cy = cl.fy * canvasH + Math.sin(flow * cl.speed * 0.8 + cl.phase) * canvasH * 0.09;
-          var cr2 = cl.fr * Math.max(canvasW, canvasH);
-          ctx.globalAlpha = cl.alpha;
-          ctx.drawImage(glowSprites[cl.ci], cx - cr2, cy - cr2, cr2 * 2, cr2 * 2);
+          var cx0 = cl.fx * canvasW + Math.cos(flow * cl.speed + cl.phase) * canvasW * 0.09;
+          var cy0 = cl.fy * canvasH + Math.sin(flow * cl.speed * 0.8 + cl.phase) * canvasH * 0.09;
+          var cr0 = cl.fr * Math.max(canvasW, canvasH);
+          cloudCx.push(cx0); cloudCy.push(cy0); cloudCr.push(cr0);
+          var breathe = 1 + 0.15 * Math.sin(flow * 0.6 + cl.phase * 2);
+          ctx.globalAlpha = cl.alpha * breathe;
+          ctx.drawImage(glowSprites[cl.ci], cx0 - cr0, cy0 - cr0, cr0 * 2, cr0 * 2);
           // Offset wisp: smaller, slightly different colour phase.
-          var wr = cr2 * 0.55;
-          var wx = cx + Math.cos(cl.phase + 1.7) * cr2 * 0.45;
-          var wy = cy + Math.sin(cl.phase + 1.7) * cr2 * 0.45;
-          ctx.globalAlpha = cl.alpha * 0.6;
+          var wr = cr0 * 0.55;
+          var wx = cx0 + Math.cos(cl.phase + 1.7) * cr0 * 0.45;
+          var wy = cy0 + Math.sin(cl.phase + 1.7) * cr0 * 0.45;
+          ctx.globalAlpha = cl.alpha * breathe * 0.6;
           ctx.drawImage(glowSprites[cl.ci], wx - wr, wy - wr, wr * 2, wr * 2);
+        }
+        ctx.globalAlpha = 1;
+
+        // Gas grit: clumps that follow their cloud, pulsing slowly.
+        for (i = 0; i < gasPuffs.length; i++) {
+          var gp = gasPuffs[i];
+          var gx = cloudCx[gp.k] + gp.ox * cloudCr[gp.k] + Math.sin(flow * gp.pulse + gp.phase) * 4;
+          var gy = cloudCy[gp.k] + gp.oy * cloudCr[gp.k] + Math.cos(flow * gp.pulse * 0.8 + gp.phase) * 4;
+          ctx.globalAlpha = gp.alpha * (0.8 + 0.3 * Math.sin(flow * gp.pulse * 2 + gp.phase));
+          ctx.drawImage(glowSprites[gp.ci], gx - gp.r, gy - gp.r, gp.r * 2, gp.r * 2);
         }
         ctx.globalAlpha = 1;
       }
 
-      // Fine dust motes: unlinked twinkles sitting between gas and stars.
-      // Sparking motes get a soft glow sprite; the rest are plain dots.
+      // Fine dust motes: depth/parallax twinkles between gas and stars.
+      // Near (and sparking mid) motes get a soft glow; far motes are
+      // plain dots. Wrap/parallax offsets keep drift from feeling glued.
+      var parX = 0, parY = 0;
+      if (pointer.active) {
+        parX = (0.5 - pointer.x / canvasW) * 7;
+        parY = (0.5 - pointer.y / canvasH) * 5;
+      }
       for (i = 0; i < dust.length; i++) {
         var d = dust[i];
         var dv = d.aNow;
-        if (d.spark && dv > 0.05) {
-          var dgr = d.r * 5;
+        if (dv <= 0.003) continue;
+        var dxDraw = d.x + parX * d.depth;
+        var dyDraw = d.y + parY * d.depth;
+        var dSprite = d.white ? hotGlowSprite : glowSprites[d.ci];
+        if ((d.depth === 2 || (d.depth === 1 && d.spark)) && dv > 0.05) {
+          var dgr = d.r * (d.depth === 2 ? 6 : 5);
           ctx.globalAlpha = dv * 0.5;
-          ctx.drawImage(glowSprites[d.ci], d.x - dgr, d.y - dgr, dgr * 2, dgr * 2);
+          ctx.drawImage(dSprite, dxDraw - dgr, dyDraw - dgr, dgr * 2, dgr * 2);
         }
         ctx.globalAlpha = 1;
         ctx.beginPath();
         ctx.fillStyle = "rgba(" + d.rgb + ", " + dv.toFixed(3) + ")";
-        ctx.arc(d.x, d.y, d.r, 0, TAU);
+        ctx.arc(dxDraw, dyDraw, d.r, 0, TAU);
         ctx.fill();
       }
 
@@ -2966,9 +3026,17 @@
         else if (p.y > canvasH) { p.y = canvasH; p.vy *= -1; p.bvy *= -1; }
       }
 
-      // Dust drift: slower than stars, twinkles on its own phase, and
-      // brightens gently near the cursor. Wraps around the edges so
-      // the grit feels continuous rather than confined.
+      // Dust drift: depth-layered, slightly chaotic so the grit
+      // feels alive. Motes are nudged by a tangential swirl around
+      // the nearest gas-cloud centre and by tiny Brownian jitter
+      // (drag keeps it slow). Wraps around the edges.
+      var cloudCxS = [], cloudCyS = [];
+      for (var cci = 0; cci < nebulaClouds.length; cci++) {
+        var sCl = nebulaClouds[cci];
+        cloudCxS.push(sCl.fx * canvasW + Math.cos(flow * sCl.speed + sCl.phase) * canvasW * 0.09);
+        cloudCyS.push(sCl.fy * canvasH + Math.sin(flow * sCl.speed * 0.8 + sCl.phase) * canvasH * 0.09);
+      }
+      var swirlRange = Math.max(canvasW, canvasH) * 0.5;
       for (i = 0; i < dust.length; i++) {
         var mote = dust[i];
         if (active) {
@@ -2982,20 +3050,46 @@
             mote.vy += (dy / dist) * force;
           }
         }
+        // Swirl around the nearest cloud centre (tangential).
+        var nearIdx = -1, nearD2 = Infinity;
+        for (cci = 0; cci < cloudCxS.length; cci++) {
+          dx = mote.x - cloudCxS[cci];
+          dy = mote.y - cloudCyS[cci];
+          d2 = dx * dx + dy * dy;
+          if (d2 < nearD2) { nearD2 = d2; nearIdx = cci; }
+        }
+        if (nearIdx >= 0 && nearD2 > 1) {
+          var cdist = Math.sqrt(nearD2);
+          if (cdist < swirlRange) {
+            var swirl = 0.00035 * (1 - cdist / swirlRange) * (0.5 + mote.depth * 0.5);
+            dx = mote.x - cloudCxS[nearIdx];
+            dy = mote.y - cloudCyS[nearIdx];
+            mote.vx += (-dy / cdist) * swirl;
+            mote.vy += (dx / cdist) * swirl;
+          }
+        }
         mote.vx += Math.cos(mote.y * 0.008 + flow * 0.7) * 0.0006;
         mote.vy += Math.sin(mote.x * 0.008 + flow * 0.6) * 0.0006;
+        // Brownian jitter: real dust wanders, not always cleanly.
+        mote.vx += (Math.random() - 0.5) * 0.0005;
+        mote.vy += (Math.random() - 0.5) * 0.0005;
         // Dust drag: keeps the slow drift from building up.
         mote.vx *= 0.995;
         mote.vy *= 0.995;
         mote.phase += mote.pulse;
-        var moteTwinkle = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(mote.phase));
+        // Irregular shimmer: fundamental + harmonic so sparkle
+        // doesn't pulse in perfect sync.
+        var moteBase = 0.5 + 0.5 * Math.sin(mote.phase);
+        var moteShimmer = 0.78 + 0.22 * Math.sin(mote.phase * 3.17 + 1.7);
+        var moteTwinkle = (0.30 + 0.70 * moteBase) * moteShimmer;
+        if (mote.spark && moteBase > 0.9) moteTwinkle *= 1.4;
         var moteNear = 1;
         if (active) {
           dx = mote.x - px;
           dy = mote.y - py;
           d2 = dx * dx + dy * dy;
           if (d2 < LIGHT_DIST2) {
-            moteNear = 1 + (1 - Math.sqrt(d2) / LIGHT_DIST) * 0.8;
+            moteNear = 1 + (1 - Math.sqrt(d2) / LIGHT_DIST) * (0.4 + mote.depth * 0.4);
           }
         }
         mote.aNow = mote.alpha * moteTwinkle * moteNear;
