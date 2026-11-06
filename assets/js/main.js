@@ -2607,12 +2607,12 @@
   })();
 
   /* ------------------------------------------------------------
-     10. Trust Section: Bioluminescent Node Web
-     A dense web of phosphor-green nodes, like algae lighting up in
-     dark water. Nodes drift and connect with thick glowing edges;
-     hovering pushes them away and shifts nearby nodes into random
-     cool blues and cyans, which fade back to green afterwards.
-     Canvas-based and dependency-free.
+     10. Trust Section: Space Nebula Particle Web
+     A multi-spectral nebula of star-like nodes. Each node carries its
+     own nebula colour; connecting threads are true linear gradients
+     running from one node's colour into the other's. Soft nebula
+     clouds drift behind the web, and near the cursor nodes heat up
+     toward a white-hot glow. Canvas-based and dependency-free.
      ------------------------------------------------------------ */
   (function initTrustNetwork() {
     var section = document.querySelector('[data-od-id="trust"]');
@@ -2628,83 +2628,79 @@
     var dpr = 1;
     var particles = [];
     var glowSprites = [];
+    var hotGlowSprite = null;
+    var nebulaClouds = [];
     var rafId = null;
     var running = false;
     var visible = true;
     var pointer = { x: -9999, y: -9999, active: false };
 
     var TAU = Math.PI * 2;
-    var LINK_DIST = 130;
+    var LINK_DIST = 115;
     var LINK_DIST2 = LINK_DIST * LINK_DIST;
     var POINTER_DIST = 190;
     var POINTER_DIST2 = POINTER_DIST * POINTER_DIST;
     var LIGHT_DIST = 260;
     var LIGHT_DIST2 = LIGHT_DIST * LIGHT_DIST;
-    var LINK_WIDTH = 1.9;
-    var POINTER_WIDTH = 2.2;
-    var BUCKETS = 6;
-    var linkBuckets = [];
-    for (var lb = 0; lb < BUCKETS; lb++) linkBuckets.push([]);
-    var hotLinks = [];
+    var LINK_WIDTH = 1.15;
+    var POINTER_WIDTH = 1.4;
     var flow = 0;
 
-    // Default bioluminescent algae greens, brightest first: seafoam,
-    // mint, emerald, deep sea, shadowed weed.
+    // Space nebula palette — magenta, violet, cyan, mint, gold, periwinkle.
+    // Mint is kept as the bridge to the site's green accent.
     var COLORS = [
-      [0, 255, 130],
-      [80, 255, 170],
-      [0, 230, 150],
-      [20, 190, 130],
-      [0, 150, 100]
+      [255, 90, 210],
+      [150, 100, 255],
+      [0, 220, 255],
+      [60, 255, 170],
+      [255, 170, 70],
+      [90, 130, 255]
     ];
 
-    // Cool "disturbed plankton" colours: cyans, blues, aqua.
-    var HOVER_COLORS = [
-      [0, 225, 255],
-      [64, 140, 255],
-      [0, 255, 190],
-      [120, 160, 255],
-      [30, 255, 230],
-      [90, 120, 255]
-    ];
+    // White-hot for heat glow and cursor links.
+    var HOT = [255, 255, 255];
 
     function rand(min, max) {
       return min + Math.random() * (max - min);
     }
 
-    // ---- Node web ----
+    function makeGlowSprite(c) {
+      var size = 128;
+      var cvs = document.createElement("canvas");
+      cvs.width = size;
+      cvs.height = size;
+      var g = cvs.getContext("2d");
+      var rgb = c[0] + ", " + c[1] + ", " + c[2];
+      var grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+      grad.addColorStop(0, "rgba(" + rgb + ", 0.9)");
+      grad.addColorStop(0.3, "rgba(" + rgb + ", 0.28)");
+      grad.addColorStop(1, "rgba(" + rgb + ", 0)");
+      g.fillStyle = grad;
+      g.fillRect(0, 0, size, size);
+      return cvs;
+    }
+
+    // ---- Nebula web ----
     function makeGlowSprites() {
       glowSprites = [];
-      var all = COLORS.concat(HOVER_COLORS);
-      for (var i = 0; i < all.length; i++) {
-        var size = 128;
-        var cvs = document.createElement("canvas");
-        cvs.width = size;
-        cvs.height = size;
-        var g = cvs.getContext("2d");
-        var c = all[i];
-        var rgb = c[0] + ", " + c[1] + ", " + c[2];
-        var grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-        grad.addColorStop(0, "rgba(" + rgb + ", 0.9)");
-        grad.addColorStop(0.3, "rgba(" + rgb + ", 0.28)");
-        grad.addColorStop(1, "rgba(" + rgb + ", 0)");
-        g.fillStyle = grad;
-        g.fillRect(0, 0, size, size);
-        glowSprites.push(cvs);
+      for (var i = 0; i < COLORS.length; i++) {
+        glowSprites.push(makeGlowSprite(COLORS[i]));
       }
+      hotGlowSprite = makeGlowSprite(HOT);
     }
 
     function makeParticles() {
       particles = [];
-      var count = Math.round((canvasW * canvasH) / 4700);
-      count = Math.max(90, Math.min(340, count));
+      var count = Math.round((canvasW * canvasH) / 5500);
+      count = Math.max(70, Math.min(210, count));
 
       for (var i = 0; i < count; i++) {
         var angle = Math.random() * TAU;
-        var speed = rand(0.12, 0.34);
+        var speed = rand(0.08, 0.24);
         var ci = (Math.random() * COLORS.length) | 0;
         var c = COLORS[ci];
         var alpha = rand(0.45, 0.95);
+        var r = Math.random() < 0.08 ? rand(1.8, 2.6) : rand(0.6, 1.4);
         particles.push({
           x: Math.random() * canvasW,
           y: Math.random() * canvasH,
@@ -2712,7 +2708,7 @@
           vy: Math.sin(angle) * speed,
           bvx: Math.cos(angle) * speed,
           bvy: Math.sin(angle) * speed,
-          r: rand(0.7, 1.6),
+          r: r,
           ci: ci,
           base: c,
           cr: c[0],
@@ -2722,30 +2718,42 @@
           alpha: alpha,
           aNow: alpha,
           heat: 0,
-          hover: null,
-          hoverCi: -1,
           phase: Math.random() * TAU,
           pulse: rand(0.008, 0.02)
         });
       }
+
+      // Soft nebula clouds: slow-drifting, additive washes behind the web.
+      nebulaClouds = [
+        { fx: 0.22, fy: 0.32, fr: 0.38, ci: 0, phase: 0, speed: 0.5 },
+        { fx: 0.78, fy: 0.28, fr: 0.34, ci: 2, phase: 2.1, speed: 0.42 },
+        { fx: 0.55, fy: 0.72, fr: 0.40, ci: 1, phase: 4.2, speed: 0.36 }
+      ];
     }
 
     function draw() {
       ctx.clearRect(0, 0, canvasW, canvasH);
-      var i, j, a, b, dx, dy, d2, alpha, dist;
+      var i, j, a, b, dx, dy, d2, dist, alpha, f, heatMax;
 
-      // Additive compositing: crossings of thick edges glow brighter
+      // Additive compositing: crossings glow brighter like gas in a nebula.
       ctx.globalCompositeOperation = "lighter";
 
-      // Node-to-node links in terminal green. With 3-digit node counts,
-      // thousands of per-link strokes would dominate the frame, so pairs
-      // are bucketed by alpha (6 levels) and each bucket is stroked as
-      // one path -- 6 stroke calls total instead of thousands. Links
-      // touching a "lit" node are pulled out and tinted individually.
-      ctx.lineWidth = LINK_WIDTH;
-      for (i = 0; i < BUCKETS; i++) linkBuckets[i].length = 0;
-      hotLinks.length = 0;
+      // Nebula clouds: huge, faint, slow-drifting washes.
+      if (nebulaClouds.length) {
+        ctx.globalAlpha = 0.10;
+        for (i = 0; i < nebulaClouds.length; i++) {
+          var cl = nebulaClouds[i];
+          var cx = cl.fx * canvasW + Math.cos(flow * cl.speed + cl.phase) * canvasW * 0.08;
+          var cy = cl.fy * canvasH + Math.sin(flow * cl.speed * 0.8 + cl.phase) * canvasH * 0.08;
+          var cr2 = cl.fr * Math.max(canvasW, canvasH);
+          ctx.drawImage(glowSprites[cl.ci], cx - cr2, cy - cr2, cr2 * 2, cr2 * 2);
+        }
+        ctx.globalAlpha = 1;
+      }
 
+      // Node-to-node links: each is a linear gradient from one endpoint's
+      // current colour to the other's, so hues bleed into each other.
+      ctx.lineWidth = LINK_WIDTH;
       for (i = 0; i < particles.length; i++) {
         a = particles[i];
         for (j = i + 1; j < particles.length; j++) {
@@ -2753,48 +2761,29 @@
           dx = a.x - b.x;
           dy = a.y - b.y;
           d2 = dx * dx + dy * dy;
-          if (d2 < LINK_DIST2) {
-            dist = Math.sqrt(d2);
-            if (a.heat > 0.03 || b.heat > 0.03) {
-              hotLinks.push(a, b, 1 - dist / LINK_DIST);
-            } else {
-              var bi = ((1 - dist / LINK_DIST) * BUCKETS) | 0;
-              if (bi >= BUCKETS) bi = BUCKETS - 1;
-              linkBuckets[bi].push(a.x, a.y, b.x, b.y);
-            }
+          if (d2 >= LINK_DIST2) continue;
+          dist = Math.sqrt(d2);
+          f = 1 - dist / LINK_DIST;
+          heatMax = a.heat > b.heat ? a.heat : b.heat;
+          alpha = f * 0.30 * (1 + heatMax * 0.9);
+          if (a.ci === b.ci && heatMax < 0.03) {
+            // Same resting colour: a shared gradient would be a solid,
+            // so stroke directly to skip the gradient allocation.
+            ctx.strokeStyle = "rgba(" + a.rgb + ", " + alpha.toFixed(3) + ")";
+          } else {
+            var grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+            grad.addColorStop(0, "rgba(" + a.cr + ", " + a.cg + ", " + a.cb + ", " + alpha.toFixed(3) + ")");
+            grad.addColorStop(1, "rgba(" + b.cr + ", " + b.cg + ", " + b.cb + ", " + alpha.toFixed(3) + ")");
+            ctx.strokeStyle = grad;
           }
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
         }
       }
 
-      for (i = 0; i < BUCKETS; i++) {
-        var coords = linkBuckets[i];
-        if (!coords.length) continue;
-        alpha = ((i + 0.5) / BUCKETS) * 0.32;
-        ctx.strokeStyle = "rgba(0, 255, 130, " + alpha.toFixed(3) + ")";
-        ctx.beginPath();
-        for (var k = 0; k < coords.length; k += 4) {
-          ctx.moveTo(coords[k], coords[k + 1]);
-          ctx.lineTo(coords[k + 2], coords[k + 3]);
-        }
-        ctx.stroke();
-      }
-
-      // Lit links: average the two endpoints' current (blended) colours
-      for (i = 0; i < hotLinks.length; i += 3) {
-        a = hotLinks[i];
-        b = hotLinks[i + 1];
-        alpha = hotLinks[i + 2] * 0.5;
-        var rr = (a.cr + b.cr) * 0.5 | 0;
-        var gg = (a.cg + b.cg) * 0.5 | 0;
-        var bb = (a.cb + b.cb) * 0.5 | 0;
-        ctx.strokeStyle = "rgba(" + rr + ", " + gg + ", " + bb + ", " + alpha.toFixed(3) + ")";
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.stroke();
-      }
-
-      // Cursor links pull in each node's current colour
+      // Cursor links pull from white-hot at the cursor into each node's colour.
       if (pointer.active) {
         ctx.lineWidth = POINTER_WIDTH;
         for (i = 0; i < particles.length; i++) {
@@ -2802,33 +2791,35 @@
           dx = a.x - pointer.x;
           dy = a.y - pointer.y;
           d2 = dx * dx + dy * dy;
-          if (d2 < POINTER_DIST2) {
-            dist = Math.sqrt(d2);
-            alpha = (1 - dist / POINTER_DIST) * 0.6;
-            ctx.strokeStyle = "rgba(" + a.rgb + ", " + alpha.toFixed(3) + ")";
-            ctx.beginPath();
-            ctx.moveTo(pointer.x, pointer.y);
-            ctx.lineTo(a.x, a.y);
-            ctx.stroke();
-          }
+          if (d2 >= POINTER_DIST2) continue;
+          dist = Math.sqrt(d2);
+          alpha = (1 - dist / POINTER_DIST) * 0.55;
+          var pgrad = ctx.createLinearGradient(pointer.x, pointer.y, a.x, a.y);
+          pgrad.addColorStop(0, "rgba(255, 255, 255, " + (alpha * 0.85).toFixed(3) + ")");
+          pgrad.addColorStop(1, "rgba(" + a.rgb + ", " + alpha.toFixed(3) + ")");
+          ctx.strokeStyle = pgrad;
+          ctx.beginPath();
+          ctx.moveTo(pointer.x, pointer.y);
+          ctx.lineTo(a.x, a.y);
+          ctx.stroke();
         }
       }
 
-      // Nodes: green glow crossfades into the cool hover glow
+      // Nodes: coloured star glow; heating crossfades toward white-hot.
       for (i = 0; i < particles.length; i++) {
         a = particles[i];
         var v = a.aNow;
-        var gr = a.r * 6;
-        var baseAlpha = Math.min(1, v * 0.65) * (1 - a.heat);
+        var gr = a.r * 7;
+        var baseAlpha = Math.min(1, v * 0.6) * (1 - a.heat * 0.85);
 
         if (baseAlpha > 0.003) {
           ctx.globalAlpha = baseAlpha;
           ctx.drawImage(glowSprites[a.ci], a.x - gr, a.y - gr, gr * 2, gr * 2);
         }
         if (a.heat > 0.01) {
-          var hgr = gr * 1.25;
-          ctx.globalAlpha = Math.min(1, v * 0.95) * a.heat;
-          ctx.drawImage(glowSprites[COLORS.length + a.hoverCi], a.x - hgr, a.y - hgr, hgr * 2, hgr * 2);
+          var hgr = gr * 1.4;
+          ctx.globalAlpha = Math.min(1, v) * a.heat;
+          ctx.drawImage(hotGlowSprite, a.x - hgr, a.y - hgr, hgr * 2, hgr * 2);
         }
         ctx.globalAlpha = 1;
 
@@ -2858,14 +2849,8 @@
           d2 = dx * dx + dy * dy;
 
           // Light radius is deliberately wider than push radius, so
-          // nodes glow cool even as the cursor clears them away.
-          if (d2 < LIGHT_DIST2) {
-            lit = true;
-            if (!p.hover) {
-              p.hoverCi = (Math.random() * HOVER_COLORS.length) | 0;
-              p.hover = HOVER_COLORS[p.hoverCi];
-            }
-          }
+          // nodes glow hot even as the cursor clears them away.
+          if (d2 < LIGHT_DIST2) lit = true;
 
           // Repel from the cursor, squaring force for a soft edge
           if (d2 < POINTER_DIST2 && d2 > 0.000001) {
@@ -2877,21 +2862,19 @@
           }
         }
 
-        // Bioluminescent heat: light up fast, fade back slowly
+        // Nebula heat: heat up fast toward white-hot, cool down slowly
         var target = lit ? 1 : 0;
-        p.heat += (target - p.heat) * (lit ? 0.14 : 0.05);
+        p.heat += (target - p.heat) * (lit ? 0.12 : 0.045);
         if (!lit && p.heat < 0.01) {
           p.heat = 0;
-          p.hover = null;
-          p.hoverCi = -1;
           p.cr = p.base[0];
           p.cg = p.base[1];
           p.cb = p.base[2];
           p.rgb = p.base[0] + ", " + p.base[1] + ", " + p.base[2];
-        } else if (p.hover && p.heat > 0) {
-          p.cr = (p.base[0] + (p.hover[0] - p.base[0]) * p.heat) | 0;
-          p.cg = (p.base[1] + (p.hover[1] - p.base[1]) * p.heat) | 0;
-          p.cb = (p.base[2] + (p.hover[2] - p.base[2]) * p.heat) | 0;
+        } else if (p.heat > 0) {
+          p.cr = (p.base[0] + (HOT[0] - p.base[0]) * p.heat) | 0;
+          p.cg = (p.base[1] + (HOT[1] - p.base[1]) * p.heat) | 0;
+          p.cb = (p.base[2] + (HOT[2] - p.base[2]) * p.heat) | 0;
           p.rgb = p.cr + ", " + p.cg + ", " + p.cb;
         }
 
@@ -2899,19 +2882,19 @@
         p.vx += (p.bvx - p.vx) * 0.018;
         p.vy += (p.bvy - p.vy) * 0.018;
 
-        // Gentle ambient current, like water moving over algae
+        // Gentle ambient current, like gas slowly swirling in a nebula
         p.vx += Math.cos(p.y * 0.01 + flow) * 0.0012;
         p.vy += Math.sin(p.x * 0.01 + flow * 0.8) * 0.0012;
 
-        // Slow twinkle so the web breathes
+        // Slow twinkle so the stars breathe
         p.phase += p.pulse;
         p.aNow = p.alpha * (0.8 + 0.2 * Math.sin(p.phase));
 
         // Speed limit so a fast swipe doesn't launch nodes
         var speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-        if (speed > 2.6) {
-          p.vx = (p.vx / speed) * 2.6;
-          p.vy = (p.vy / speed) * 2.6;
+        if (speed > 2.2) {
+          p.vx = (p.vx / speed) * 2.2;
+          p.vy = (p.vy / speed) * 2.2;
         }
 
         p.x += p.vx;
